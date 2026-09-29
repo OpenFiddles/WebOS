@@ -1,0 +1,657 @@
+/* ---------- GLOBAL ---------- */
+
+:root {
+    --accent: #00d4b8;
+    --accent-strong: #00a891;
+    --accent-wash: rgba(0, 212, 184, 0.16);
+    --surface: rgba(12, 18, 29, 0.72);
+    --line: rgba(255, 255, 255, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    background:
+        radial-gradient(circle at 16% 12%, rgba(255, 191, 0, 0.17), transparent 26%),
+        radial-gradient(circle at 84% 80%, rgba(255, 0, 0, 0.355), transparent 30%),
+        linear-gradient(135deg, #291f10 0%, #361d17 52%, #361313 100%);
+    color: white;
+    overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+body[data-theme="mint"] #open-launcher,
+body[data-theme="mint"] .DockIcon {
+    background: linear-gradient(135deg, #72f2c3, #168aad);
+}
+
+body[data-theme="sunset"] #open-launcher,
+body[data-theme="sunset"] .DockIcon {
+    background: linear-gradient(135deg, #ffb36b, #e85d75);
+}
+
+/* ---------- LIQUID GLASS BASE ---------- */
+
+.glass {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* ---------- TASKBAR + DOCK ---------- */
+
+#taskbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    z-index: 9000;
+    background: linear-gradient(180deg, rgba(10,10,20,0.85), rgba(5,5,10,0.9));
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    animation: slide-down 0.45s ease both;
+}
+
+#taskbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#taskbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+#taskbar-apps {
+    display: flex;
+    flex: 1;
+    gap: 6px;
+    margin: 0 16px;
+    overflow: auto;
+}
+
+.TaskButton,
+.StatusButton {
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.TaskButton {
+    max-width: 160px;
+    padding: 5px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.TaskButton:hover,
+.TaskButton.active {
+    background: var(--accent-wash);
+    border-color: rgba(255,255,255,0.12);
+}
+
+.StatusButton {
+    padding: 4px 6px;
+}
+
+.StatusButton:hover {
+    color: #7ee8dc;
+}
+
+#open-launcher {
+    font-size: 18px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #19ead0, #0088a8);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#open-launcher:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+}
+
+/* iOS-style dock */
+
+#dock {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    max-width: 420px;
+}
+
+.dock-glass {
+    background: rgba(20, 20, 30, 0.55);
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+    backdrop-filter: blur(22px) saturate(150%);
+}
+
+.DockIcon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #19ead0, #0088a8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.5);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    animation: dock-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.DockIcon:nth-child(2) { animation-delay: 0.06s; }
+.DockIcon:nth-child(3) { animation-delay: 0.12s; }
+.DockIcon:nth-child(4) { animation-delay: 0.18s; }
+
+.DockIcon:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 30px rgba(0,0,0,0.7);
+}
+
+/* ---------- WINDOWS (LIQUID GLASS) ---------- */
+
+.WindowDesign {
+    width: 360px;
+    height: 230px;
+    position: absolute;
+    top: 70px;
+    left: 40px;
+    overflow: hidden;
+    min-width: 260px;
+    min-height: 150px;
+    z-index: 10;
+    animation: window-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.WindowShell {
+    width: 100%;
+    height: 100%;
+}
+
+.WindowShell.glass {
+    border-radius: 18px;
+}
+
+.WindowTitleBar {
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: move;
+    touch-action: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.WindowButtons {
+    display: flex;
+    gap: 6px;
+}
+
+.WindowButtons span {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.12);
+}
+
+.WindowBody {
+    padding: 10px;
+    font-size: 13px;
+    height: calc(100% - 34px);
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.WindowDesign.is-minimized {
+    display: none;
+}
+
+.WindowDesign.is-closing {
+    animation: window-out 0.18s ease forwards;
+}
+
+.WindowDesign.is-maximized {
+    left: 12px !important;
+    top: 54px !important;
+    width: calc(100vw - 24px) !important;
+    height: calc(100vh - 116px) !important;
+}
+
+.AppPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.AppPanel h2,
+.AppPanel p {
+    margin: 0;
+}
+
+.AppPanel input,
+.AppPanel textarea,
+.AppPanel button,
+.AppPanel select,
+.LauncherSearch {
+    box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.28);
+    color: inherit;
+    font: inherit;
+}
+
+.AppPanel input,
+.AppPanel textarea,
+.LauncherSearch {
+    user-select: text;
+}
+
+.AppPanel select {
+    color-scheme: dark;
+}
+
+.AppPanel textarea {
+    flex: 1;
+    min-height: 120px;
+    resize: none;
+}
+
+.AppPanel button {
+    align-self: flex-start;
+    background: var(--accent-strong);
+    border: 0;
+    cursor: pointer;
+}
+
+.AppList {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.AppList li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+}
+
+.FileToolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.AppOutput {
+    min-height: 90px;
+    margin: 0;
+    padding: 10px;
+    overflow: auto;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.28);
+    color: #b9ffe8;
+    white-space: pre-wrap;
+}
+
+.EmulatorWindow .WindowBody {
+    display: flex;
+    padding: 0;
+    overflow: hidden;
+    background: #0d0d0d;
+}
+
+.EmulatorFrame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    border: 0;
+    background: #0d0d0d;
+}
+
+.BrowserShell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    min-height: 0;
+}
+
+.BrowserBar {
+    display: flex;
+    gap: 6px;
+    padding: 2px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 9px;
+}
+
+.BrowserAddress {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.35);
+    color: white;
+    user-select: text;
+}
+
+.BrowserBar button {
+    padding: 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--accent-strong);
+    color: white;
+    cursor: pointer;
+}
+
+.BrowserFrame {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    border: 0;
+    background: white;
+    border-radius: 8px;
+}
+
+.BrowserHint {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 180, 110, 0.3);
+    border-radius: 8px;
+    background: rgba(115, 62, 28, 0.25);
+    color: #ffd7ae;
+    font-size: 12px;
+}
+
+.BrowserHint.visible {
+    display: flex;
+}
+
+.BrowserHint button {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: #ffb36b;
+    color: #24150c;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+}
+
+/* resize handle */
+
+.ResizeHandle {
+    width: 12px;
+    height: 12px;
+    background: rgba(255,255,255,0.25);
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    border-radius: 4px;
+    cursor: se-resize;
+}
+
+/* ---------- LAUNCHER (FULLSCREEN, LIQUID GLASS) ---------- */
+
+.LauncherFS {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top, rgba(0,0,0,0.75), rgba(0,0,0,0.95));
+    backdrop-filter: blur(26px) saturate(160%);
+    z-index: 9500;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px) scale(0.98);
+    transition:
+        opacity 0.28s ease-out,
+        transform 0.32s cubic-bezier(0.23, 0.9, 0.35, 1.2);
+}
+
+.LauncherFS.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+/* launcher content */
+
+.LauncherInner {
+    max-width: 720px;
+    margin: 80px auto 0 auto;
+    padding: 24px 26px 30px 26px;
+    animation: launcher-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.LauncherSearch {
+    width: 100%;
+    margin-bottom: 18px;
+    background: rgba(0,0,0,0.32);
+}
+
+.LauncherHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+.LauncherGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+}
+
+.AppIcon[hidden] {
+    display: none;
+}
+
+/* app icons */
+
+.AppIcon {
+    border: 0;
+    background: linear-gradient(135deg, rgba(25, 234, 208, 0.92), rgba(0, 124, 157, 0.92));
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.6);
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+    animation: icon-in 0.35s ease both;
+    font: inherit;
+}
+
+.AppIcon strong,
+.AppIcon span,
+.AppIcon small {
+    display: block;
+}
+
+.AppIcon strong {
+    margin-bottom: 6px;
+    font-size: 24px;
+}
+
+.AppIcon small {
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.72;
+}
+
+.AppIcon:nth-child(2) { animation-delay: 0.04s; }
+.AppIcon:nth-child(3) { animation-delay: 0.08s; }
+.AppIcon:nth-child(4) { animation-delay: 0.12s; }
+.AppIcon:nth-child(5) { animation-delay: 0.16s; }
+.AppIcon:nth-child(6) { animation-delay: 0.20s; }
+.AppIcon:nth-child(7) { animation-delay: 0.24s; }
+.AppIcon:nth-child(8) { animation-delay: 0.28s; }
+
+.AppIcon:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 18px 36px rgba(0,0,0,0.75);
+}
+
+/* ---------- DESKTOP ---------- */
+
+#Desktop {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    padding-top: 42px;
+}
+
+@media (max-width: 680px) {
+    #taskbar {
+        padding: 0 8px;
+    }
+
+    #taskbar-left span,
+    #network-status {
+        display: none;
+    }
+
+    #taskbar-apps {
+        margin: 0 6px;
+    }
+
+    .LauncherInner {
+        margin: 54px 12px 0;
+        padding: 18px;
+    }
+
+    .LauncherGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .AppIcon {
+        padding: 15px 8px;
+        font-size: 14px;
+    }
+
+    .WindowDesign {
+        left: 10px !important;
+        top: 54px !important;
+        width: calc(100vw - 20px) !important;
+        height: calc(100vh - 116px) !important;
+    }
+}
+
+/* ---------- UTILITY ---------- */
+
+.hidden {
+    display: none;
+}
+
+@keyframes slide-down {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dock-rise {
+    from { opacity: 0; transform: translateY(18px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes window-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes window-out {
+    to { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes launcher-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes icon-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
