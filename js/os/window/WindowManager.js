@@ -230,9 +230,31 @@ function openSettings() {
 }
 
 function openAbout() {
+    // here you can modify the About OS's window page!
+    const about_dialog = {
+        "OS_NAME": "WebOS",
+        "Codename": "Webion",
+        "Version": "web-0.5",
+        "About": "WebOS is an OS... In the browser! Consider supporting us to help keep it going!",
+        "DonationPage": ":[",
+        "MainPage": ":["
+    };
+
     closeLauncher();
-    return createWindow("About WebOS", '<div class="AppPanel"><h2>WebPopcorn OS</h2><p>A browser-based desktop for experiments, apps, and virtual machines.</p><ul class="AppList"><li><span>Shell</span><small>DisplayManager</small></li><li><span>Storage</span><small>Local device</small></li><li><span>Version</span><small>1.0</small></li></ul></div>');
+
+    // here you can modifiy it's html!
+    var html = `
+        <div class="AboutOS">
+            <h1>${about_dialog.OS_NAME}</h1>
+            <p><strong>Codename:</strong> ${about_dialog.Codename}</p>
+            <p><strong>Version:</strong> ${about_dialog.Version}</p>
+            <p>${about_dialog.About}</p>
+        </div>
+    `;
+
+    return createWindow("About WebOS", html);
 }
+
 
 function openCalculator() {
     closeLauncher();
@@ -242,146 +264,334 @@ function openCalculator() {
 
 function openCalendar() {
     closeLauncher();
-    const win = createWindow("Calendar", '<div class="AppPanel"><h2>Calendar</h2><input id="calendar-date" type="date"><textarea id="calendar-note" placeholder="Add a note for this date..."></textarea><button type="button" id="calendar-save">Save event</button><p id="calendar-status" aria-live="polite"></p></div>');
-    const date = win.querySelector("#calendar-date");
-    const note = win.querySelector("#calendar-note");
-    date.value = new Date().toISOString().slice(0, 10);
-    const key = () => "/Documents/Calendar/" + date.value + ".txt";
-    date.onchange = async () => { note.value = (await WebOSFileSystem.read(key()))?.content || ""; };
-    date.onchange();
-    win.querySelector("#calendar-save").onclick = async () => {
-        await WebOSFileSystem.putText(key(), note.value);
-        win.querySelector("#calendar-status").textContent = "Saved for " + date.value;
+
+    // 1. Clean, readable HTML template
+    const htmlTemplate = `
+        <div class="AppPanel">
+            <h2>Calendar</h2>
+            <input id="calendar-date" type="date">
+            <textarea id="calendar-note" placeholder="Add a note for this date..."></textarea>
+            <button type="button" id="calendar-save">Save event</button>
+            <p id="calendar-status" aria-live="polite"></p>
+        </div>
+    `;
+
+    const win = createWindow("Calendar", htmlTemplate);
+    
+    // Elements caching
+    const dateInput = win.querySelector("#calendar-date");
+    const noteInput = win.querySelector("#calendar-note");
+    const saveButton = win.querySelector("#calendar-save");
+    const statusText = win.querySelector("#calendar-status");
+
+    // Set today's date automatically
+    dateInput.value = new Date().toISOString().slice(0, 10);
+
+    // Helper to generate the exact file path key
+    const getFilePath = () => `/Documents/Calendar/${dateInput.value}.txt`;
+
+    // 2. Load existing note when date changes
+    dateInput.onchange = async () => {
+        noteInput.disabled = true; // Disable inputs to prevent typing while fetching
+        statusText.textContent = "Loading event...";
+        
+        try {
+            const file = await WebOSFileSystem.read(getFilePath());
+            noteInput.value = file?.content || "";
+            statusText.textContent = "";
+        } catch (error) {
+            console.error("Failed to read calendar data:", error);
+            statusText.textContent = "Error loading event.";
+        } finally {
+            noteInput.disabled = false;
+        }
     };
+
+    // Trigger initial load for today's date
+    dateInput.onchange();
+
+    // 3. Save note event listener
+    saveButton.onclick = async () => {
+        saveButton.disabled = true;
+        statusText.textContent = "Saving...";
+
+        try {
+            await WebOSFileSystem.putText(getFilePath(), noteInput.value);
+            statusText.textContent = `Saved successfully for ${dateInput.value}!`;
+        } catch (error) {
+            console.error("Failed to save calendar data:", error);
+            statusText.textContent = "Error saving event. Please try again.";
+        } finally {
+            saveButton.disabled = false;
+        }
+    };
+
     return win;
 }
+
 
 function openSystemMonitor() {
     closeLauncher();
-    const win = createWindow("System Monitor", '<div class="AppPanel"><h2>System Monitor</h2><ul class="AppList" id="system-stats"></ul></div>');
-    const stats = win.querySelector("#system-stats");
-    const update = () => {
-        const rows = [
-            ["Windows", document.querySelectorAll(".WindowDesign:not(#WindowTemplate):not(.is-minimized)").length],
-            ["Storage", "IndexedDB filesystem"],
-            ["Memory", performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) + " MB" : "Browser managed"]
+
+    // 1. Clean HTML wrapper structure
+    const htmlTemplate = `
+        <div class="AppPanel">
+            <h2>System Monitor</h2>
+            <ul class="AppList" id="system-stats"></ul>
+        </div>
+    `;
+
+    const win = createWindow("System Monitor", htmlTemplate);
+    const statsContainer = win.querySelector("#system-stats");
+
+    // 2. Real-time metrics collector
+    const updateStats = () => {
+        // Fallback for memory reporting across different browsers
+        const memoryUsage = window.performance?.memory 
+            ? `${Math.round(window.performance.memory.usedJSHeapSize / 1048576)} MB` 
+            : "Unsupported by browser";
+
+        const openWindowsCount = document.querySelectorAll(".WindowDesign:not(#WindowTemplate):not(.is-minimized)").length;
+
+        const metrics = [
+            { label: "Active Windows", value: openWindowsCount },
+            { label: "Storage Engine", value: "IndexedDB Filesystem" },
+            { label: "Memory Allocation", value: memoryUsage }
         ];
-        stats.replaceChildren(...rows.map(([label, value]) => {
-            const item = document.createElement("li");
-            item.innerHTML = `<span>${label}</span><small>${value}</small>`;
-            return item;
-        }));
+
+        // 3. Efficient UI rendering
+        statsContainer.innerHTML = metrics
+            .map(item => `<li><span>${item.label}</span><small>${item.value}</small></li>`)
+            .join("");
     };
-    update();
+
+    // Initial render
+    updateStats();
+
+    // 4. Live tracking loop (updates metrics every 1 second)
+    const intervalId = setInterval(updateStats, 1000);
+
+    // 5. Memory leak prevention: clear the interval when the window is destroyed
+    // Assuming your custom window component emits an onclose or close listener hook:
+    if (typeof win.addEventListener === "function") {
+        win.addEventListener("close", () => clearInterval(intervalId));
+    } else {
+        // Fallback custom property hook if addEventListener isn't standard on your win object
+        win.onCloseHook = () => clearInterval(intervalId);
+    }
+
     return win;
 }
+
 
 function openWasmLab() {
     closeLauncher();
-    const win = createWindow("WASM Lab", '<div class="AppPanel"><h2>WASM Lab</h2><input id="wasm-file" type="file" accept=".wasm,application/wasm"><select id="wasm-export"><option>Load a module first</option></select><button type="button" id="wasm-run">Run export</button><pre id="wasm-output" class="AppOutput">Select a local WebAssembly module.</pre></div>');
-    const picker = win.querySelector("#wasm-file");
+
+    // 1. Clean HTML template for better maintenance
+    const htmlTemplate = `
+        <div class="AppPanel">
+            <h2>WASM Lab</h2>
+            <input id="wasm-file" type="file" accept=".wasm,application/wasm">
+            <select id="wasm-export" disabled>
+                <option value="">Load a module first</option>
+            </select>
+            <button type="button" id="wasm-run" disabled>Run export</button>
+            <pre id="wasm-output" class="AppOutput">Select a local WebAssembly module.</pre>
+        </div>
+    `;
+
+    const win = createWindow("WASM Lab", htmlTemplate);
+    
+    // Element selections
+    const filePicker = win.querySelector("#wasm-file");
     const exportsMenu = win.querySelector("#wasm-export");
-    const output = win.querySelector("#wasm-output");
-    let instance;
-    picker.onchange = async () => {
-        const file = picker.files[0];
+    const runButton = win.querySelector("#wasm-run");
+    const outputArea = win.querySelector("#wasm-output");
+    
+    let instance = null;
+
+    // 2. Handle parsing and instantiating the WASM file
+    filePicker.onchange = async () => {
+        const file = filePicker.files[0];
         if (!file) return;
+
+        outputArea.textContent = "Compiling and instantiating module...";
+        
+        // Reset UI state during load
+        exportsMenu.disabled = true;
+        runButton.disabled = true;
+        instance = null;
+
         try {
             const bytes = await file.arrayBuffer();
-            const result = await WebAssembly.instantiate(bytes, {});
+            
+            // Basic sandboxed importObject. Many WASM modules expect a minimal environment (like JavaScript console or memory).
+            const importObject = {
+                env: {
+                    memory: new WebAssembly.Memory({ initial: 256 }),
+                    abort: () => console.warn("WASM module called abort()")
+                }
+            };
+
+            const result = await WebAssembly.instantiate(bytes, importObject);
             instance = result.instance;
-            exportsMenu.replaceChildren(...Object.keys(instance.exports).map((name) => new Option(name, name)));
-            output.textContent = "Loaded " + file.name + ". Select an exported function.";
+
+            // Generate dropdown options cleanly
+            const exportNames = Object.keys(instance.exports);
+            
+            if (exportNames.length === 0) {
+                outputArea.textContent = `Loaded ${file.name}, but it exports no properties or functions.`;
+                return;
+            }
+
+            exportsMenu.innerHTML = exportNames
+                .map(name => `<option value="${name}">${name}</option>`)
+                .join("");
+
+            // Re-enable controls upon successful mount
+            exportsMenu.disabled = false;
+            runButton.disabled = false;
+            outputArea.textContent = `Successfully loaded ${file.name}. Select an exported function below.`;
+
         } catch (error) {
-            output.textContent = "WASM load failed: " + error.message;
+            exportsMenu.innerHTML = '<option value="">Load failed</option>';
+            outputArea.textContent = `WASM instantiation failed:\n${error.message}`;
         }
     };
-    win.querySelector("#wasm-run").onclick = () => {
+
+    // 3. Execution logic for running functions
+    runButton.onclick = () => {
         if (!instance) return;
-        const name = exportsMenu.value;
-        const exported = instance.exports[name];
-        if (typeof exported !== "function") {
-            output.textContent = name + " is not a callable function.";
+
+        const targetFunctionName = exportsMenu.value;
+        const exportedItem = instance.exports[targetFunctionName];
+
+        if (typeof exportedItem !== "function") {
+            outputArea.textContent = `Error: "${targetFunctionName}" is an exported global/memory object, not a callable function.`;
             return;
         }
-        try {
-            output.textContent = name + "() => " + String(exported());
-        } catch (error) {
-            output.textContent = "Export failed: " + error.message;
-        }
 
-            .AppIcon.is-selected {
-                outline: 2px solid var(--accent);
-                outline-offset: 3px;
-                transform: translateY(-3px);
-            }
+        try {
+            outputArea.textContent = `Executing ${targetFunctionName}()...\n`;
+            
+            // Execute the WASM function
+            const result = exportedItem();
+            
+            outputArea.textContent += `Result: ${result !== undefined ? String(result) : "void (execution finished)"}`;
+        } catch (error) {
+            outputArea.textContent = `Runtime Execution Error:\n${error.message}`;
+        }
     };
+
     return win;
 }
-            const launcherSearch = document.getElementById("launcher-search");
+
+
+const launcherSearch = document.getElementById("launcher-search");
 
 function openBrowser(initialUrl) {
     closeLauncher();
-                launcherSearch.focus();
-                launcherSearch.select();
+
+    // 1. Clean HTML template matching your project's architecture
+    const htmlTemplate = `
+        <div class="AppPanel BrowserApp">
+            <form class="BrowserBar">
+                <input type="url" id="browser-address" placeholder="Enter URL (https://...)" required>
+                <button type="button" class="BrowserOpenExternal" title="Open in new browser tab">🌐</button>
+            </form>
+            <div class="BrowserContainer" style="position: relative; width: 100%; height: calc(100% - 40px);">
+                <iframe class="BrowserFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+                <div class="BrowserHint" style="display: none; position: absolute; top: 0; left: 0; right: 0; background: #ffcccc; color: #330000; padding: 8px; text-align: center;">
+                    This website might be blocking iframe preview due to X-Frame-Options.
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 2. Initialize the window canvas
+    const win = createWindow("Browser", htmlTemplate);
+
+    // Dynamic responsive sizing (Cleaned from original fragment)
     win.style.width = Math.min(window.innerWidth - 40, 900) + "px";
     win.style.height = Math.min(window.innerHeight - 110, 620) + "px";
-            launcherSearch.addEventListener("input", (event) => {
     win.style.top = "68px";
 
-                    icon.hidden = query !== "" && !icon.dataset.search.includes(query);
+    // 3. Cache DOM Elements
+    const addressBar = win.querySelector("#browser-address");
     const frame = win.querySelector(".BrowserFrame");
-                const firstVisible = document.querySelector(".AppIcon:not([hidden])");
-                document.querySelectorAll(".AppIcon").forEach((icon) => icon.classList.remove("is-selected"));
-                if (firstVisible) firstVisible.classList.add("is-selected");
     const hint = win.querySelector(".BrowserHint");
-
-            launcherSearch.addEventListener("keydown", (event) => {
-                const visibleApps = [...document.querySelectorAll(".AppIcon:not([hidden])")];
-                if (!visibleApps.length) return;
-                const selectedIndex = visibleApps.findIndex((icon) => icon.classList.contains("is-selected"));
-                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                    event.preventDefault();
-                    const direction = event.key === "ArrowDown" ? 1 : -1;
-                    const nextIndex = (selectedIndex + direction + visibleApps.length) % visibleApps.length;
-                    visibleApps.forEach((icon, index) => icon.classList.toggle("is-selected", index === nextIndex));
-                    visibleApps[nextIndex].scrollIntoView({ block: "nearest" });
-                }
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    visibleApps[selectedIndex < 0 ? 0 : selectedIndex].click();
-                }
-            });
     const externalButton = win.querySelector(".BrowserOpenExternal");
+    const searchForm = win.querySelector(".BrowserBar");
+
     let currentUrl = "";
-    let frameTimer;
+    let frameTimer = null;
+
+    // 4. Navigation Controller
     const navigate = (url) => {
         try {
+            // Auto-prepend protocol if a user types 'example.com' instead of 'https://example.com'
+            if (!/^https?:\/\//i.test(url)) {
+                url = "https://" + url;
+            }
+
             const parsed = new URL(url);
-            if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("unsupported protocol");
-            address.value = parsed.href;
+            if (!["http:", "https:"].includes(parsed.protocol)) {
+                throw new Error("Unsupported protocol");
+            }
+
+            addressBar.value = parsed.href;
             currentUrl = parsed.href;
-            hint.classList.remove("visible");
+            
+            // Hide previous alert banners
+            hint.style.display = "none";
             clearTimeout(frameTimer);
+
+            // Execute iframe source allocation
             frame.src = parsed.href;
-            frameTimer = setTimeout(() => hint.classList.add("visible"), 1800);
+
+            // Security warning fallback: If the page doesn't signal a load within 2 seconds,
+            // assume it's highly likely being rejected by X-Frame-Options headers.
+            frameTimer = setTimeout(() => {
+                hint.style.display = "block";
+            }, 2000);
+
         } catch (error) {
-            address.value = "";
-            address.placeholder = "Only http:// and https:// URLs are supported";
+            addressBar.value = "";
+            addressBar.placeholder = "Invalid URL. Use http:// or https:// formats.";
         }
     };
-    externalButton.addEventListener("click", () => window.open(currentUrl, "_blank", "noopener,noreferrer"));
+
+    // 5. Event Binding
+    externalButton.addEventListener("click", () => {
+        if (currentUrl) {
+            window.open(currentUrl, "_blank", "noopener,noreferrer");
+        }
+    });
+
     frame.addEventListener("load", () => {
+        // Disarm the fallback timeout warning if the source registers a successful onload trigger
+        clearTimeout(frameTimer);
+        
         try {
+            // Check headers/titles if security context allows it (same-domain testing only)
             const title = frame.contentDocument?.title || "";
-            if (title.toLowerCase().includes("refused") || title.toLowerCase().includes("blocked")) hint.classList.add("visible");
-        } catch (error) {}
+            if (title.toLowerCase().includes("refused") || title.toLowerCase().includes("blocked")) {
+                hint.style.display = "block";
+            }
+        } catch (crossOriginError) {
+            // Note: Standard browser security will throw a cross-origin DOM exception here
+            // if the loaded page works but belongs to a different domain. This is normal.
+        }
     });
-    win.querySelector(".BrowserBar").addEventListener("submit", (event) => {
+
+    searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        navigate(address.value);
+        navigate(addressBar.value);
     });
-    navigate(initialUrl || "https://example.com");
+
+    // Run primary invocation
+    navigate(initialUrl || "https://example.com"); //
+
     return win;
 }
 
@@ -434,4 +644,3 @@ function updateClock() {
 document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
 updateClock();
 setInterval(updateClock, 30000);
-</script>
