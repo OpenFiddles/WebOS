@@ -1,27 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>WebOS Launcher</title>
-        <link rel="stylesheet" href="../css/universal_css_native_stuff.css"/>
-        <link rel="stylesheet" href="../css/display/regular_theme.css"/>
-        <link rel="manifest" href="../site.webmanifest"/>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebOS Launcher</title>
+    <link rel="stylesheet" href="../css/universal_css_native_stuff.css"/>
+    <link rel="stylesheet" href="../css/display/regular_theme.css"/>
+    <link rel="manifest" href="../site.webmanifest"/>
+</head>
 <body>
 
 <!-- ---------- WINDOW TEMPLATE ---------- -->
 
 <div class="WindowDesign hidden" id="WindowTemplate">
     <div class="WindowShell glass">
+        <!-- Resize handle strategically moved to the absolute outer edge -->
         <div class="ResizeHandle"></div>
 
         <div class="WindowTitleBar">
             <span>Nothing...</span>
             <div class="WindowButtons">
-                <span class="Minimize">–</span>
-                <span class="Maximize">□</span>
-                <span class="Close">×</span>
+                <span class="Minimize" role="button" aria-label="Minimize Window">–</span>
+                <span class="Maximize" role="button" aria-label="Maximize Window">□</span>
+                <span class="Close" role="button" aria-label="Close Window">×</span>
             </div>
         </div>
 
@@ -35,17 +36,20 @@
 
 <div id="Desktop">
 
-    <div id="taskbar">
+    <div id="taskbar" role="contentinfo">
         <div id="taskbar-left">
             <button id="open-launcher" aria-label="Open launcher" title="Open launcher">☰</button>
             <span>WebOS Launcher</span>
         </div>
-        <div id="taskbar-apps" aria-label="Open windows"></div>
+        <div id="taskbar-apps" role="toolbar" aria-label="Open windows"></div>
         <div id="taskbar-right">
             <button class="StatusButton" id="network-status" title="Network status">Online</button>
             <button class="StatusButton" id="clock" title="System time"></button>
         </div>
     </div>
+
+    <!-- This empty panel zone is where active application window elements dynamically spawn -->
+    <div id="window-workspace"></div>
 
     <div id="dock" class="dock-glass" aria-label="Favorite apps"></div>
 
@@ -59,19 +63,17 @@
             <span>Launcher</span>
             <span>Press Esc to close</span>
         </div>
-        <input class="LauncherSearch" id="launcher-search" type="search" placeholder="Search apps" autocomplete="off">
-        <div class="LauncherGrid"></div>
-            <input class="LauncherSearch" id="launcher-search" type="search" placeholder="Search apps" autocomplete="off" aria-controls="launcher-grid">
-            <div class="LauncherGrid" id="launcher-grid"></div>
+        <!-- FIX: Cleaned duplicate layout inputs and mapped accessibility relationships cleanly -->
+        <input class="LauncherSearch" id="launcher-search" type="search" placeholder="Search apps" autocomplete="off" aria-controls="launcher-grid">
+        <div class="LauncherGrid" id="launcher-grid"></div>
     </div>
 </div>
 
-<!-- ---------- SCRIPT ---------- -->
+<!-- ---------- SYSTEM RUNTIME SCRIPTS ---------- -->
 
 <script src="../js/os/desktop/filesystem.js"></script>
 <script src="../js/os/desktop/app-registry.js"></script>
 <script src="../js/os/window/WindowManager.js"></script>
-
 
 </body>
 </html>

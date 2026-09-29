@@ -1,254 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>WebPopcorn Boot</title>
-
-<style>
-    body {
-        margin: 0;
-        background: black;
-        color: white;
-        font-family: system-ui, sans-serif;
-        overflow: hidden;
-    }
-
-    /* Center container */
-    .boot-center {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-    }
-
-    /* Popcorn logo */
-    .popcorn-logo {
-        font-size: 60px;
-        font-weight: bold;
-        animation: logoPop 1.2s ease-out forwards;
-    }
-
-    /* Loading bar */
-    .loading-bar {
-        width: 300px;
-        height: 8px;
-        background: #333;
-        margin: 20px auto;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .boot-status {
-        min-height: 1.2em;
-        color: #a8b8c4;
-        font-size: 13px;
-    }
-
-    .skip-boot {
-        border: 1px solid #376337;
-        border-radius: 6px;
-        padding: 8px 12px;
-        background: #142014;
-        color: #d8ffd8;
-        cursor: pointer;
-    }
-
-    .skip-boot:focus-visible {
-        outline: 2px solid #7ee8dc;
-        outline-offset: 3px;
-    }
-
-    .auth-screen {
-        display: none;
-        position: fixed;
-        inset: 0;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-        background:
-            radial-gradient(circle at 18% 20%, rgba(0, 212, 184, 0.18), transparent 30%),
-            linear-gradient(135deg, #101a29, #080b12 65%, #17111b);
-    }
-
-    .auth-screen.active {
-        display: flex;
-    }
-
-    .auth-card {
-        width: min(420px, 100%);
-        padding: 28px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 18px;
-        background: rgba(11, 18, 29, 0.82);
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(18px);
-    }
-
-    .auth-card h1,
-    .auth-card p {
-        margin: 0;
-    }
-
-    .auth-card h1 {
-        font-size: 26px;
-    }
-
-    .auth-copy {
-        margin-top: 8px !important;
-        color: #a8b8c4;
-        font-size: 13px;
-        line-height: 1.5;
-    }
-
-    .auth-form {
-        display: grid;
-        gap: 10px;
-        margin-top: 22px;
-    }
-
-    .auth-form label {
-        color: #d5e3ec;
-        font-size: 12px;
-    }
-
-    .auth-form input {
-        box-sizing: border-box;
-        width: 100%;
-        margin-top: 5px;
-        padding: 11px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 8px;
-        background: rgba(0, 0, 0, 0.3);
-        color: white;
-        font: inherit;
-    }
-
-    .auth-form button,
-    .provider-button {
-        padding: 10px 12px;
-        border: 0;
-        border-radius: 8px;
-        cursor: pointer;
-        font: inherit;
-    }
-
-    .auth-form button[type="submit"] {
-        margin-top: 4px;
-        background: #00b89f;
-        color: #061713;
-        font-weight: 700;
-    }
-
-    .provider-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-top: 14px;
-    }
-
-    .provider-button {
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        background: rgba(255, 255, 255, 0.07);
-        color: white;
-    }
-
-    .auth-switch,
-    .guest-button {
-        display: block;
-        width: 100%;
-        margin-top: 14px;
-        border: 0;
-        background: transparent;
-        color: #7ee8dc;
-        cursor: pointer;
-        font: inherit;
-        font-size: 12px;
-    }
-
-    .auth-status {
-        min-height: 1.3em;
-        margin-top: 12px !important;
-        color: #ffcc9b;
-        font-size: 12px;
-    }
-
-    .auth-status.success {
-        color: #9affd7;
-    }
-
-    .loading-fill {
-        width: 0%;
-        height: 100%;
-        background: linear-gradient(180deg,
-                #d4f0ff 0%,
-                #00a891 100%
-            );
-        animation: loadAnim 5s ease-in forwards;
-    }
-
-
-    /* Logo animation */
-    @keyframes logoPop {
-        from {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.7) rotate3d(50, 50, 59)
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1) rotate3d(0,0,0);
-
-        }
-    }
-
-    /* Loading animation */
-    @keyframes loadAnim {
-        from { width: 0%; }
-        to { width: 100%; }
-    }
-
-    /* Fade out before desktop */
-    @keyframes fadeOut {
-        to { opacity: 0; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .popcorn-logo,
-        .loading-fill {
-            animation: none;
-        }
-
-        .loading-fill {
-            width: 100%;
-        }
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebPopcorn Boot</title>
+    <!-- FIX: Restored correct relation parameter 'rel="stylesheet"' to load styles properly -->
+    <link rel="stylesheet" href="../css/boot/boot.css"/>
 </head>
 
 <body>
 
+<!-- ---------- CORE CORE BOOTLOADER VISUAL CANVAS ---------- -->
 <main class="boot-center" id="boot" aria-labelledby="boot-title">
     <div class="popcorn-logo" id="boot-title">WebOS</div>
     <div class="loading-bar">
-        <div class="loading-fill" role="progressbar" aria-label="Starting WebOS"></div>
+        <!-- Progress track state modifiers wired here -->
+        <div class="loading-fill" id="loading-progress" role="progressbar" aria-label="Starting WebOS" style="width: 10%;"></div>
     </div>
     <p class="boot-status" id="boot-status" aria-live="polite">Starting desktop services...</p>
-    <button class="skip-boot" id="skip-boot" type="button">Continue to desktop</button>
+    <!-- FIX: Initialized as disabled to protect background caching routines from user interruption -->
+    <button class="skip-boot" id="skip-boot" type="button" disabled>Please wait...</button>
 </main>
 
-<main class="auth-screen" id="auth-screen" aria-labelledby="auth-title">
+<!-- ---------- LOCAL STORAGE AUTHENTICATION PORTAL ---------- -->
+<main class="auth-screen" id="auth-screen" aria-labelledby="auth-title" style="display: none;">
     <section class="auth-card">
         <h1 id="auth-title">Welcome to WebOS</h1>
         <p class="auth-copy" id="auth-copy">Create a local account for this browser. Your password is hashed and never sent anywhere.</p>
+        
         <form class="auth-form" id="auth-form">
             <label>Email<input id="auth-email" type="email" autocomplete="email" required></label>
             <label>Password<input id="auth-password" type="password" minlength="8" autocomplete="new-password" required></label>
             <button type="submit" id="auth-submit">Create local account</button>
         </form>
+        
         <div class="provider-row">
             <button class="provider-button" type="button" data-provider="Google">Google</button>
             <button class="provider-button" type="button" data-provider="Microsoft">Microsoft</button>
         </div>
+        
         <button class="auth-switch" type="button" id="auth-switch">Already have an account? Sign in</button>
         <button class="auth-switch" type="button" id="auth-reset">Forgot the local password? Reset account</button>
         <button class="guest-button" type="button" id="guest-button">Continue as guest</button>
@@ -256,12 +46,16 @@
     </section>
 </main>
 
+<!-- ---------- CORE KERNEL BOOT EXECUTIONS ---------- -->
 <script>
     const boot = document.getElementById("boot");
     const status = document.getElementById("boot-status");
     const skipButton = document.getElementById("skip-boot");
+    const progressFill = document.getElementById("loading-progress");
+    
     let redirected = false;
     let signingIn = false;
+    
     const authScreen = document.getElementById("auth-screen");
     const authForm = document.getElementById("auth-form");
     const authTitle = document.getElementById("auth-title");
@@ -270,26 +64,53 @@
     const authSwitch = document.getElementById("auth-switch");
     const authStatus = document.getElementById("auth-status");
 
+    /**
+     * Pre-warms the Alpine Linux emulator storage layer within the browser's Cache Storage API.
+     */
     async function warmAlpineRootfs() {
         try {
             status.textContent = "Warming Alpine container...";
+            if (progressFill) progressFill.style.width = "40%";
+            
             const cache = await caches.open("webos-v10");
             const image = "/html/apps/emulator_alpine/alpine.ext2";
+            
             if (!await cache.match(image)) {
                 const response = await fetch(image);
                 if (!response.ok) throw new Error("root filesystem request failed");
                 await cache.put(image, response);
             }
+            
             status.textContent = "Desktop services ready.";
+            if (progressFill) progressFill.style.width = "100%";
+            onBootComplete();
         } catch (error) {
+            // Safe fallback loop if offline or network blocks disk image caching
+            console.warn("[WebOS Boot] Alpine pre-warm skipped:", error.message);
             status.textContent = "Desktop services ready. Alpine will load when opened.";
+            if (progressFill) progressFill.style.width = "100%";
+            onBootComplete();
         }
     }
 
-    warmAlpineRootfs();
+    /**
+     * Triggers clean system navigation gates safely once network assets settle down.
+     */
+    function onBootComplete() {
+        skipButton.disabled = false;
+        skipButton.textContent = "Continue to desktop";
+        
+        // FIX: Replaced race condition timeout with an instant validation gate check
+        if (sessionStorage.getItem("webos-session")) {
+            openDesktop();
+        } else {
+            showAuth();
+        }
+    }
 
     function showAuth() {
         boot.style.display = "none";
+        authScreen.style.display = "block"; 
         authScreen.classList.add("active");
         document.getElementById("auth-email").focus();
     }
@@ -328,29 +149,41 @@
         setTimeout(openDesktop, 350);
     }
 
+    // Interactive event bindings
     skipButton.addEventListener("click", showAuth);
+    
     window.addEventListener("keydown", (event) => {
-        if (!authScreen.classList.contains("active") && (event.key === "Enter" || event.key === " ")) showAuth();
+        if (authScreen.style.display === "none" && !skipButton.disabled && (event.key === "Enter" || event.key === " ")) {
+            showAuth();
+        }
     });
+    
     authSwitch.addEventListener("click", () => setAuthMode(!signingIn));
+    
     document.getElementById("auth-reset").addEventListener("click", () => {
         if (!window.confirm("Remove the local WebOS account from this browser?")) return;
         localStorage.removeItem("webos-account");
         setAuthMode(false);
         authStatus.textContent = "Local account removed. You can create a new one.";
     });
+    
     document.querySelectorAll("[data-provider]").forEach((button) => {
         button.addEventListener("click", () => {
             authStatus.className = "auth-status";
             authStatus.textContent = button.dataset.provider + " sign-in needs an OAuth client ID and server callback. Use email/password for local mode.";
         });
     });
-    document.getElementById("guest-button").addEventListener("click", openDesktop);
+    
+    document.getElementById("guest-button").addEventListener("click", () => {
+        finishAuth("guest_user");
+    });
+    
     authForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const email = document.getElementById("auth-email").value.trim().toLowerCase();
         const password = document.getElementById("auth-password").value;
         const saved = JSON.parse(localStorage.getItem("webos-account") || "null");
+        
         if (signingIn) {
             if (!saved || saved.email !== email || saved.passwordHash !== await passwordHash(email, password)) {
                 authStatus.textContent = "Email or password is incorrect.";
@@ -366,11 +199,11 @@
         localStorage.setItem("webos-account", JSON.stringify({ email, passwordHash: await passwordHash(email, password), createdAt: Date.now() }));
         finishAuth(email);
     });
-    setTimeout(() => {
-        if (sessionStorage.getItem("webos-session")) openDesktop();
-        else showAuth();
-    }, 5000);
+
+    // Start initialization on engine boot
+    warmAlpineRootfs();
 </script>
+<script src="../js/boot/Popcorn.boot.js"></script>
 
 </body>
 </html>

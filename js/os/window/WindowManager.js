@@ -1,15 +1,27 @@
-/* WINDOW CREATION */
-
 let windowCount = 0;
-let topWindowLayer = 20;
+const BASE_WINDOW_LAYER = 20;
 
 function focusWindow(win) {
-    topWindowLayer += 1;
-    win.style.zIndex = topWindowLayer;
+    // 1. Gather all open windows except the one being focused
+    const allWindows = Array.from(document.querySelectorAll("[id^='Window_']"))
+        .filter(w => w !== win)
+        // Sort them by their current layer depth to preserve history
+        .sort((a, b) => (parseInt(a.style.zIndex) || BASE_WINDOW_LAYER) - (parseInt(b.style.zIndex) || BASE_WINDOW_LAYER));
+
+    // 2. Re-index remaining windows linearly starting from the base layer
+    allWindows.forEach((w, index) => {
+        w.style.zIndex = BASE_WINDOW_LAYER + index;
+    });
+
+    // 3. Place the focused window exactly on top of the stacked list
+    win.style.zIndex = BASE_WINDOW_LAYER + allWindows.length;
+
+    // 4. Update the taskbar buttons
     document.querySelectorAll(".TaskButton").forEach((button) => {
         button.classList.toggle("active", button.dataset.windowId === win.id && !win.classList.contains("is-minimized"));
     });
 }
+
 
 function createWindow(title, content) {
     const template = document.getElementById("WindowTemplate");
@@ -56,13 +68,23 @@ function makeWindowDraggable(win) {
         if (event.target.closest(".WindowButtons") || win.classList.contains("is-maximized")) return;
         const offsetX = event.clientX - win.offsetLeft;
         const offsetY = event.clientY - win.offsetTop;
+        
         titleBar.setPointerCapture(event.pointerId);
+        
         const move = (moveEvent) => {
             win.style.left = Math.max(8, moveEvent.clientX - offsetX) + "px";
             win.style.top = Math.max(48, moveEvent.clientY - offsetY) + "px";
         };
+        
+        const up = () => {
+            titleBar.removeEventListener("pointermove", move);
+            titleBar.removeEventListener("pointerup", up);
+            // FIX: Explicitly release the pointer so the browser knows dragging is completely over
+            titleBar.releasePointerCapture(event.pointerId); 
+        };
+        
         titleBar.addEventListener("pointermove", move);
-        titleBar.addEventListener("pointerup", () => titleBar.removeEventListener("pointermove", move), { once: true });
+        titleBar.addEventListener("pointerup", up);
     });
 }
 
@@ -70,18 +92,32 @@ function makeWindowDraggable(win) {
 
 function makeWindowResizable(win) {
     const handle = win.querySelector(".ResizeHandle");
+    if (!handle) return; // Safeguard if an app window structure doesn't include a handle
+
     handle.addEventListener("pointerdown", (event) => {
         if (win.classList.contains("is-maximized")) return;
         event.preventDefault();
+        event.stopPropagation(); // Stops interaction bubbling up to window focus rules
+        
         handle.setPointerCapture(event.pointerId);
+        
         const resize = (resizeEvent) => {
             win.style.width = Math.max(260, resizeEvent.clientX - win.offsetLeft) + "px";
             win.style.height = Math.max(150, resizeEvent.clientY - win.offsetTop) + "px";
         };
+        
+        const up = () => {
+            handle.removeEventListener("pointermove", resize);
+            handle.removeEventListener("pointerup", up);
+            // FIX: Explicitly release the pointer capture so the resize bar returns to normal state
+            handle.releasePointerCapture(event.pointerId);
+        };
+        
         handle.addEventListener("pointermove", resize);
-        handle.addEventListener("pointerup", () => handle.removeEventListener("pointermove", resize), { once: true });
+        handle.addEventListener("pointerup", up);
     });
 }
+
 
 /* WINDOW BUTTONS */
 
@@ -90,19 +126,49 @@ function wireWindowButtons(win) {
     const minimizeBtn = win.querySelector(".Minimize");
     const maximizeBtn = win.querySelector(".Maximize");
 
-    closeBtn.onclick = () => {
-        win.remove();
-        document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.remove();
-    };
-    minimizeBtn.onclick = () => {
-        win.classList.add("is-minimized");
-        document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
-    };
-    maximizeBtn.onclick = () => {
-        win.classList.toggle("is-maximized");
-        focusWindow(win);
-    };
+    if (closeBtn) {
+        closeBtn.addEventListener("pointerdown", (e) => {
+            e.stopPropagation(); // Stop the click from focusing a dying window
+            win.remove();
+            document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.remove();
+            
+            // FIX: Find the next remaining window with the highest z-index layer and focus it
+            const remainder = Array.from(document.querySelectorAll("[id^='Window_']"))
+                .filter(w => !w.classList.contains("is-minimized"))
+                .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
+                
+            if (remainder.length > 0) {
+                focusWindow(remainder[0]);
+            }
+        });
+    }
+
+    if (minimizeBtn) {
+        minimizeBtn.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            win.classList.add("is-minimized");
+            document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
+            
+            // FIX: Drop focus down to the next visible window when minimizing
+            const remainder = Array.from(document.querySelectorAll("[id^='Window_']"))
+                .filter(w => w !== win && !w.classList.contains("is-minimized"))
+                .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
+                
+            if (remainder.length > 0) {
+                focusWindow(remainder[0]);
+            }
+        });
+    }
+
+    if (maximizeBtn) {
+        maximizeBtn.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            win.classList.toggle("is-maximized");
+            focusWindow(win);
+        });
+    }
 }
+
 
 /* LAUNCHER LOGIC */
 

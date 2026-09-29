@@ -1,3 +1,7 @@
+/**
+ * file-system.js
+ * Asynchronous IndexedDB Virtual Filesystem Abstraction Layer for WebOS.
+ */
 (() => {
     const databaseName = "webos-filesystem";
     const storeName = "entries";
@@ -42,6 +46,7 @@
     async function ensureSeeded() {
         const root = await transaction("readonly", (store) => store.get("/"));
         if (root) return;
+        
         const seed = [
             { path: "/", type: "directory", modified: Date.now() },
             { path: "/Desktop", type: "directory", modified: Date.now() },
@@ -49,6 +54,7 @@
             { path: "/Downloads", type: "directory", modified: Date.now() },
             { path: "/Documents/Welcome.txt", type: "file", content: "Welcome to WebPopcorn OS.\n", modified: Date.now() }
         ];
+        
         const database = await openDatabase();
         await new Promise((resolve, reject) => {
             const store = database.transaction(storeName, "readwrite").objectStore(storeName);
@@ -62,11 +68,21 @@
         await ensureSeeded();
         const parent = normalize(directory);
         const entries = await transaction("readonly", (store) => store.getAll());
+        
         return entries
             .filter((entry) => {
-                if (entry.path === "/") return parent === "/";
-                const remainder = entry.path.slice(parent === "/" ? 1 : parent.length + 1);
-                return entry.path !== parent && remainder && !remainder.includes("/");
+                if (entry.path === parent) return false;
+                if (parent === "/") {
+                    // Root optimization: ensure item lives exactly on root layer
+                    const parts = entry.path.split("/").filter(Boolean);
+                    return parts.length === 1;
+                }
+                // FIX: Ensure absolute directory matching boundary via startsWith checking with trailing slash
+                const prefix = parent + "/";
+                if (!entry.path.startsWith(prefix)) return false;
+                
+                const remainder = entry.path.slice(prefix.length);
+                return remainder && !remainder.includes("/");
             })
             .sort((left, right) => left.type.localeCompare(right.type) || left.path.localeCompare(right.path));
     }
@@ -74,6 +90,31 @@
     async function putText(path, content) {
         await ensureSeeded();
         const normalized = normalize(path);
+        
+        // FIX: Proactive Recursive Parent Directory Generation
+        // If writing to /Documents/Folders/Test.txt, automatically create directory entries for parent lines
+        const pathParts = normalized.split("/").filter(Boolean);
+        if (pathParts.length > 1) {
+            const database = await openDatabase();
+            await new Promise((resolve, reject) => {
+                const store = database.transaction(storeName, "readwrite").objectStore(storeName);
+                let standardAccumulator = "";
+                
+                // Track everything up to the final file name segment
+                for (let i = 0; i < pathParts.length - 1; i++) {
+                    standardAccumulator += "/" + pathParts[i];
+                    store.put({
+                        path: standardAccumulator,
+                        type: "directory",
+                        modified: Date.now()
+                    });
+                }
+                store.transaction.oncomplete = resolve;
+                store.transaction.onerror = () => reject(store.transaction.error);
+            });
+        }
+
+        // Commit core file entry payload securely
         return transaction("readwrite", (store) => store.put({
             path: normalized,
             type: "file",
@@ -92,6 +133,7 @@
         const normalized = normalize(path);
         const entries = await transaction("readonly", (store) => store.getAll());
         const database = await openDatabase();
+        
         return new Promise((resolve, reject) => {
             const store = database.transaction(storeName, "readwrite").objectStore(storeName);
             entries.filter((entry) => entry.path === normalized || entry.path.startsWith(normalized + "/"))

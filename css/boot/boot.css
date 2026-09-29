@@ -1,0 +1,217 @@
+    body {
+        margin: 0;
+        background: black;
+        color: white;
+        font-family: system-ui, sans-serif;
+        overflow: hidden;
+    }
+
+    /* Center container */
+    .boot-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    /* Popcorn logo */
+    .popcorn-logo {
+        font-size: 60px;
+        font-weight: bold;
+        animation: logoPop 1.2s ease-out forwards;
+    }
+
+    /* Loading bar */
+    .loading-bar {
+        width: 300px;
+        height: 8px;
+        background: #333;
+        margin: 20px auto;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .boot-status {
+        min-height: 1.2em;
+        color: #a8b8c4;
+        font-size: 13px;
+    }
+
+    .skip-boot {
+        border: 1px solid #376337;
+        border-radius: 6px;
+        padding: 8px 12px;
+        background: #142014;
+        color: #d8ffd8;
+        cursor: pointer;
+    }
+
+    .skip-boot:focus-visible {
+        outline: 2px solid #7ee8dc;
+        outline-offset: 3px;
+    }
+
+    .auth-screen {
+        display: none;
+        position: fixed;
+        inset: 0;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background:
+            radial-gradient(circle at 18% 20%, rgba(0, 212, 184, 0.18), transparent 30%),
+            linear-gradient(135deg, #101a29, #080b12 65%, #17111b);
+    }
+
+    .auth-screen.active {
+        display: flex;
+    }
+
+    .auth-card {
+        width: min(420px, 100%);
+        padding: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 18px;
+        background: rgba(11, 18, 29, 0.82);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(18px);
+    }
+
+    .auth-card h1,
+    .auth-card p {
+        margin: 0;
+    }
+
+    .auth-card h1 {
+        font-size: 26px;
+    }
+
+    .auth-copy {
+        margin-top: 8px !important;
+        color: #a8b8c4;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .auth-form {
+        display: grid;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .auth-form label {
+        color: #d5e3ec;
+        font-size: 12px;
+    }
+
+    .auth-form input {
+        box-sizing: border-box;
+        width: 100%;
+        margin-top: 5px;
+        padding: 11px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        color: white;
+        font: inherit;
+    }
+
+    .auth-form button,
+    .provider-button {
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+        font: inherit;
+    }
+
+    .auth-form button[type="submit"] {
+        margin-top: 4px;
+        background: #00b89f;
+        color: #061713;
+        font-weight: 700;
+    }
+
+    .provider-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .provider-button {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.07);
+        color: white;
+    }
+
+    .auth-switch,
+    .guest-button {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        border: 0;
+        background: transparent;
+        color: #7ee8dc;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+    }
+
+    .auth-status {
+        min-height: 1.3em;
+        margin-top: 12px !important;
+        color: #ffcc9b;
+        font-size: 12px;
+    }
+
+    .auth-status.success {
+        color: #9affd7;
+    }
+
+    .loading-fill {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(180deg,
+                #d4f0ff 0%,
+                #00a891 100%
+            );
+        animation: loadAnim 5s ease-in forwards;
+    }
+
+
+    /* Logo animation */
+    @keyframes logoPop {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.7) rotate3d(50, 50, 59)
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1) rotate3d(0,0,0);
+
+        }
+    }
+
+    /* Loading animation */
+    @keyframes loadAnim {
+        from { width: 0%; }
+        to { width: 100%; }
+    }
+
+    /* Fade out before desktop */
+    @keyframes fadeOut {
+        to { opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .popcorn-logo,
+        .loading-fill {
+            animation: none;
+        }
+
+        .loading-fill {
+            width: 100%;
+        }
+    }
