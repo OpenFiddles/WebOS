@@ -453,22 +453,23 @@ function openSystemMonitor() {
 function openWasmLab() {
     closeLauncher();
 
-    // 1. Clean HTML template for better maintenance
+    // 1. Clean HTML template matching your .WindowBody insertion setup
     const htmlTemplate = `
-        <div class="AppPanel">
-            <h2>WASM Lab</h2>
-            <input id="wasm-file" type="file" accept=".wasm,application/wasm">
-            <select id="wasm-export" disabled>
+        <div class="AppPanel" style="padding: 15px; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box;">
+            <h2 style="margin: 0 0 5px 0; font-size: 1.2rem;">WASM Lab</h2>
+            <input id="wasm-file" type="file" accept=".wasm,application/wasm" style="width: 100%;">
+            <select id="wasm-export" disabled style="padding: 6px; width: 100%; border-radius: 4px; border: 1px solid #ccc; background: #fff; color: #000;">
                 <option value="">Load a module first</option>
             </select>
-            <button type="button" id="wasm-run" disabled>Run export</button>
-            <pre id="wasm-output" class="AppOutput">Select a local WebAssembly module.</pre>
+            <button type="button" id="wasm-run" disabled style="padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; border: none; background: #007acc; color: #fff;">Run export</button>
+            <pre id="wasm-output" class="AppOutput" style="margin: 0; padding: 10px; flex-grow: 1; overflow: auto; background: #1e1e1e; color: #d4d4d4; font-family: monospace; border-radius: 4px; font-size: 0.9rem; min-height: 100px; white-space: pre-wrap; word-break: break-all;">Select a local WebAssembly module.</pre>
         </div>
     `;
 
+    // Initialize using your template manager
     const win = createWindow("WASM Lab", htmlTemplate);
     
-    // Element selections
+    // Explicit scoped context selections within this specific clone instance
     const filePicker = win.querySelector("#wasm-file");
     const exportsMenu = win.querySelector("#wasm-export");
     const runButton = win.querySelector("#wasm-run");
@@ -476,48 +477,60 @@ function openWasmLab() {
     
     let instance = null;
 
-    // 2. Handle parsing and instantiating the WASM file
+    // 2. Handle parsing and instantiating the uploaded binary file safely
     filePicker.onchange = async () => {
+        // FIX: Extract item index zero from file list array collection
         const file = filePicker.files[0];
         if (!file) return;
 
         outputArea.textContent = "Compiling and instantiating module...";
         
-        // Reset UI state during load
+        // Reset UI state controllers
         exportsMenu.disabled = true;
         runButton.disabled = true;
         instance = null;
 
         try {
+            // Read binary buffer data from selected disk source
             const bytes = await file.arrayBuffer();
             
-            // Basic sandboxed importObject. Many WASM modules expect a minimal environment (like JavaScript console or memory).
+            // Standard execution logging channel mapping directly to your window app pane
+            const systemLog = (msg) => {
+                outputArea.textContent += `\n[System Out] ${msg}`;
+            };
+
+            // Sandbox compilation context wrapper
             const importObject = {
                 env: {
-                    memory: new WebAssembly.Memory({ initial: 256 }),
-                    abort: () => console.warn("WASM module called abort()")
+                    abort: (msg) => console.warn(`WASM module called abort: ${msg}`),
+                    print: systemLog,
+                    printErr: systemLog
                 }
             };
 
+            // Compile byte block streaming buffers natively 
             const result = await WebAssembly.instantiate(bytes, importObject);
             instance = result.instance;
 
-            // Generate dropdown options cleanly
-            const exportNames = Object.keys(instance.exports);
+            // Extract valid callable executions while stripping out internal raw memory markers
+            const exportNames = Object.keys(instance.exports).filter(name => {
+                return typeof instance.exports[name] === "function";
+            });
             
             if (exportNames.length === 0) {
-                outputArea.textContent = `Loaded ${file.name}, but it exports no properties or functions.`;
+                outputArea.textContent = `Loaded ${file.name}, but it exports no callable execution endpoints.`;
                 return;
             }
 
+            // Build dynamic target selector parameters
             exportsMenu.innerHTML = exportNames
                 .map(name => `<option value="${name}">${name}</option>`)
                 .join("");
 
-            // Re-enable controls upon successful mount
+            // Elevate system state back to live interaction mode
             exportsMenu.disabled = false;
             runButton.disabled = false;
-            outputArea.textContent = `Successfully loaded ${file.name}. Select an exported function below.`;
+            outputArea.textContent = `Successfully loaded ${file.name}.\nSelect an exported function function block below to trigger run loop context routines.`;
 
         } catch (error) {
             exportsMenu.innerHTML = '<option value="">Load failed</option>';
@@ -525,7 +538,7 @@ function openWasmLab() {
         }
     };
 
-    // 3. Execution logic for running functions
+    // 3. Execution logic wrapper triggered by clicking run button
     runButton.onclick = () => {
         if (!instance) return;
 
@@ -533,17 +546,17 @@ function openWasmLab() {
         const exportedItem = instance.exports[targetFunctionName];
 
         if (typeof exportedItem !== "function") {
-            outputArea.textContent = `Error: "${targetFunctionName}" is an exported global/memory object, not a callable function.`;
+            outputArea.textContent = `Error: "${targetFunctionName}" is not a valid callable method engine.`;
             return;
         }
 
         try {
             outputArea.textContent = `Executing ${targetFunctionName}()...\n`;
             
-            // Execute the WASM function
+            // Trigger raw WebAssembly binary runtime cycle execution context loop natively
             const result = exportedItem();
             
-            outputArea.textContent += `Result: ${result !== undefined ? String(result) : "void (execution finished)"}`;
+            outputArea.textContent += `\nExecution Complete.\nResult: ${result !== undefined ? String(result) : "void (no return value)"}`;
         } catch (error) {
             outputArea.textContent = `Runtime Execution Error:\n${error.message}`;
         }
@@ -551,6 +564,7 @@ function openWasmLab() {
 
     return win;
 }
+
 
 
 const launcherSearch = document.getElementById("launcher-search");

@@ -8,15 +8,15 @@
     "node",
     "html"
   ],
-  "homepage": "https://github.com/xily-random-account/WebOS#readme",
+  "homepage": "https://gitlab.com/openfiddles/WebOS",
   "bugs": {
-    "url": "https://github.com/xily-random-account/WebOS/issues"
+    "url": "https://gitlab.com/openfiddles/WebOS"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xily-random-account/WebOS.git"
+    "url": "git+https://gitlab.com/openfiddles/WebOS"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "author": "Alyshia",
   "type": "commonjs",
   "main": "sw.js",

@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /BootScreen_popcorn.html
+Allow: /DisplayManager_PopIT.html
+
+# Prevent indexing of isolated system applications, binaries, and dependencies
+Disallow: /html/apps/
+Disallow: /js/os/
+Disallow: /js/boot/
+
+Sitemap: https://web-os-iota.vercel.app/sitemap.xml
