@@ -8,11 +8,12 @@
     // 1. SECURITY TRAP: Verify that a valid local auth session exists before rendering the desktop
     const userSession = sessionStorage.getItem("webos-session");
     if (!userSession) {
-        console.warn("[WebOS Security] Unauthorized access detected. Redirecting to login gate...");
-        // Re-routes intruder straight back to your boot/auth interface page
-        window.location.href = "boot.html"; 
-        return; // Halt all layout initialization
+        console.warn("[WebOS Security] Unauthorized access. Redirecting to login gate...");
+        // Since this runs inside DisplayManager_PopIT.html, BootScreen_popcorn.html is right next to it!
+        window.location.href = "BootScreen_popcorn.html"; 
+        return; 
     }
+
 
     // 2. Map global hardware UI nodes
     const clockElement = document.getElementById("clock");
