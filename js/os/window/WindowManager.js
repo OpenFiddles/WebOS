@@ -30,8 +30,9 @@ function createWindow(title, content) {
     win.classList.remove("hidden");
     win.id = "Window_" + Date.now() + "_" + windowCount++;
 
-    win.querySelector(".WindowTitleBar span").textContent = title;
-    win.querySelector(".WindowBody").innerHTML = content;
+    // FIX: Changed selectors to match HTML lowercase/hyphenated classes
+    win.querySelector(".window-titlebar .window-title-text").textContent = title;
+    win.querySelector(".window-body").innerHTML = content;
 
     win.style.left = (40 + Math.random() * 80) + "px";
     win.style.top = (80 + Math.random() * 80) + "px";
@@ -54,7 +55,9 @@ function createWindow(title, content) {
         focusWindow(win);
     });
     document.getElementById("taskbar-apps").appendChild(taskButton);
-    win.querySelector(".WindowTitleBar").addEventListener("pointerdown", () => focusWindow(win));
+    
+    // FIX: Changed selector to match HTML lowercase class
+    win.querySelector(".window-titlebar").addEventListener("pointerdown", () => focusWindow(win));
     win.addEventListener("pointerdown", () => focusWindow(win));
     focusWindow(win);
     return win;
