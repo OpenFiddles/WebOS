@@ -572,26 +572,31 @@ const launcherSearch = document.getElementById("launcher-search");
 function openBrowser(initialUrl) {
     closeLauncher();
 
-    // 1. Clean HTML template matching your project's architecture
+    // 1. IMPROVED HTML: Added layout support for Back, Forward, and Reload controls
     const htmlTemplate = `
-        <div class="AppPanel BrowserApp">
-            <form class="BrowserBar">
-                <input type="url" id="browser-address" placeholder="Enter URL (https://...)" required>
-                <button type="button" class="BrowserOpenExternal" title="Open in new browser tab">🌐</button>
+        <div class="AppPanel BrowserApp" style="display: flex; flex-direction: column; width: 100%; height: 100%; font-family: sans-serif;">
+            <form class="BrowserBar" style="display: flex; gap: 6px; padding: 6px; background: #222; align-items: center;">
+                <div class="BrowserNavigationControls" style="display: flex; gap: 4px;">
+                    <button type="button" class="BrowserBack" title="Back" style="background: #444; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">◀</button>
+                    <button type="button" class="BrowserForward" title="Forward" style="background: #444; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">▶</button>
+                    <button type="button" class="BrowserReload" title="Reload" style="background: #444; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">🔄</button>
+                </div>
+                <input type="url" id="browser-address" placeholder="Enter URL (https://...)" required style="flex-grow: 1; padding: 6px; border: none; border-radius: 4px; background: #333; color: #fff;">
+                <button type="button" class="BrowserOpenExternal" title="Open in new browser tab" style="background: #444; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">🌐</button>
             </form>
-            <div class="BrowserContainer" style="position: relative; width: 100%; height: calc(100% - 40px);">
+            <div class="BrowserContainer" style="position: relative; width: 100%; flex-grow: 1; background: #fff;">
                 <iframe class="BrowserFrame" style="width: 100%; height: 100%; border: none;"></iframe>
-                <div class="BrowserHint" style="display: none; position: absolute; top: 0; left: 0; right: 0; background: #ffcccc; color: #330000; padding: 8px; text-align: center;">
-                    This website might be blocking iframe preview due to X-Frame-Options.
+                <div class="BrowserHint" style="display: none; position: absolute; top: 0; left: 0; right: 0; background: #ffcccc; color: #330000; padding: 8px; text-align: center; font-size: 14px; z-index: 10;">
+                    The proxy server is taking too long to load this website.
                 </div>
             </div>
         </div>
     `;
 
-    // 2. Initialize the window canvas
+    // 2. Initialize the window canvas framework
     const win = createWindow("Browser", htmlTemplate);
 
-    // Dynamic responsive sizing (Cleaned from original fragment)
+    // Responsive window metrics mapping
     win.style.width = Math.min(window.innerWidth - 40, 900) + "px";
     win.style.height = Math.min(window.innerHeight - 110, 620) + "px";
     win.style.top = "68px";
@@ -602,14 +607,22 @@ function openBrowser(initialUrl) {
     const hint = win.querySelector(".BrowserHint");
     const externalButton = win.querySelector(".BrowserOpenExternal");
     const searchForm = win.querySelector(".BrowserBar");
+    
+    // Cache new navigation control tags
+    const backButton = win.querySelector(".BrowserBack");
+    const forwardButton = win.querySelector(".BrowserForward");
+    const reloadButton = win.querySelector(".BrowserReload");
 
-    let currentUrl = "";
+    // 4. State Management (History Buffers)
+    let historyStack = [];
+    let historyPointer = -1;
+    let isNavigatingFromHistory = false;
     let frameTimer = null;
 
-    // 4. Navigation Controller
-    const navigate = (url) => {
+    // 5. Navigation Controller
+    const navigate = (url, trackingEnabled = true) => {
         try {
-            // Auto-prepend protocol if a user types 'example.com' instead of 'https://example.com'
+            // Auto-prepend protocol format layers
             if (!/^https?:\/\//i.test(url)) {
                 url = "https://" + url;
             }
@@ -619,21 +632,37 @@ function openBrowser(initialUrl) {
                 throw new Error("Unsupported protocol");
             }
 
+            // Sync state elements
             addressBar.value = parsed.href;
-            currentUrl = parsed.href;
             
-            // Hide previous alert banners
+            // Manage custom history array stacks manually for sandboxed proxies
+            if (trackingEnabled && !isNavigatingFromHistory) {
+                // If we navigate to a new site while sitting back in history, slice the forward chain
+                historyStack = historyStack.slice(0, historyPointer + 1);
+                historyStack.push(parsed.href);
+                historyPointer = historyStack.length - 1;
+            }
+
+            // Update state tracking
+            isNavigatingFromHistory = false;
             hint.style.display = "none";
             clearTimeout(frameTimer);
 
-            // Execute iframe source allocation
-            frame.src = parsed.href;
+            // Execute conditional source load routing rules
+            if (parsed.origin === window.location.origin) {
+                frame.src = parsed.href;
+            } else {
+                frame.src = `/api/browser-proxy?url=${encodeURIComponent(parsed.href)}`;
+            }
 
-            // Security warning fallback: If the page doesn't signal a load within 2 seconds,
-            // assume it's highly likely being rejected by X-Frame-Options headers.
+            // Network failure boundary safety trigger
             frameTimer = setTimeout(() => {
                 hint.style.display = "block";
-            }, 2000);
+            }, 6000);
+
+            // Update layout button disabled statuses cleanly
+            backButton.style.opacity = historyPointer > 0 ? "1" : "0.4";
+            forwardButton.style.opacity = historyPointer < historyStack.length - 1 ? "1" : "0.4";
 
         } catch (error) {
             addressBar.value = "";
@@ -641,26 +670,48 @@ function openBrowser(initialUrl) {
         }
     };
 
-    // 5. Event Binding
-    externalButton.addEventListener("click", () => {
-        if (currentUrl) {
-            window.open(currentUrl, "_blank", "noopener,noreferrer");
+    // 6. Navigation Button Direct Bindings
+    backButton.addEventListener("click", () => {
+        if (historyPointer > 0) {
+            isNavigatingFromHistory = true;
+            historyPointer--;
+            navigate(historyStack[historyPointer], false);
         }
     });
 
+    forwardButton.addEventListener("click", () => {
+        if (historyPointer < historyStack.length - 1) {
+            isNavigatingFromHistory = true;
+            historyPointer++;
+            navigate(historyStack[historyPointer], false);
+        }
+    });
+
+    reloadButton.addEventListener("click", () => {
+        if (historyStack[historyPointer]) {
+            navigate(historyStack[historyPointer], false);
+        }
+    });
+
+    externalButton.addEventListener("click", () => {
+        if (historyStack[historyPointer]) {
+            window.open(historyStack[historyPointer], "_blank", "noopener,noreferrer");
+        }
+    });
+
+    // 7. System Iframe Content Listener Optimization
     frame.addEventListener("load", () => {
-        // Disarm the fallback timeout warning if the source registers a successful onload trigger
         clearTimeout(frameTimer);
         
         try {
-            // Check headers/titles if security context allows it (same-domain testing only)
+            // Monitor same-origin title fallbacks cleanly
             const title = frame.contentDocument?.title || "";
             if (title.toLowerCase().includes("refused") || title.toLowerCase().includes("blocked")) {
                 hint.style.display = "block";
             }
         } catch (crossOriginError) {
-            // Note: Standard browser security will throw a cross-origin DOM exception here
-            // if the loaded page works but belongs to a different domain. This is normal.
+            // standard cross-origin boundaries prevent parent DOM scanning. 
+            // This is completely expected for external proxy sites.
         }
     });
 
@@ -669,11 +720,12 @@ function openBrowser(initialUrl) {
         navigate(addressBar.value);
     });
 
-    // Run primary invocation
-    navigate(initialUrl || "https://example.com"); //
+    // Run core initialization sequence
+    navigate(initialUrl || "https://example.com");
 
     return win;
 }
+
 
 function launchApp(app) {
     return WebOSAppRegistry.launch((app || "terminal").toLowerCase());

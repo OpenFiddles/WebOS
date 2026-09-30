@@ -1,8 +1,8 @@
 {
-  "name": "webos",
-  "version": "0.0.1",
+  "name": "@openfiddles/WebOS",
+  "version": "0.6",
   "private": true,
-  "description": "WebOS browser interface",
+  "description": "A literal OS... In the browser! (Browser-native in pure html, css, and js)",
   "keywords": [
     "os",
     "node",
@@ -19,11 +19,15 @@
   "license": "GPL-3.0-or-later",
   "author": "Alyshia",
   "type": "commonjs",
-  "main": "sw.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "express": "^4.21.0"
   }
 }

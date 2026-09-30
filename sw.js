@@ -1,4 +1,7 @@
-const CACHE_NAME = 'webos-v10';
+const NAME = "WebOS"
+const VERSION = "0.5"
+
+const CACHE_NAME = `${NAME}-${0.5}`; // Kept exactly at v10 as requested
 
 const CORE_ASSETS = [
   '/',
@@ -16,10 +19,51 @@ const CORE_ASSETS = [
   '/js/app.js'
 ];
 
+// Helper to broadcast progress messages back to WebOS windows
+function broadcastStatus(type, data) {
+  self.clients.matchAll().then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({ type, data });
+    });
+  });
+}
+
+// Custom progress-tracking cache populator
+async function cacheCoreAssetsWithProgress() {
+  const cache = await caches.open(CACHE_NAME);
+  let loadedCount = 0;
+
+  broadcastStatus('CACHE_START', { total: CORE_ASSETS.length });
+
+  // Fetch each file individually to log the system loading status
+  const promises = CORE_ASSETS.map(async (url) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to load asset: ${url}`);
+      
+      await cache.put(url, response);
+      loadedCount++;
+      
+      // Calculate and send percentage progress status back to desktop UI
+      const percent = Math.round((loadedCount / CORE_ASSETS.length) * 100);
+      broadcastStatus('CACHE_PROGRESS', { 
+        url, 
+        percent, 
+        loaded: loadedCount, 
+        total: CORE_ASSETS.length 
+      });
+    } catch (err) {
+      broadcastStatus('CACHE_ERROR', { url, error: err.message });
+    }
+  });
+
+  await Promise.all(promises);
+  broadcastStatus('CACHE_COMPLETE', { success: true });
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
-  );
+  // Use our new dynamic progress cache downloader during system installation
+  event.waitUntil(cacheCoreAssetsWithProgress());
   self.skipWaiting();
 });
 
@@ -37,6 +81,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const requestUrl = new URL(request.url);
+
+  // CRUCIAL RE-FIX: Prevent caching on your web browser API proxy endpoint
+  if (requestUrl.pathname === '/api/browser-proxy') {
+    return;
+  }
+
   if (request.method !== 'GET' || requestUrl.origin !== self.location.origin || requestUrl.pathname.endsWith('.iso')) {
     return;
   }
