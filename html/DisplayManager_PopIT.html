@@ -12,25 +12,41 @@
 
 <!-- ---------- WINDOW TEMPLATE ---------- -->
 
-<div class="WindowDesign hidden" id="WindowTemplate">
-    <div class="WindowShell glass">
-        <!-- Resize handle strategically moved to the absolute outer edge -->
-        <div class="ResizeHandle"></div>
+<div class="window-shell glass hidden" id="WindowTemplate" role="dialog" aria-labelledby="WindowTitle-Template" aria-hidden="true">
+    <!-- Active resizing anchors on all outer boundaries -->
+    <div class="resize-handle top" data-direction="n"></div>
+    <div class="resize-handle right" data-direction="e"></div>
+    <div class="resize-handle bottom" data-direction="s"></div>
+    <div class="resize-handle left" data-direction="w"></div>
+    <div class="resize-handle corner-se" data-direction="se"></div>
 
-        <div class="WindowTitleBar">
-            <span>Nothing...</span>
-            <div class="WindowButtons">
-                <span class="Minimize" role="button" aria-label="Minimize Window">–</span>
-                <span class="Maximize" role="button" aria-label="Maximize Window">□</span>
-                <span class="Close" role="button" aria-label="Close Window">×</span>
-            </div>
+    <!-- Titlebar / Window Header -->
+    <header class="window-titlebar">
+        <div class="window-title-content">
+            <img class="window-icon" src="/icons/default-app.png" alt="" aria-hidden="true">
+            <span id="WindowTitle-Template" class="window-title-text">Nothing...</span>
         </div>
+        <nav class="window-controls" aria-label="Window Actions">
+            <button class="win-btn minimize" aria-label="Minimize Window" title="Minimize">
+                <svg width="12" height="12" viewBox="0 0 12 12"><rect fill="currentColor" x="1" y="5" width="10" height="2"/></svg>
+            </button>
+            <button class="win-btn maximize" aria-label="Maximize Window" title="Maximize">
+                <svg width="12" height="12" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="2" x="2" y="2" width="8" height="8"/></svg>
+            </button>
+            <button class="win-btn close" aria-label="Close Window" title="Close">
+                <svg width="12" height="12" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="2" d="M2,2 L10,10 M10,2 L2,10"/></svg>
+            </button>
+        </nav>
+    </header>
 
-        <div class="WindowBody">
-            Nothing Interesting... :[
+    <!-- App / Window Content Frame -->
+    <main class="window-body">
+        <div class="window-content-fallback">
+            <p>Nothing Interesting... :[</p>
         </div>
-    </div>
+    </main>
 </div>
+
 
 <!-- ---------- DESKTOP + TASKBAR + DOCK ---------- -->
 

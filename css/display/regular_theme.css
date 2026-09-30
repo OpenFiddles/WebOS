@@ -197,79 +197,173 @@ body[data-theme="sunset"] .DockIcon {
 
 /* ---------- WINDOWS (LIQUID GLASS) ---------- */
 
-.WindowDesign {
+/* Base Window Wrapper Layout */
+.window-shell {
     width: 360px;
     height: 230px;
+    min-width: 260px;
+    min-height: 150px;
     position: absolute;
     top: 70px;
     left: 40px;
-    overflow: hidden;
-    min-width: 260px;
-    min-height: 150px;
     z-index: 10;
+    
+    /* Layout Container Mechanics */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    
+    /* Fluid Hardware-Accelerated Animations */
+    will-change: transform, opacity;
     animation: window-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.WindowShell {
-    width: 100%;
-    height: 100%;
+/* Glassmorphic Shell Aesthetic Engine */
+.window-shell.glass {
+    border-radius: 14px;
+    background: rgba(20, 20, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
 }
 
-.WindowShell.glass {
-    border-radius: 18px;
-}
-
-.WindowTitleBar {
-    padding: 6px 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: move;
-    touch-action: none;
+/* Window Drag Titlebar Layout */
+.window-titlebar {
+    height: 38px;
+    padding: 0 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    user-select: none;
+    cursor: move;
+    touch-action: none;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
 }
 
-.WindowButtons {
+/* App Identity Context (Icon + Text Alignment) */
+.window-title-content {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
 }
 
-.WindowButtons span {
+.window-icon {
     width: 16px;
     height: 16px;
-    border-radius: 999px;
+    object-fit: contain;
+}
+
+/* Window Command Buttons Container */
+.window-controls {
+    display: flex;
+    gap: 8px;
+}
+
+/* Modern Button Base Engine */
+.win-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    background: rgba(255,255,255,0.12);
+    transition: all 0.15s ease;
+    padding: 0;
 }
 
-.WindowBody {
-    padding: 10px;
-    font-size: 13px;
-    height: calc(100% - 34px);
-    box-sizing: border-box;
+.win-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.win-btn:active {
+    transform: scale(0.92);
+}
+
+/* Specific Contextual Button Accents */
+.win-btn.close:hover {
+    background: #e81123 !important;
+    color: #ffffff !important;
+}
+
+/* Isolated Scroll Window Body Content Frame */
+.window-body {
+    flex-grow: 1;
     overflow: auto;
+    position: relative;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(0, 0, 0, 0.15);
 }
 
-.WindowDesign.is-minimized {
-    display: none;
+.window-content-fallback {
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
-.WindowDesign.is-closing {
-    animation: window-out 0.18s ease forwards;
+/* --- Omnidirectional Resize Handle Overlay Matrix --- */
+.resize-handle {
+    position: absolute;
+    z-index: 100;
+}
+.resize-handle.top    { top: -3px; left: 4px; right: 4px; height: 6px; cursor: n-resize; }
+.resize-handle.bottom { bottom: -3px; left: 4px; right: 4px; height: 6px; cursor: s-resize; }
+.resize-handle.left   { left: -3px; top: 4px; bottom: 4px; width: 6px; cursor: w-resize; }
+.resize-handle.right  { right: -3px; top: 4px; bottom: 4px; width: 6px; cursor: e-resize; }
+.resize-handle.corner-se { bottom: 0; right: 0; width: 12px; height: 12px; cursor: se-resize; z-index: 101; }
+
+/* --- Window State Modifiers Engine --- */
+.window-shell.hidden {
+    display: none !important;
 }
 
-.WindowDesign.is-maximized {
-    left: 12px !important;
+.window-shell.is-minimized {
+    transform: scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.window-shell.is-closing {
+    animation: window-out 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+}
+
+/* Maximized Window Execution Parameters */
+.window-shell.is-maximized {
     top: 54px !important;
+    left: 12px !important;
     width: calc(100vw - 24px) !important;
     height: calc(100vh - 116px) !important;
+    border-radius: 8px !important; /* Slightly rounded corners look better when maximized */
+    box-shadow: none !important;
+}
+
+.window-shell.is-maximized .resize-handle {
+    display: none !important; /* Disable resizing boundaries when maximized */
+}
+
+/* --- System Animation Core Keyframes --- */
+@keyframes window-in {
+    0% { transform: scale(0.92) translateY(10px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes window-out {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.94); opacity: 0; }
 }
 
 .AppPanel {
@@ -629,18 +723,18 @@ body[data-theme="sunset"] .DockIcon {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes window-in {
-    from { opacity: 0; transform: translateY(12px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes window-out {
-    to { opacity: 0; transform: scale(0.96); }
-}
 
 @keyframes launcher-in {
-    from { opacity: 0; transform: translateY(14px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    0% {
+        opacity: 0;
+        transform: translateY(30px) rotateX(-20deg) scale(0.95);
+        transform-origin: center bottom;
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotateX(0deg) scale(1);
+        transform-origin: center bottom;
+    }
 }
 
 @keyframes icon-in {
