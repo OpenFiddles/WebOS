@@ -1,3 +1,9 @@
+import { inject } from "@vercel/analytics"
+import { injectSpeedInsights } from '@vercel/speed-insights';
+
+injectSpeedInsights();
+inject()
+
 // load service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
