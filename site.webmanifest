@@ -5,13 +5,39 @@
   "description": "A literal OS in a browser in pure HTML, CSS, and JS.",
   "lang": "en-US",
   "dir": "ltr",
-  "start_url": "/",
+  "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#121212",
   "theme_color": "#00a891",
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "scope": "/",
-  "display_override": ["window-controls-overlay", "minimal-ui"],
-  "prefer_related_applications": false
+  "display_override": [
+    "window-controls-overlay",
+    "minimal-ui"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

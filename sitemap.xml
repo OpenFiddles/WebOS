@@ -7,13 +7,13 @@
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://web-os-iota.vercel.app/BootScreen_popcorn.html</loc>
+        <loc>https://web-os-iota.vercel.app/html/BootScreen_popcorn.html</loc>
         <lastmod>2026-09-29</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://web-os-iota.vercel.app/DisplayManager_PopIT.html</loc>
+        <loc>https://web-os-iota.vercel.app/html/DisplayManager_PopIT.html</loc>
         <lastmod>2026-09-29</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>

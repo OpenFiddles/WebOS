@@ -1,7 +1,8 @@
-const NAME = "WebOS"
-const VERSION = "0.5"
+const NAME = "WebOS";
+const VERSION = "0.5";
 
-const CACHE_NAME = `${NAME}-${0.5}`; // Kept exactly at v10 as requested
+// Matches versioning strings accurately
+const CACHE_NAME = `${NAME}-v${VERSION}`; 
 
 const CORE_ASSETS = [
   '/',
@@ -42,9 +43,11 @@ async function cacheCoreAssetsWithProgress() {
       if (!response.ok) throw new Error(`Failed to load asset: ${url}`);
       
       await cache.put(url, response);
+    } catch (err) {
+      broadcastStatus('CACHE_ERROR', { url, error: err.message });
+    } finally {
+      // Always increment & calculate percentage even if a single asset breaks
       loadedCount++;
-      
-      // Calculate and send percentage progress status back to desktop UI
       const percent = Math.round((loadedCount / CORE_ASSETS.length) * 100);
       broadcastStatus('CACHE_PROGRESS', { 
         url, 
@@ -52,8 +55,6 @@ async function cacheCoreAssetsWithProgress() {
         loaded: loadedCount, 
         total: CORE_ASSETS.length 
       });
-    } catch (err) {
-      broadcastStatus('CACHE_ERROR', { url, error: err.message });
     }
   });
 
@@ -62,7 +63,6 @@ async function cacheCoreAssetsWithProgress() {
 }
 
 self.addEventListener('install', (event) => {
-  // Use our new dynamic progress cache downloader during system installation
   event.waitUntil(cacheCoreAssetsWithProgress());
   self.skipWaiting();
 });
@@ -82,15 +82,17 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const requestUrl = new URL(request.url);
 
-  // CRUCIAL RE-FIX: Prevent caching on your web browser API proxy endpoint
+  // Exclude explicit web proxy API router calls from hijacking
   if (requestUrl.pathname === '/api/browser-proxy') {
     return;
   }
 
+  // Skip POST/PUT operations, cross-origin sources, or raw large system ISO binaries
   if (request.method !== 'GET' || requestUrl.origin !== self.location.origin || requestUrl.pathname.endsWith('.iso')) {
     return;
   }
 
+  // Intercept and stream virtual ranges for Alpine storage images
   if (requestUrl.pathname === '/html/apps/emulator_alpine/alpine.ext2' && request.headers.has('range')) {
     event.respondWith(serveRange(request));
     return;
