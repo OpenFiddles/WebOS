@@ -11,11 +11,12 @@ const app = express();
 // 1. SERVE YOUR OS FILES
 app.use(express.static(path.join(__dirname)));
 // 2. Initialize Supabase Client using Vercel System Environments
+/*
 const supabase = createClient(
     process.env.SUPABASE_URL || '', 
     process.env.SUPABASE_ANON_KEY || ''
 );
-
+*/
 // 3. Example Endpoint: Test if your database connection is active
 app.get('/api/os-check', async (req, res) => {
     try {
