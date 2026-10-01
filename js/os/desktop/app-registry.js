@@ -1,30 +1,21 @@
 /**
- * app-registry.js
+ * app-registry.js (API Subsystem Integrated Lifecycle)
  * Core Application Registry and Execution Lifecycle for WebOS.
  */
 (() => {
     const definitions = new Map();
 
-    /**
-     * Registers an application template configuration structure into the system memory cache.
-     * @param {Object} definition - The app configuration metrics descriptor object.
-     */
     function register(definition) {
         definitions.set(definition.id, Object.freeze({ ...definition }));
     }
 
-    /**
-     * Retrieves an array representation of all globally registered app metadata.
-     * @returns {Array<Object>} Comprehensive application profile dataset array list.
-     */
     function all() {
         return [...definitions.values()];
     }
 
     /**
      * Processes execution invocation context hooks to open a standard window framework instance.
-     * @param {string} id - The specific alphanumeric lookup key matching the app to launch.
-     * @param {*} argument - Optional run arguments context state injected into application initializers.
+     * MODIFIED: Natively wraps and passes a custom API wrapper to the launching app.
      */
     function launch(id, argument) {
         const definition = definitions.get(id);
@@ -32,8 +23,6 @@
             return window.createWindow("WebOS", "Unknown app: " + id);
         }
         
-        // FIX: Gracefully extract the operational target callback block structure
-        // dynamically resolves if handler parameter was registered as a text key pointer or raw function closure
         let handler = definition.handler;
         if (typeof handler === "string") {
             handler = window[handler];
@@ -43,13 +32,17 @@
             return window.createWindow("WebOS", "App handler is unavailable: " + definition.name);
         }
         
-        return handler(argument);
+        // ================================================================
+        // API INJECTION ENGINE
+        // Dynamically instantiate a custom sandboxed API context client 
+        // using the app's unique registry id token metadata boundary.
+        // ================================================================
+        const appAPIInstance = new WebOSAppClient(definition.id);
+        
+        // Execute app logic: Passes the API proxy first, then any custom initial arguments
+        return handler(appAPIInstance, argument);
     }
 
-    /**
-     * Clears existing layout nodes and populates the application inventory grid 
-     * and hardware quick-action layout launchbars.
-     */
     function render() {
         const grid = document.querySelector(".LauncherGrid");
         const dock = document.getElementById("dock");
@@ -59,13 +52,11 @@
         dock.replaceChildren();
         
         all().forEach((definition) => {
-            // Build the standard System Launcher Grid element item
             const launcherButton = document.createElement("button");
             launcherButton.className = "AppIcon";
             launcherButton.type = "button";
             launcherButton.dataset.app = definition.id;
             
-            // Generate clean indexed text string flags to handle searching safely
             const rawSearchToken = [definition.name, definition.description, definition.id].join(" ").toLowerCase();
             launcherButton.dataset.search = rawSearchToken;
             launcherButton.setAttribute("aria-label", `${definition.name}: ${definition.description}`);
@@ -79,7 +70,6 @@
             launcherButton.addEventListener("click", () => launch(definition.id));
             grid.appendChild(launcherButton);
             
-            // Build out persistent Quick-Launch Taskbar Dock configurations dynamically
             if (definition.dock) {
                 const dockButton = document.createElement("button");
                 dockButton.className = "DockIcon";
@@ -93,6 +83,5 @@
         });
     }
 
-    // Export execution ecosystem namespace safely into the global context space
     window.WebOSAppRegistry = Object.freeze({ register, all, launch, render });
 })();

@@ -94,32 +94,122 @@ function makeWindowDraggable(win) {
 /* RESIZING */
 
 function makeWindowResizable(win) {
-    const handle = win.querySelector(".ResizeHandle");
-    if (!handle) return; // Safeguard if an app window structure doesn't include a handle
+    // Select all boundary resizing anchors present in the HTML template
+    const handles = win.querySelectorAll(".resize-handle");
+    if (!handles.length) return;
 
-    handle.addEventListener("pointerdown", (event) => {
-        if (win.classList.contains("is-maximized")) return;
-        event.preventDefault();
-        event.stopPropagation(); // Stops interaction bubbling up to window focus rules
-        
-        handle.setPointerCapture(event.pointerId);
-        
-        const resize = (resizeEvent) => {
-            win.style.width = Math.max(260, resizeEvent.clientX - win.offsetLeft) + "px";
-            win.style.height = Math.max(150, resizeEvent.clientY - win.offsetTop) + "px";
-        };
-        
-        const up = () => {
-            handle.removeEventListener("pointermove", resize);
-            handle.removeEventListener("pointerup", up);
-            // FIX: Explicitly release the pointer capture so the resize bar returns to normal state
-            handle.releasePointerCapture(event.pointerId);
-        };
-        
-        handle.addEventListener("pointermove", resize);
-        handle.addEventListener("pointerup", up);
+    // Internal state variables for performance tracking
+    let isResizing = false;
+    let activeHandle = null;
+    let direction = "";
+    
+    let startX = 0, startY = 0;
+    let startWidth = 0, startHeight = 0;
+    let startLeft = 0, startTop = 0;
+    
+    let deltaX = 0, deltaY = 0;
+    let animationFrameId = null;
+
+    // Constraints matching your layout design tokens
+    const MIN_WIDTH = 260;
+    const MIN_HEIGHT = 150;
+
+    handles.forEach(handle => {
+        handle.addEventListener("pointerdown", onPointerDown);
     });
+
+    function onPointerDown(e) {
+        if (win.classList.contains("is-maximized") || e.button !== 0) return;
+        
+        e.preventDefault();
+        e.stopPropagation(); // Prevents interaction from bubbling up to focus layout rules
+
+        isResizing = true;
+        activeHandle = e.currentTarget;
+        direction = activeHandle.getAttribute("data-direction");
+        
+        activeHandle.setPointerCapture(e.pointerId);
+
+        // Snapshot structural anchors before scaling transformations occur
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = win.offsetWidth;
+        startHeight = win.offsetHeight;
+        startLeft = parseInt(win.style.left, 10) || win.offsetLeft || 0;
+        startTop = parseInt(win.style.top, 10) || win.offsetTop || 0;
+
+        deltaX = 0;
+        deltaY = 0;
+
+        activeHandle.addEventListener("pointermove", onPointerMove);
+        activeHandle.addEventListener("pointerup", onPointerUp);
+        activeHandle.addEventListener("pointercancel", onPointerUp);
+    }
+
+    function onPointerMove(e) {
+        if (!isResizing) return;
+
+        deltaX = e.clientX - startX;
+        deltaY = e.clientY - startY;
+
+        // requestAnimationFrame consolidates reflow updates directly to monitor refresh cycles
+        if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(updateWindowSize);
+        }
+    }
+
+    function updateWindowSize() {
+        if (!isResizing) return;
+
+        // --- EAST & SOUTH (Bottom / Right Resizing) ---
+        if (direction.includes("e")) {
+            win.style.width = Math.max(MIN_WIDTH, startWidth + deltaX) + "px";
+        }
+        if (direction.includes("s")) {
+            win.style.height = Math.max(MIN_HEIGHT, startHeight + deltaY) + "px";
+        }
+
+        // --- WEST (Left Resizing: Shifts width and reposition left boundary) ---
+        if (direction.includes("w")) {
+            let targetWidth = startWidth - deltaX;
+            if (targetWidth >= MIN_WIDTH) {
+                win.style.width = targetWidth + "px";
+                win.style.left = (startLeft + deltaX) + "px";
+            }
+        }
+
+        // --- NORTH (Top Resizing: Shifts height and reposition top boundary) ---
+        if (direction.includes("n")) {
+            let targetHeight = startHeight - deltaY;
+            if (targetHeight >= MIN_HEIGHT) {
+                win.style.height = targetHeight + "px";
+                win.style.top = (startTop + deltaY) + "px";
+            }
+        }
+
+        animationFrameId = null;
+    }
+
+    function onPointerUp(e) {
+        if (!isResizing) return;
+
+        isResizing = false;
+        if (activeHandle) {
+            activeHandle.releasePointerCapture(e.pointerId);
+            activeHandle.removeEventListener("pointermove", onPointerMove);
+            activeHandle.removeEventListener("pointerup", onPointerUp);
+            activeHandle.removeEventListener("pointercancel", onPointerUp);
+        }
+
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        
+        activeHandle = null;
+    }
 }
+
 
 
 /* WINDOW BUTTONS */
@@ -621,6 +711,8 @@ function openBrowser(initialUrl) {
     let historyPointer = -1;
     let isNavigatingFromHistory = false;
     let frameTimer = null;
+    window.createNotification("browser", "whoops", "📝");
+
 
     // 5. Navigation Controller
     const navigate = (url, trackingEnabled = true) => {
@@ -670,6 +762,8 @@ function openBrowser(initialUrl) {
         } catch (error) {
             addressBar.value = "";
             addressBar.placeholder = "Invalid URL. Use http:// or https:// formats.";
+            window.createNotification("browser", "invalid", "📝");
+
         }
     };
 
@@ -779,3 +873,73 @@ function updateClock() {
 document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
 updateClock();
 setInterval(updateClock, 30000);
+/**
+ * Creates and displays an elegant flat panel notification toast.
+ * Shape Architecture: Rounded strictly on top, flat on the bottom.
+ * @param {string} title - The notification header text (e.g. App Name)
+ * @param {string} message - Descriptive body notification text
+ * @param {string} [icon="🔔"] - Single emoji layout text rendering anchor
+ */
+window.createNotification = function(title, message, icon = "🔔") {
+    // 1. Maintain or build a dedicated column container stacking alerts neatly
+    let container = document.getElementById("webos-notification-stack");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "webos-notification-stack";
+        Object.assign(container.style, {
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            zIndex: "999999",
+            pointerEvents: "none"
+        });
+        document.body.appendChild(container);
+    }
+
+    // 2. Manufacture clean, solid flat-panel toast design components
+    const toast = document.createElement("div");
+    toast.className = "NotificationToast";
+    
+    Object.assign(toast.style, {
+        background: "#16161a",
+        color: "#e3e3e6",
+        border: "1px solid #2d2d36",
+        borderRadius: "8px 8px 0px 0px", // Rounded strictly on top, flat on bottom
+        padding: "12px 16px",
+        width: "280px",
+        boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        pointerEvents: "auto",
+        transition: "all 0.25s cubic-bezier(0.25, 1, 0.5, 1)",
+        opacity: "0",
+        transform: "translateY(-20px) scale(0.95)"
+    });
+
+    toast.innerHTML = `
+        <span style="font-size: 20px; flex-shrink: 0;">${icon}</span>
+        <div style="overflow: hidden;">
+            <strong style="display: block; font-size: 13px; color: #ffffff; white-space: nowrap; text-overflow: ellipsis;">${title}</strong>
+            <span style="display: block; font-size: 12px; color: #a1a1a8; margin-top: 2px; line-height: 1.4;">${message}</span>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // 3. Trigger smooth layout entrance frames on hardware paint cycles
+    requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(0) scale(1)";
+    });
+
+    // 4. Auto-destruct timeline sequence (dismisses after 4 seconds)
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-10px) scale(0.95)";
+        toast.addEventListener("transitionend", () => toast.remove());
+    }, 4000);
+};

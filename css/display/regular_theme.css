@@ -195,7 +195,23 @@ body[data-theme="sunset"] .DockIcon {
     box-shadow: 0 16px 30px rgba(0,0,0,0.7);
 }
 
-/* ---------- WINDOWS (LIQUID GLASS) ---------- */
+/* ---------- WINDOWS (MODERN FLAT AUTOMATION) ---------- */
+
+/* Core Visibility States */
+#WindowTemplate {
+    display: none !important; /* Ensures the master HTML template layout remains completely hidden */
+}
+
+.window-shell.hidden {
+    display: none !important; 
+}
+
+.window-shell.is-minimized {
+    opacity: 0;
+    transform: scale(0.95) translateY(30px);
+    pointer-events: none;
+    visibility: hidden;
+}
 
 /* Base Window Wrapper Layout */
 .window-shell {
@@ -214,84 +230,130 @@ body[data-theme="sunset"] .DockIcon {
     overflow: hidden;
     box-sizing: border-box;
     
+    /* Smooth Spatial Transformations */
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), 
+                opacity 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+                visibility 0.2s linear;
+    
     /* Fluid Hardware-Accelerated Animations */
     will-change: transform, opacity;
-    animation: window-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: window-in 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;
 }
 
-/* Glassmorphic Shell Aesthetic Engine */
+/* Solid Flat Shell Aesthetic Engine */
 .window-shell.glass {
-    border-radius: 14px;
-    background: rgba(20, 20, 20, 0.65);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    /* Shape Architecture: Rounded strictly on top, flat on bottom */
+    border-radius: 12px 12px 0px 0px; 
+    
+    /* Background & Filter Overrides (No more glassmorphism) */
+    background: #1e1e24; /* Solid, premium dark slate workspace color */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    
+    /* Border and clean flat dropshadow layering */
+    border: 1px solid #2d2d36;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Focus state feedback indicator */
+.window-shell:focus-within,
+.window-shell.is-focused {
+    border-color: #3f3f4d;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
 /* Window Drag Titlebar Layout */
 .window-titlebar {
-    height: 38px;
+    height: 40px;
     padding: 0 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     user-select: none;
-    cursor: move;
+    -webkit-user-select: none;
+    cursor: grab;
     touch-action: none;
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: #16161a; /* Darker accent block separating the utility header */
+    border-bottom: 1px solid #2d2d36;
     flex-shrink: 0;
+}
+
+.window-titlebar:active {
+    cursor: grabbing;
 }
 
 /* App Identity Context (Icon + Text Alignment) */
 .window-title-content {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: rgba(255, 255, 255, 0.9);
+    gap: 10px;
+    color: #e3e3e6;
     font-size: 13px;
     font-weight: 500;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.15px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .window-icon {
     width: 16px;
     height: 16px;
     object-fit: contain;
+    flex-shrink: 0;
 }
 
 /* Window Command Buttons Container */
 .window-controls {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 /* Modern Button Base Engine */
 .win-btn {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 6px;
     border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.05);
+    color: #a1a1a8;
+    background: transparent;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background-color 0.1s ease, color 0.1s ease, transform 0.1s ease;
     padding: 0;
+}
+
+.win-btn svg {
+    pointer-events: none;
 }
 
 .win-btn:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.15);
+    background: #2d2d36;
 }
 
 .win-btn:active {
     transform: scale(0.92);
 }
+
+/* Specialized Windows Action Behaviors */
+.win-btn.close:hover {
+    background: #e81123; /* Classic clean flat red exit indicator */
+    color: #ffffff;
+}
+
+/* App / Window Content Frame */
+.window-body {
+    flex: 1 1 auto;
+    overflow: auto;
+    position: relative;
+    background: #111113; /* Deep solid black viewport workspace ground */
+}
+
+
 
 /* Specific Contextual Button Accents */
 .win-btn.close:hover {
