@@ -1,6 +1,13 @@
 {
+  "version": 2,
   "cleanUrls": false,
   "trailingSlash": false,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",
@@ -8,7 +15,7 @@
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "require-corp"
       },
-      "continue": true
+      "dest": "server.js"
     }
   ]
 }
