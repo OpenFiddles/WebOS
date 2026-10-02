@@ -9,15 +9,13 @@ const path = require('path');
 const app = express();
 const { createClient } = require('@supabase/supabase-js');
 
-
 // 1. SERVE YOUR OS FILES AND HOMEPAGE
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ADD THIS EXPLICIT HOMEPAGE ROUTE HANDLER:
 app.get('/', (req, res) => {
-    // If your main frontend file is named index.html and sits in the root folder:
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 
 // 2. Initialize Supabase Client using Vercel System Environments
 const supabase = createClient(

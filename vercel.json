@@ -24,7 +24,7 @@
       "destination": "/server.js"
     },
     {
-      "source": "/((?!.*\\.).*)",
+      "source": "/((?!api/).*)",
       "destination": "/server.js"
     }
   ]
