@@ -9,7 +9,7 @@ const path = require('path');
 const app = express();
 const { createClient } = require('@supabase/supabase-js');
 
-// 1. SERVE YOUR OS FILES
+
 // 1. SERVE YOUR OS FILES AND HOMEPAGE
 app.use(express.static(path.join(__dirname)));
 
