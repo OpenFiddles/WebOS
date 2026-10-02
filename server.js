@@ -2,9 +2,11 @@
  * WebOS Kernel Server Core
  * Handles local web serving and the Web Browser Iframe Proxy
  */
+require('dotenv').config(); // <-- Loads local variables from a .env fil
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+
 
 const app = express();
 const { createClient } = require('@supabase/supabase-js');
