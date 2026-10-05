@@ -1,4 +1,4 @@
-const NAME = "WebOS"; const VERSION = "0.5"; // Matches versioning strings accurately
+const NAME = "WebOS"; const VERSION = "0.6"; // Matches versioning strings accurately
 const CACHE_NAME = `${NAME}-v${VERSION}`; const CORE_ASSETS = [ '/', '/index.html', '/site.webmanifest', '/html/BootScreen_popcorn.html', '/html/DisplayManager_PopIT.html', '/js/os/desktop/app-registry.js', '/js/os/desktop/filesystem.js', '/html/Launcher_Popo.html', '/html/apps/emulator_alpine/index.html', '/html/apps/emulator_alpine/asset-config.js', '/html/apps/emulator_alpine/alpine.ext2', '/css/universal_css_native_stuff.css', '/js/app.js' ]; // Helper to broadcast progress messages back to WebOS windows 
 function broadcastStatus(type, data) { self.clients.matchAll().then((clients) => { clients.forEach((client) => { client.postMessage({ type, data }); }); }); } // Custom progress-tracking cache populator 
 async function cacheCoreAssetsWithProgress() { const cache = await caches.open(CACHE_NAME); let loadedCount = 0; broadcastStatus('CACHE_START', { total: CORE_ASSETS.length }); // Fetch each file individually to log the system loading status 
