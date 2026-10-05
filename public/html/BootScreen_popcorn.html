@@ -83,7 +83,7 @@
     }
 
     /**
-     * Kernal event pipeline observer hooks into service worker communication streams.
+     * Kernel event pipeline observer hooks into service worker communication streams.
      */
     function initializeKernelMonitor() {
         if (!('serviceWorker' in navigator)) {
@@ -172,6 +172,7 @@
         authSubmit.textContent = signIn ? "Sign in" : "Create local account";
         authSwitch.textContent = signIn ? "Need an account? Sign up" : "Already have an account? Sign in";
         document.getElementById("auth-password").autocomplete = signIn ? "current-password" : "new-password";
+        authStatus.className = "auth-status";
         authStatus.textContent = "";
     }
 
@@ -212,6 +213,7 @@
         if (!window.confirm("Remove the local WebOS account from this browser?")) return;
         localStorage.removeItem("webos-account");
         setAuthMode(false);
+        authStatus.className = "auth-status warning";
         authStatus.textContent = "Local account removed. You can create a new one.";
     });
     
@@ -241,11 +243,13 @@
             finishAuth(email);
             return;
         }
+        
         if (saved) {
             authStatus.className = "auth-status error";
             authStatus.textContent = "A local account already exists. Sign in instead.";
             return;
         }
+        
         localStorage.setItem("webos-account", JSON.stringify({ 
             email, 
             passwordHash: await passwordHash(email, password), 
@@ -254,9 +258,10 @@
         finishAuth(email);
     });
 
-    // Fire initialization on application load bound loop
+    // CRITICAL RUNTIME FIX: Kickstart the monitor loop on page parse execution [13]
     initializeKernelMonitor();
 </script>
+
 <script src="../js/boot/Popcorn.boot.js"></script>
 
 </body>
