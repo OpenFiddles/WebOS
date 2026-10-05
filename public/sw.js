@@ -32,7 +32,6 @@ async function fetchWithProgress(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load asset: ${url}`);
 
-  // Fallback to basic response if Content-Length header is missing or unsupported
   const contentLength = response.headers.get('content-length');
   if (!contentLength || !response.body) {
     return response;
@@ -45,27 +44,31 @@ async function fetchWithProgress(url) {
   const stream = new ReadableStream({
     async start(controller) {
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          controller.close();
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            break;
+          }
+          loadedBytes += value.byteLength;
+          
+          broadcastStatus('CACHE_FILE_STREAM', {
+            url,
+            loadedBytes,
+            totalBytes,
+            percent: Math.round((loadedBytes / totalBytes) * 100)
+          });
+
+          controller.enqueue(value);
+        } catch (streamError) {
+          controller.error(streamError);
           break;
         }
-        loadedBytes += value.byteLength;
-        
-        // Broadcast raw file byte-level chunks to the OS window for fine-grained loaders
-        broadcastStatus('CACHE_FILE_STREAM', {
-          url,
-          loadedBytes,
-          totalBytes,
-          percent: Math.round((loadedBytes / totalBytes) * 100)
-        });
-
-        controller.enqueue(value);
       }
     }
   });
 
-  // Construct a new response passing the stream along with original headers
+  // Construct a new response passing the tracked stream along with original headers
   return new Response(stream, {
     headers: response.headers,
     status: response.status,
@@ -73,23 +76,29 @@ async function fetchWithProgress(url) {
   });
 }
 
-// Custom progress-tracking cache populator
+// Custom progress-tracking cache populator with complete network fault-tolerance
 async function cacheCoreAssetsWithProgress() {
   const cache = await caches.open(CACHE_NAME);
   let loadedCount = 0;
   
   broadcastStatus('CACHE_START', { total: CORE_ASSETS.length });
 
-  // Fetch each file individually to log the system loading status
+  // Map files out individually into isolated execution safety containers
   const promises = CORE_ASSETS.map(async (url) => {
     try {
-      // Swapped out regular fetch for the stream-progress tracking fetcher
       const response = await fetchWithProgress(url);
-      await cache.put(url, response);
+      
+      // CRITICAL FIX: Cache storage engines consume responses. We must clone 
+      // the streaming object safely to protect the runtime memory space.
+      await cache.put(url, response.clone());
+      return { url, success: true };
     } catch (err) {
+      // Robust Fallback: If a file cannot be fetched, flag it but do NOT crash the boot loader loop
+      console.error(`[WebOS Kernel] Skipping unmounted asset: ${url} ->`, err.message);
       broadcastStatus('CACHE_ERROR', { url, error: err.message });
+      return { url, success: false, error: err.message };
     } finally {
-      // Always increment & calculate percentage even if a single asset breaks
+      // Always increment progress meters even if an asset fails to load
       loadedCount++;
       const percent = Math.round((loadedCount / CORE_ASSETS.length) * 100);
       broadcastStatus('CACHE_PROGRESS', { 
@@ -101,7 +110,9 @@ async function cacheCoreAssetsWithProgress() {
     }
   });
 
-  await Promise.all(promises);
+  // CRITICAL FIX: Changed from Promise.all to Promise.allSettled so the boot loop 
+  // finishes and transitions to the desktop even if some network files fail.
+  await Promise.allSettled(promises);
   broadcastStatus('CACHE_COMPLETE', { success: true });
 }
 
@@ -125,17 +136,14 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const requestUrl = new URL(request.url);
 
-  // Exclude explicit web proxy API router calls from hijacking
   if (requestUrl.pathname === '/api/browser-proxy') {
     return;
   }
 
-  // Skip POST/PUT operations, cross-origin sources, or raw large system ISO binaries
   if (request.method !== 'GET' || requestUrl.origin !== self.location.origin || requestUrl.pathname.endsWith('.iso')) {
     return;
   }
 
-  // Intercept and stream virtual ranges for Alpine storage images
   if (requestUrl.pathname === '/html/apps/emulator_alpine/alpine.ext2' && request.headers.has('range')) {
     event.respondWith(serveRange(request));
     return;
@@ -148,10 +156,13 @@ self.addEventListener('fetch', (event) => {
       }
       return fetch(request).then((networkResponse) => {
         if (networkResponse.ok) {
-          const responseCopy = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseCopy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse.clone()));
         }
         return networkResponse;
+      }).catch((fetchErr) => {
+        console.warn(`[WebOS Fetch Fallback] File offline: ${requestUrl.pathname}`, fetchErr);
+        // Returns a safe empty 404 response framework instead of locking up the iframe pipeline
+        return new Response('Asset unavailable offline', { status: 404, statusText: 'Offline Missing' });
       });
     })
   );
@@ -162,36 +173,43 @@ async function serveRange(request) {
   let response = await cache.match('/html/apps/emulator_alpine/alpine.ext2');
 
   if (!response) {
-    // If not cached yet during installation, fall back to fetching it safely with stream tracking
-    response = await fetchWithProgress('/html/apps/emulator_alpine/alpine.ext2');
-    if (!response.ok) return response;
-    await cache.put('/html/apps/emulator_alpine/alpine.ext2', response.clone());
-  }
-
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const range = request.headers.get('range').match(/bytes=(\d+)-(\d*)/);
-
-  if (!range) return new Response(bytes, { status: 200, headers: response.headers });
-
-  const start = Number(range[1]);
-  const requestedEnd = range[2] ? Number(range[2]) : bytes.length - 1;
-  const end = Math.min(requestedEnd, bytes.length - 1);
-
-  if (start >= bytes.length || start > end) {
-    return new Response(null, {
-      status: 416,
-      headers: { 'Content-Range': `bytes */${bytes.length}` }
-    });
-  }
-
-  return new Response(bytes.slice(start, end + 1), {
-    status: 206,
-    headers: {
-      'Accept-Ranges': 'bytes',
-      'Content-Length': String(end - start + 1),
-      'Content-Range': `bytes ${start}-${end}/${bytes.length}`,
-      'Content-Type': 'application/octet-stream',
-      'ETag': 'webos-alpine-ext2'
+    try {
+      response = await fetchWithProgress('/html/apps/emulator_alpine/alpine.ext2');
+      if (!response.ok) return response;
+      await cache.put('/html/apps/emulator_alpine/alpine.ext2', response.clone());
+    } catch (fallbackError) {
+      return new Response(null, { status: 404, statusText: 'Virtual Disk Image Offline' });
     }
-  });
+  }
+
+  try {
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const range = request.headers.get('range').match(/bytes=(\d+)-(\d*)/);
+
+    if (!range) return new Response(bytes, { status: 200, headers: response.headers });
+
+    const start = Number(range[1]);
+    const requestedEnd = range[2] ? Number(range[2]) : bytes.length - 1;
+    const end = Math.min(requestedEnd, bytes.length - 1);
+
+    if (start >= bytes.length || start > end) {
+      return new Response(null, {
+        status: 416,
+        headers: { 'Content-Range': `bytes */${bytes.length}` }
+      });
+    }
+
+    return new Response(bytes.slice(start, end + 1), {
+      status: 206,
+      headers: {
+        'Accept-Ranges': 'bytes',
+        'Content-Length': String(end - start + 1),
+        'Content-Range': `bytes ${start}-${end}/${bytes.length}`,
+        'Content-Type': 'application/octet-stream',
+        'ETag': 'webos-alpine-ext2'
+      }
+    });
+  } catch (bufferError) {
+    return new Response(null, { status: 500, statusText: 'Internal Disk Streaming Error' });
+  }
 }
