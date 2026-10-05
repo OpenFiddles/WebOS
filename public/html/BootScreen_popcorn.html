@@ -46,7 +46,6 @@
     </section>
 </main>
 
-<!-- ---------- CORE KERNEL BOOT EXECUTIONS ---------- -->
 <script type="module">
     // --- System DOM Mappings ---
     const boot = document.getElementById("boot");
@@ -106,7 +105,6 @@
                 case 'CACHE_FILE_STREAM':
                     if (data.url.endsWith('alpine.ext2')) {
                         largeFilePercent = data.percent;
-                        // Build fractional tracking weight so indicator advances mid-download
                         const baseWeight = (currentAssetIndex / TOTAL_CORE_FILES) * 100;
                         const streamContribution = (largeFilePercent / 100) * (100 / TOTAL_CORE_FILES);
                         const weightedProgress = Math.min(Math.round(baseWeight + streamContribution), 99);
@@ -118,11 +116,16 @@
                 case 'CACHE_PROGRESS':
                     currentAssetIndex = data.loaded;
                     const indexPercent = data.percent;
-                    // Protect visual jumps by maintaining high value boundaries
                     updateProgressUI(
                         Math.max(indexPercent, Math.round((currentAssetIndex / TOTAL_CORE_FILES) * 100)),
                         `Mounting system driver asset [${data.loaded}/${data.total}]...`
                     );
+                    
+                    // Progressive enhancement: Unlock skip button early if user wants to bypass mid-install
+                    if (currentAssetIndex >= 3 && skipButton.disabled) {
+                        skipButton.disabled = false;
+                        skipButton.textContent = "Skip to authentication";
+                    }
                     break;
 
                 case 'CACHE_COMPLETE':
@@ -160,7 +163,8 @@
         const savedAccount = localStorage.getItem("webos-account");
         setAuthMode(!!savedAccount);
         
-        document.getElementById("auth-email").focus();
+        const emailInput = document.getElementById("auth-email");
+        if (emailInput) emailInput.focus();
     }
 
     function setAuthMode(signIn) {
@@ -258,7 +262,7 @@
         finishAuth(email);
     });
 
-    // CRITICAL RUNTIME FIX: Kickstart the monitor loop on page parse execution [13]
+    // Start running the monitoring routines instantly
     initializeKernelMonitor();
 </script>
 
