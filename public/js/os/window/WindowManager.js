@@ -25,23 +25,43 @@ function focusWindow(win) {
 
 function createWindow(title, content) {
     const template = document.getElementById("WindowTemplate");
-    const win = template.cloneNode(true);
+    if (!template) return console.error("System Error: WindowTemplate missing from DOM.");
+    
+    // CRITICAL FIX: Clone from template.content to extract the inner elements cleanly
+    const winClone = template.content.cloneNode(true);
+    const win = winClone.querySelector(".window-shell");
 
-    win.classList.remove("hidden");
-    win.id = "Window_" + Date.now() + "_" + windowCount++;
+    // Assign a unique runtime system tracking tracker ID
+    win.id = "Window_" + Date.now() + "_" + (typeof windowCount !== 'undefined' ? windowCount++ : 0);
 
-    // FIX: Changed selectors to match HTML lowercase/hyphenated classes
-    win.querySelector(".window-titlebar .window-title-text").textContent = title;
-    win.querySelector(".window-body").innerHTML = content;
+    // Populate metadata utilizing your exact lowercase template classes
+    win.querySelector(".window-title-text").textContent = title;
+    
+    // Check if content looks like a URL string, if so render isolated application iframe
+    const bodyContainer = win.querySelector(".window-body");
+    if (typeof content === "string" && (content.startsWith("http") || content.startsWith("/") || content.endsWith(".html"))) {
+        const iframe = document.createElement("iframe");
+        iframe.src = content;
+        iframe.loading = "lazy";
+        bodyContainer.appendChild(iframe);
+    } else {
+        bodyContainer.innerHTML = content;
+    }
 
+    // Dynamic cascade window positioning offsets
     win.style.left = (40 + Math.random() * 80) + "px";
     win.style.top = (80 + Math.random() * 80) + "px";
 
+    // Bind operational controllers
     makeWindowDraggable(win);
     makeWindowResizable(win);
     wireWindowButtons(win);
 
-    document.body.appendChild(win);
+    // CRITICAL FIX: Mount inside workspace layer instead of the unconstrained body root
+    const workspace = document.getElementById("window-workspace") || document.body;
+    workspace.appendChild(win);
+
+    // Generate responsive task tray navigation items
     const taskButton = document.createElement("button");
     taskButton.className = "TaskButton";
     taskButton.type = "button";
@@ -54,14 +74,21 @@ function createWindow(title, content) {
         }
         focusWindow(win);
     });
-    document.getElementById("taskbar-apps").appendChild(taskButton);
     
-    // FIX: Changed selector to match HTML lowercase class
-    win.querySelector(".window-titlebar").addEventListener("pointerdown", () => focusWindow(win));
+    const taskbarApps = document.getElementById("taskbar-apps");
+    if (taskbarApps) taskbarApps.appendChild(taskButton);
+    
+    // Focus tracking mechanics execution hooks
+    const titleBar = win.querySelector(".window-titlebar");
+    if (titleBar) {
+        titleBar.addEventListener("pointerdown", () => focusWindow(win));
+    }
     win.addEventListener("pointerdown", () => focusWindow(win));
+    
     focusWindow(win);
     return win;
 }
+
 
 /* DRAGGING */
 
