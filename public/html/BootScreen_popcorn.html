@@ -47,14 +47,12 @@
 </main>
 
 <!-- ---------- CORE KERNEL BOOT EXECUTIONS ---------- -->
-<script>
+<script type="module">
+    // --- System DOM Mappings ---
     const boot = document.getElementById("boot");
     const status = document.getElementById("boot-status");
     const skipButton = document.getElementById("skip-boot");
     const progressFill = document.getElementById("loading-progress");
-    
-    let redirected = false;
-    let signingIn = false;
     
     const authScreen = document.getElementById("auth-screen");
     const authForm = document.getElementById("auth-form");
@@ -64,33 +62,79 @@
     const authSwitch = document.getElementById("auth-switch");
     const authStatus = document.getElementById("auth-status");
 
+    // --- State Vectors ---
+    const TOTAL_CORE_FILES = 13; // Total core files listed in SW
+    let currentAssetIndex = 0;
+    let largeFilePercent = 0;
+    let redirected = false;
+    let signingIn = false;
+
     /**
-     * Pre-warms the Alpine Linux emulator storage layer within the browser's Cache Storage API.
+     * Updates progress meters and system text frames safely.
      */
-    async function warmAlpineRootfs() {
-        try {
-            status.textContent = "Warming Alpine container...";
-            if (progressFill) progressFill.style.width = "40%";
-            
-            const cache = await caches.open("webos-v10");
-            const image = "/html/apps/emulator_alpine/alpine.ext2";
-            
-            if (!await cache.match(image)) {
-                const response = await fetch(image);
-                if (!response.ok) throw new Error("root filesystem request failed");
-                await cache.put(image, response);
-            }
-            
-            status.textContent = "Desktop services ready.";
-            if (progressFill) progressFill.style.width = "100%";
-            onBootComplete();
-        } catch (error) {
-            // Safe fallback loop if offline or network blocks disk image caching
-            console.warn("[WebOS Boot] Alpine pre-warm skipped:", error.message);
-            status.textContent = "Desktop services ready. Alpine will load when opened.";
-            if (progressFill) progressFill.style.width = "100%";
-            onBootComplete();
+    function updateProgressUI(overallPercent, statusMessage) {
+        if (progressFill) {
+            progressFill.style.width = `${overallPercent}%`;
+            progressFill.setAttribute('aria-valuenow', overallPercent);
         }
+        if (statusMessage) {
+            status.textContent = statusMessage;
+        }
+    }
+
+    /**
+     * Kernal event pipeline observer hooks into service worker communication streams.
+     */
+    function initializeKernelMonitor() {
+        if (!('serviceWorker' in navigator)) {
+            // Safe automated fallback loop if running within isolated non-SW test containers
+            setTimeout(() => {
+                updateProgressUI(100, "Compatibility layer online.");
+                onBootComplete();
+            }, 1000);
+            return;
+        }
+
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            const { type, data } = event.data;
+
+            switch (type) {
+                case 'CACHE_START':
+                    updateProgressUI(10, `Spawning kernel container cache storage context...`);
+                    break;
+
+                case 'CACHE_FILE_STREAM':
+                    if (data.url.endsWith('alpine.ext2')) {
+                        largeFilePercent = data.percent;
+                        // Build fractional tracking weight so indicator advances mid-download
+                        const baseWeight = (currentAssetIndex / TOTAL_CORE_FILES) * 100;
+                        const streamContribution = (largeFilePercent / 100) * (100 / TOTAL_CORE_FILES);
+                        const weightedProgress = Math.min(Math.round(baseWeight + streamContribution), 99);
+                        
+                        updateProgressUI(weightedProgress, `Warming Alpine container image: ${largeFilePercent}%`);
+                    }
+                    break;
+
+                case 'CACHE_PROGRESS':
+                    currentAssetIndex = data.loaded;
+                    const indexPercent = data.percent;
+                    // Protect visual jumps by maintaining high value boundaries
+                    updateProgressUI(
+                        Math.max(indexPercent, Math.round((currentAssetIndex / TOTAL_CORE_FILES) * 100)),
+                        `Mounting system driver asset [${data.loaded}/${data.total}]...`
+                    );
+                    break;
+
+                case 'CACHE_COMPLETE':
+                    updateProgressUI(100, "Desktop services ready.");
+                    onBootComplete();
+                    break;
+
+                case 'CACHE_ERROR':
+                    console.warn("[WebOS Kernel Context] Non-fatal asset boot missing:", data.url, data.error);
+                    break;
+            }
+        });
     }
 
     /**
@@ -100,7 +144,6 @@
         skipButton.disabled = false;
         skipButton.textContent = "Continue to desktop";
         
-        // FIX: Replaced race condition timeout with an instant validation gate check
         if (sessionStorage.getItem("webos-session")) {
             openDesktop();
         } else {
@@ -112,6 +155,11 @@
         boot.style.display = "none";
         authScreen.style.display = "block"; 
         authScreen.classList.add("active");
+        
+        // Auto-detect existing enrollment signatures
+        const savedAccount = localStorage.getItem("webos-account");
+        setAuthMode(!!savedAccount);
+        
         document.getElementById("auth-email").focus();
     }
 
@@ -149,7 +197,7 @@
         setTimeout(openDesktop, 350);
     }
 
-    // Interactive event bindings
+    // --- Core Interactive Events Bindings ---
     skipButton.addEventListener("click", showAuth);
     
     window.addEventListener("keydown", (event) => {
@@ -186,6 +234,7 @@
         
         if (signingIn) {
             if (!saved || saved.email !== email || saved.passwordHash !== await passwordHash(email, password)) {
+                authStatus.className = "auth-status error";
                 authStatus.textContent = "Email or password is incorrect.";
                 return;
             }
@@ -193,15 +242,20 @@
             return;
         }
         if (saved) {
+            authStatus.className = "auth-status error";
             authStatus.textContent = "A local account already exists. Sign in instead.";
             return;
         }
-        localStorage.setItem("webos-account", JSON.stringify({ email, passwordHash: await passwordHash(email, password), createdAt: Date.now() }));
+        localStorage.setItem("webos-account", JSON.stringify({ 
+            email, 
+            passwordHash: await passwordHash(email, password), 
+            createdAt: Date.now() 
+        }));
         finishAuth(email);
     });
 
-    // Start initialization on engine boot
-    warmAlpineRootfs();
+    // Fire initialization on application load bound loop
+    initializeKernelMonitor();
 </script>
 <script src="../js/boot/Popcorn.boot.js"></script>
 

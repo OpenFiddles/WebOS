@@ -1,8 +1,8 @@
 {
-  "id": "/?utm_source=pwa",
+  "id": "/",
   "name": "WebOS",
-  "short_name": "WOS",
-  "description": "A literal OS in a browser in pure HTML, CSS, and JS.",
+  "short_name": "WebOS",
+  "description": "A lightweight web operating system environment built natively with pure HTML, CSS, and JavaScript.",
   "lang": "en-US",
   "dir": "ltr",
   "start_url": "/?utm_source=pwa",

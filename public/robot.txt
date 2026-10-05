@@ -1,13 +1,23 @@
-# https://www.robotstxt.org/robotstxt.html
+# For documentation on robots.txt specifications, see: https://www.robotstxt.org/robotstxt.html
+
 User-agent: *
+
+# Allow crawling of the primary public landing vectors
 Allow: /
 Allow: /index.html
 Allow: /BootScreen_popcorn.html
 Allow: /DisplayManager_PopIT.html
 
-# Prevent indexing of isolated system applications, binaries, and dependencies
+# Prevent search engine indexing of backend core engines, raw disk images, and system packages
 Disallow: /html/apps/
 Disallow: /js/os/
 Disallow: /js/boot/
+Disallow: /css/boot/
+Disallow: /api/browser-proxy
 
+# Block indexing of direct emulator components to preserve runtime boundaries
+Disallow: *.ext2
+Disallow: *.iso
+
+# Centralized discovery map file for search engine indexers
 Sitemap: https://web-os-iota.vercel.app/sitemap.xml

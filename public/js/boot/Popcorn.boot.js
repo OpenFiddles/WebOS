@@ -1,5 +1,5 @@
 /**
- * boot.js
+ * Popcorn.boot.js
  * Core desktop environment bootstrap orchestrator and secure session firewall.
  */
 (async () => {
@@ -43,19 +43,19 @@
     // -------------------------------------------------------------
     const userSession = sessionStorage.getItem("webos-session");
 
-    // Scenario A: If we are on the DisplayManager page but not logged in, bootloader handles interception
+    // Scenario A: If we are on the DisplayManager workspace but not logged in, intercept instantly
     if (!userSession && !bootContainer && !authScreen) {
-        console.warn("[WebOS Security] Unauthorized access. Redirecting to login gate...");
+        console.warn("[WebOS Security] Unauthorized access attempts. Redirecting to auth gate...");
         window.location.href = "BootScreen_popcorn.html"; 
         return; 
     }
 
-    // Scenario B: If we are initializing on the Boot Screen layer, load authentication runtime listeners
+    // Scenario B: If we are initializing on the Boot Screen layer, register the event listeners
     if (bootContainer || authScreen) {
         console.log("[WebOS Bootloader] Execution runtime active on boot canvas.");
         initBootloaderListeners();
-        await warmAlpineRootfs();
-        return; // Halt execution loop here; desktop initializes after login completes
+        warmAlpineRootfs(); // Attach real-time service worker progress trackers
+        return; // Halt execution loop; authorization actions handle next stage context routing
     }
 
     // Scenario C: Authenticated session verified. Initializing primary Desktop environments.
@@ -111,33 +111,70 @@
     // -------------------------------------------------------------
 
     /**
-     * Pre-warms the Alpine Linux emulator storage layer within the browser's Cache Storage API.
+     * Binds into the kernel's background service worker communication pipeline
+     * to monitor actual installation state and compute high-fidelity streaming metrics.
      */
-    async function warmAlpineRootfs() {
-        try {
-            updateBootStatus("Warming Alpine container...");
-            const progressFill = document.getElementById("loading-progress");
-            if (progressFill) progressFill.style.width = "40%";
-            
-            const cache = await caches.open("webos-v10");
-            const image = "/html/apps/emulator_alpine/alpine.ext2";
-            
-            if (!await cache.match(image)) {
-                const response = await fetch(image);
-                if (!response.ok) throw new Error("Root filesystem request failed");
-                await cache.put(image, response);
-            }
-            
-            updateBootStatus("Desktop services ready.");
-            if (progressFill) progressFill.style.width = "100%";
-            onBootComplete();
-        } catch (error) {
-            console.warn("[WebOS Boot] Alpine pre-warm skipped:", error.message);
-            updateBootStatus("Desktop services ready. Alpine will load when opened.");
-            const progressFill = document.getElementById("loading-progress");
-            if (progressFill) progressFill.style.width = "100%";
-            onBootComplete();
+    function warmAlpineRootfs() {
+        const TOTAL_CORE_FILES = 13; // Count matches Service Worker array exactly
+        let currentAssetIndex = 0;
+        let largeFilePercent = 0;
+
+        if (!('serviceWorker' in navigator)) {
+            // Instant automated bypass fallback if running in a restricted sandbox tier
+            setTimeout(() => {
+                updateBootStatus("Compatibility layer active.");
+                const progressFill = document.getElementById("loading-progress");
+                if (progressFill) progressFill.style.width = "100%";
+                onBootComplete();
+            }, 800);
+            return;
         }
+
+        // Intercept granular message flags broadcasted from the service worker kernel
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            const { type, data } = event.data;
+            const progressFill = document.getElementById("loading-progress");
+
+            switch (type) {
+                case 'CACHE_START':
+                    updateBootStatus("Spawning virtual storage contexts...");
+                    if (progressFill) progressFill.style.width = "10%";
+                    break;
+
+                case 'CACHE_FILE_STREAM':
+                    if (data.url.endsWith('alpine.ext2')) {
+                        largeFilePercent = data.percent;
+                        // Calculate base loading metrics + ongoing byte streams so the bar never halts
+                        const baseWeight = (currentAssetIndex / TOTAL_CORE_FILES) * 100;
+                        const streamContribution = (largeFilePercent / 100) * (100 / TOTAL_CORE_FILES);
+                        const weightedProgress = Math.min(Math.round(baseWeight + streamContribution), 99);
+                        
+                        updateBootStatus(`Streaming Alpine image: ${largeFilePercent}%`);
+                        if (progressFill) progressFill.style.width = `${weightedProgress}%`;
+                    }
+                    break;
+
+                case 'CACHE_PROGRESS':
+                    currentAssetIndex = data.loaded;
+                    const absolutePercent = data.percent;
+                    // Retain maximum value floor to safeguard against visual layout flicker
+                    const calculatedProgress = Math.max(absolutePercent, Math.round((currentAssetIndex / TOTAL_CORE_FILES) * 100));
+                    
+                    updateBootStatus(`Mounting driver asset [${data.loaded}/${data.total}]...`);
+                    if (progressFill) progressFill.style.width = `${calculatedProgress}%`;
+                    break;
+
+                case 'CACHE_COMPLETE':
+                    updateBootStatus("Desktop services ready.");
+                    if (progressFill) progressFill.style.width = "100%";
+                    onBootComplete();
+                    break;
+
+                case 'CACHE_ERROR':
+                    console.warn("[WebOS Bootloader Subsystem] Minor component skip:", data.url, data.error);
+                    break;
+            }
+        });
     }
 
     function onBootComplete() {
@@ -169,6 +206,10 @@
                 authScreen.style.opacity = "1";
                 authScreen.classList.add("active");
                 
+                // Pre-evaluate local profile cache state to switch modes contextually
+                const savedAccount = localStorage.getItem("webos-account");
+                setAuthMode(!!savedAccount);
+
                 const emailInput = document.getElementById("auth-email");
                 if (emailInput) emailInput.focus();
             });
@@ -194,7 +235,10 @@
         if (passwordInput) {
             passwordInput.autocomplete = signIn ? "current-password" : "new-password";
         }
-        if (authStatus) authStatus.textContent = "";
+        if (authStatus) {
+            authStatus.className = "auth-status";
+            authStatus.textContent = "";
+        }
     }
 
     function openDesktop() {
@@ -246,14 +290,17 @@
                 if (!window.confirm("Remove the local WebOS account from this browser?")) return;
                 localStorage.removeItem("webos-account");
                 setAuthMode(false);
-                if (authStatus) authStatus.textContent = "Local account removed. You can create a new one.";
+                if (authStatus) {
+                    authStatus.className = "auth-status warning";
+                    authStatus.textContent = "Local account removed. You can create a new one.";
+                }
             });
         }
         
         document.querySelectorAll("[data-provider]").forEach((button) => {
             button.addEventListener("click", () => {
                 if (authStatus) {
-                    authStatus.className = "auth-status";
+                    authStatus.className = "auth-status info";
                     authStatus.textContent = button.dataset.provider + " sign-in requires an OAuth client ID. Use email/password local mode.";
                 }
             });
@@ -267,20 +314,31 @@
         if (authForm) {
             authForm.addEventListener("submit", async (event) => {
                 event.preventDefault();
-                const email = document.getElementById("auth-email").value.trim().toLowerCase();
-                const password = document.getElementById("auth-password").value;
+                const emailInput = document.getElementById("auth-email");
+                const passwordInput = document.getElementById("auth-password");
+                
+                if (!emailInput || !passwordInput) return;
+
+                const email = emailInput.value.trim().toLowerCase();
+                const password = passwordInput.value;
                 const saved = JSON.parse(localStorage.getItem("webos-account") || "null");
                 
                 if (signingIn) {
                     if (!saved || saved.email !== email || saved.passwordHash !== await passwordHash(email, password)) {
-                        if (authStatus) authStatus.textContent = "Email or password is incorrect.";
+                        if (authStatus) {
+                            authStatus.className = "auth-status error";
+                            authStatus.textContent = "Email or password is incorrect.";
+                        }
                         return;
                     }
                     finishAuth(email);
                     return;
                 }
                 if (saved) {
-                    if (authStatus) authStatus.textContent = "A local account already exists. Sign in instead.";
+                    if (authStatus) {
+                        authStatus.className = "auth-status error";
+                        authStatus.textContent = "A local account already exists. Sign in instead.";
+                    }
                     return;
                 }
                 localStorage.setItem("webos-account", JSON.stringify({ 
@@ -312,3 +370,4 @@
         `;
     }
 })();
+

@@ -1,8 +1,6 @@
 const NAME = "WebOS";
-const VERSION = "0.5";
-
-// Matches versioning strings accurately
-const CACHE_NAME = `${NAME}-v${VERSION}`; 
+const VERSION = "0.5"; // Matches versioning strings accurately
+const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
   '/',
@@ -15,7 +13,7 @@ const CORE_ASSETS = [
   '/html/Launcher_Popo.html',
   '/html/apps/emulator_alpine/index.html',
   '/html/apps/emulator_alpine/asset-config.js',
-  '/html/apps/emulator_alpine/alpine.ext2',
+  '/html/apps/emulator_alpine/alpine.ext2', // Large image file tracked via byte-stream
   '/css/universal_css_native_stuff.css',
   '/js/app.js'
 ];
@@ -29,19 +27,64 @@ function broadcastStatus(type, data) {
   });
 }
 
+// Advanced fetch helper to track raw download progress using ReadableStream
+async function fetchWithProgress(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load asset: ${url}`);
+
+  // Fallback to basic response if Content-Length header is missing or unsupported
+  const contentLength = response.headers.get('content-length');
+  if (!contentLength || !response.body) {
+    return response;
+  }
+
+  const totalBytes = parseInt(contentLength, 10);
+  let loadedBytes = 0;
+
+  const reader = response.body.getReader();
+  const stream = new ReadableStream({
+    async start(controller) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          controller.close();
+          break;
+        }
+        loadedBytes += value.byteLength;
+        
+        // Broadcast raw file byte-level chunks to the OS window for fine-grained loaders
+        broadcastStatus('CACHE_FILE_STREAM', {
+          url,
+          loadedBytes,
+          totalBytes,
+          percent: Math.round((loadedBytes / totalBytes) * 100)
+        });
+
+        controller.enqueue(value);
+      }
+    }
+  });
+
+  // Construct a new response passing the stream along with original headers
+  return new Response(stream, {
+    headers: response.headers,
+    status: response.status,
+    statusText: response.statusText
+  });
+}
+
 // Custom progress-tracking cache populator
 async function cacheCoreAssetsWithProgress() {
   const cache = await caches.open(CACHE_NAME);
   let loadedCount = 0;
-
+  
   broadcastStatus('CACHE_START', { total: CORE_ASSETS.length });
 
   // Fetch each file individually to log the system loading status
   const promises = CORE_ASSETS.map(async (url) => {
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to load asset: ${url}`);
-      
+      // Swapped out regular fetch for the stream-progress tracking fetcher
+      const response = await fetchWithProgress(url);
       await cache.put(url, response);
     } catch (err) {
       broadcastStatus('CACHE_ERROR', { url, error: err.message });
@@ -103,7 +146,6 @@ self.addEventListener('fetch', (event) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-
       return fetch(request).then((networkResponse) => {
         if (networkResponse.ok) {
           const responseCopy = networkResponse.clone();
@@ -118,21 +160,28 @@ self.addEventListener('fetch', (event) => {
 async function serveRange(request) {
   const cache = await caches.open(CACHE_NAME);
   let response = await cache.match('/html/apps/emulator_alpine/alpine.ext2');
+
   if (!response) {
-    response = await fetch('/html/apps/emulator_alpine/alpine.ext2');
+    // If not cached yet during installation, fall back to fetching it safely with stream tracking
+    response = await fetchWithProgress('/html/apps/emulator_alpine/alpine.ext2');
     if (!response.ok) return response;
     await cache.put('/html/apps/emulator_alpine/alpine.ext2', response.clone());
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());
   const range = request.headers.get('range').match(/bytes=(\d+)-(\d*)/);
+
   if (!range) return new Response(bytes, { status: 200, headers: response.headers });
 
   const start = Number(range[1]);
   const requestedEnd = range[2] ? Number(range[2]) : bytes.length - 1;
   const end = Math.min(requestedEnd, bytes.length - 1);
+
   if (start >= bytes.length || start > end) {
-    return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${bytes.length}` } });
+    return new Response(null, {
+      status: 416,
+      headers: { 'Content-Range': `bytes */${bytes.length}` }
+    });
   }
 
   return new Response(bytes.slice(start, end + 1), {
