@@ -261,32 +261,65 @@ function wireWindowButtons(win) {
 }
 
 
-/* LAUNCHER LOGIC */
+/* ---------- LAUNCHER LOGIC ---------- */
 
 const launcher = document.getElementById("Launcher");
 const launcherBtn = document.getElementById("open-launcher");
+const launcherSearch = document.getElementById("launcher-search");
 
+// Open or close launcher cleanly
 launcherBtn.onclick = () => {
-    launcher.classList.add("active");
-    document.getElementById("launcher-search").focus();
-};
-
-launcher.onclick = (e) => {
-    if (e.target === launcher) {
-        launcher.classList.remove("active");
+    // FIX: Remove 'hidden' so it physically displays, and add 'active' for animations
+    const isOpen = launcher.classList.toggle("hidden");
+    launcher.classList.toggle("active", !isOpen);
+    
+    if (!isOpen) {
+        launcherBtn.setAttribute("aria-expanded", "true");
+        if (launcherSearch) {
+            launcherSearch.value = ""; // Clear old searches on open
+            launcherSearch.focus();
+        }
+        // Reset app visibility filter
+        document.querySelectorAll(".AppIcon").forEach(icon => icon.hidden = false);
+    } else {
+        launcherBtn.setAttribute("aria-expanded", "false");
     }
 };
 
-document.getElementById("launcher-search").addEventListener("input", (event) => {
-    const query = event.target.value.trim().toLowerCase();
-    document.querySelectorAll(".AppIcon").forEach((icon) => {
-        icon.hidden = query !== "" && !icon.dataset.app.includes(query) && !icon.textContent.toLowerCase().includes(query);
-    });
-});
+// Close launcher if clicking outside the inner grid panel context
+launcher.onclick = (e) => {
+    if (e.target === launcher) {
+        launcher.classList.add("hidden");
+        launcher.classList.remove("active");
+        launcherBtn.setAttribute("aria-expanded", "false");
+    }
+};
 
+// Application indexing lookups
+if (launcherSearch) {
+    launcherSearch.addEventListener("input", (event) => {
+        const query = event.target.value.trim().toLowerCase();
+        document.querySelectorAll(".AppIcon").forEach((icon) => {
+            const appName = icon.dataset.app ? icon.dataset.app.toLowerCase() : "";
+            const textName = icon.textContent.toLowerCase();
+            
+            // Hide element if it doesn't match search criteria queries
+            icon.hidden = query !== "" && !appName.includes(query) && !textName.includes(query);
+        });
+    });
+}
+
+// Global window keystroke shortcuts listener hooks
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") launcher.classList.remove("active");
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "space") {
+    if (event.key === "Escape" && !launcher.classList.contains("hidden")) {
+        launcher.classList.add("hidden");
+        launcher.classList.remove("active");
+        launcherBtn.setAttribute("aria-expanded", "false");
+        launcherBtn.focus(); // Returns user focus to the dashboard launcher button
+    }
+    
+    // Command/Ctrl + Space hotkey action sequence switcher
+    if ((event.ctrlKey || event.metaKey) && event.key === " ") {
         event.preventDefault();
         launcherBtn.click();
     }
@@ -299,65 +332,291 @@ function closeLauncher() {
 }
 
 function openNotes() {
-    closeLauncher();
-    const win = createWindow("Notes", '<div class="AppPanel"><h2>Notes</h2><textarea id="notes-editor" placeholder="Write something worth keeping..."></textarea><button type="button" id="notes-save">Save note</button><p id="notes-status" aria-live="polite"></p></div>');
+    // Fail-safe launcher check
+    if (typeof closeLauncher === "function") closeLauncher();
+
+    // Semantic, split-pane layout structural template
+    const notesHTML = `
+        <div class="notes-app-container">
+            <div class="notes-toolbar">
+                <button type="button" class="notes-btn save-btn" id="notes-save">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Save Note
+                </button>
+                <span class="notes-status-text" id="notes-status" aria-live="polite">Ready</span>
+            </div>
+            <div class="notes-workspace">
+                <div class="notes-pane editor-pane">
+                    <div class="pane-label">Markdown Input</div>
+                    <textarea id="notes-editor" placeholder="# Hello World\\n\\nWrite some **markdown** here...\\n- Bullet items\\n- *Italics* work too!"></textarea>
+                </div>
+                <div class="notes-pane preview-pane">
+                    <div class="pane-label">Live Preview</div>
+                    <div id="notes-preview" class="markdown-body"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const win = createWindow("Notes & Markdown Editor", notesHTML);
+    
     const editor = win.querySelector("#notes-editor");
+    const preview = win.querySelector("#notes-preview");
+    const saveBtn = win.querySelector("#notes-save");
     const status = win.querySelector("#notes-status");
-    WebOSFileSystem.read("/Documents/Notes.txt").then((entry) => {
-        editor.value = entry?.content || localStorage.getItem("webos-notes") || "";
+
+    // Highly efficient lightweight Vanilla JS Markdown Parser engine
+    function parseMarkdown(markdownText) {
+        if (!markdownText) return "";
+        let html = markdownText
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // Sanitize HTML input injection vulnerabilities
+            .replace(/^### (.*\$)/gim, '<h3>\$1</h3>')                            // H3 Headers
+            .replace(/^## (.*\$)/gim, '<h2>\$1</h2>')                             // H2 Headers
+            .replace(/^# (.*\$)/gim, '<h1>\$1</h1>')                              // H1 Headers
+            .replace(/\*\*(.*?)\*\*/gim, '<strong>\$1</strong>')                 // Bold text **bold**
+            .replace(/\*(.*?)\*/gim, '<em>\$1</em>')                             // Italic text *italic*
+            .replace(/`(.*?)`/gim, '<code>\$1</code>')                           // Inline Code blocks `code`
+            .replace(/^\s*-\s(.*\$)/gim, '<li>\$1</li>')                          // List items - item
+            .replace(/\n\$/gim, '<br />');                                       // Single returns line breaks
+
+        // Wrap list items gracefully into semantic UL structures
+        html = html.replace(/(<li>.*<\/li>)/gim, '<ul>\$1</ul>');
+        // Structural paragraph blocks split on double lines breaks
+        return html.split(/\n\n+/).map(p => p.trim().startsWith('<h') || p.trim().startsWith('<ul') ? p : `<p>${p}</p>`).join('');
+    }
+
+    // Trigger parsing update dynamically when typing
+    editor.addEventListener("input", () => {
+        preview.innerHTML = parseMarkdown(editor.value);
     });
-    win.querySelector("#notes-save").addEventListener("click", () => {
-        WebOSFileSystem.putText("/Documents/Notes.txt", editor.value).then(() => {
-            localStorage.setItem("webos-notes", editor.value);
-            status.textContent = "Saved to Documents/Notes.txt at " + new Date().toLocaleTimeString();
+
+    // Unified Virtual File Tree & LocalStorage reading stack
+    if (typeof WebOSFileSystem !== "undefined" && WebOSFileSystem.read) {
+        WebOSFileSystem.read("/Documents/Notes.md").then((entry) => {
+            const rawContent = entry?.content || localStorage.getItem("webos-notes-md") || "";
+            editor.value = rawContent;
+            preview.innerHTML = parseMarkdown(rawContent);
+        }).catch(() => {
+            // Fallback safety if file path does not exist yet
+            const fallbackContent = localStorage.getItem("webos-notes-md") || "";
+            editor.value = fallbackContent;
+            preview.innerHTML = parseMarkdown(fallbackContent);
         });
+    } else {
+        const localOnly = localStorage.getItem("webos-notes-md") || "";
+        editor.value = localOnly;
+        preview.innerHTML = parseMarkdown(localOnly);
+    }
+
+    // Save event processing hook
+    saveBtn.addEventListener("click", () => {
+        const dataValue = editor.value;
+        
+        const executeLocalSave = () => {
+            localStorage.setItem("webos-notes-md", dataValue);
+            status.textContent = "Saved at " + new Date().toLocaleTimeString();
+            status.classList.add("success");
+            setTimeout(() => status.classList.remove("success"), 3000);
+        };
+
+        if (typeof WebOSFileSystem !== "undefined" && WebOSFileSystem.putText) {
+            WebOSFileSystem.putText("/Documents/Notes.md", dataValue)
+                .then(executeLocalSave)
+                .catch(err => {
+                    console.error("FS error, saving locally:", err);
+                    executeLocalSave();
+                });
+        } else {
+            executeLocalSave();
+        }
     });
+
     return win;
 }
 
+
 function openFiles() {
-    closeLauncher();
-    const win = createWindow("Files", '<div class="AppPanel"><h2>Home</h2><div class="FileToolbar"><button type="button" id="new-file">New file</button><button type="button" id="upload-file">Import</button><input id="file-picker" type="file" hidden></div><ul class="AppList" id="file-list"></ul><p id="file-status" aria-live="polite">IndexedDB filesystem</p></div>');
+    if (typeof closeLauncher === "function") closeLauncher();
+
+    // Clean structural template designed to mimic native operating system environments
+    const filesAppHTML = `
+        <div class="files-app-container">
+            <header class="files-app-toolbar">
+                <div class="toolbar-nav-group">
+                    <button type="button" class="files-icon-btn" id="file-back" title="Go Up A Folder">⬆ Back</button>
+                    <span class="files-path-breadcrumb" id="files-current-path">/</span>
+                </div>
+                <div class="toolbar-action-group">
+                    <button type="button" class="files-action-btn" id="new-file">＋ New File</button>
+                    <button type="button" class="files-action-btn variant-secondary" id="upload-file">🗂 Import File</button>
+                    <input id="file-picker" type="file" style="display: none;">
+                </div>
+            </header>
+            
+            <main class="files-grid-workspace">
+                <ul class="files-node-list" id="file-list"></ul>
+            </main>
+
+            <footer class="files-statusbar">
+                <span id="file-status" aria-live="polite">IndexedDB File System Active</span>
+            </footer>
+        </div>
+    `;
+
+    const win = createWindow("File Explorer", filesAppHTML);
+    
     const list = win.querySelector("#file-list");
     const status = win.querySelector("#file-status");
+    const pathIndicator = win.querySelector("#files-current-path");
+    const picker = win.querySelector("#file-picker");
+    const backBtn = win.querySelector("#file-back");
+
+    // Keep track of the real state context of directory navigation
+    let currentPath = "/";
+
     const renderFiles = async () => {
         list.replaceChildren();
-        const entries = await WebOSFileSystem.list("/");
-        entries.forEach((entry) => {
-            const item = document.createElement("li");
-            const name = document.createElement("span");
-            name.textContent = entry.path.split("/").pop() || "/";
-            const type = document.createElement("small");
-            type.textContent = entry.type === "directory" ? "Folder" : "File";
-            item.append(name, type);
-            if (entry.type === "file") {
-                item.title = "Double-click to open";
-                item.ondblclick = async () => {
-                    const file = await WebOSFileSystem.read(entry.path);
-                    const editor = createWindow(entry.path.split("/").pop(), `<div class="AppPanel"><textarea class="file-editor"></textarea><button type="button" class="save-file">Save file</button></div>`);
-                    editor.querySelector(".file-editor").value = file?.content || "";
-                    editor.querySelector(".save-file").onclick = () => WebOSFileSystem.putText(entry.path, editor.querySelector(".file-editor").value);
-                };
+        pathIndicator.textContent = currentPath;
+        
+        // Disable back button at root directory index properties
+        backBtn.disabled = currentPath === "/";
+
+        try {
+            // Read records safely using your database abstraction layers
+            const entries = await window.WebOSFileSystem.list(currentPath);
+            
+            if (entries.length === 0) {
+                const emptyMsg = document.createElement("div");
+                emptyMsg.className = "files-empty-state-notice";
+                emptyMsg.textContent = "This folder workspace is empty.";
+                list.appendChild(emptyMsg);
+                return;
             }
-            list.appendChild(item);
-        });
+
+            entries.forEach((entry) => {
+                const item = document.createElement("li");
+                item.className = `file-node-item ${entry.type === "directory" ? "node-type-folder" : "node-type-file"}`;
+                
+                const nodeName = entry.path.split("/").pop() || "/";
+                const displaySize = entry.type === "directory" ? "System Folder" : (entry.content ? formatBytes(entry.content.length) : "0 Bytes");
+                
+                item.innerHTML = `
+                    <div class="node-meta-wrapper">
+                        <span class="node-graphic-icon">${entry.type === "directory" ? "📁" : "📄"}</span>
+                        <div class="node-text-details">
+                            <span class="node-filename-label">${nodeName}</span>
+                            <small class="node-filesize-sublabel">${displaySize}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="node-delete-trigger-btn" title="Delete Permanent Item">×</button>
+                `;
+
+                // Single click routing for directory jumps
+                item.addEventListener("click", (e) => {
+                    if (e.target.classList.contains("node-delete-trigger-btn")) return;
+                    
+                    if (entry.type === "directory") {
+                        currentPath = entry.path;
+                        renderFiles();
+                    }
+                });
+
+                // Double click behavior mappings
+                if (entry.type === "file") {
+                    item.title = "Double-click to view asset contents";
+                    item.addEventListener("dblclick", async () => {
+                        const file = await window.WebOSFileSystem.read(entry.path);
+                        
+                        // INTEGRATION HOOK: If file extension matches Markdown format rules, trigger notes app!
+                        if (nodeName.toLowerCase().endsWith(".md") && typeof openNotes === "function") {
+                            openNotes();
+                        } else {
+                            // Unified plaintext edit interface template fallback
+                            const cleanTextValue = file ? file.content : "";
+                            const editorWin = createWindow(nodeName, `
+                                <div class="file-editor-container">
+                                    <textarea class="raw-code-textarea">${cleanTextValue}</textarea>
+                                    <div class="editor-action-footer">
+                                        <button type="button" class="editor-save-action-btn">Save Changes</button>
+                                    </div>
+                                </div>
+                            `);
+                            
+                            editorWin.querySelector(".editor-save-action-btn").onclick = async function() {
+                                const activeTextData = editorWin.querySelector(".raw-code-textarea").value;
+                                await window.WebOSFileSystem.putText(entry.path, activeTextData);
+                                status.textContent = `Updates verified on path: ${nodeName}`;
+                                renderFiles();
+                            };
+                        }
+                    });
+                }
+
+                // Delete behavior linked safely to your background .remove method
+                item.querySelector(".node-delete-trigger-btn").onclick = async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Confirm permanent erasure sequence for node: ${nodeName}?`)) {
+                        await window.WebOSFileSystem.remove(entry.path);
+                        status.textContent = `Removed item: ${nodeName}`;
+                        renderFiles();
+                    }
+                };
+
+                list.appendChild(item);
+            });
+        } catch (err) {
+            status.textContent = "Error parsing file nodes layer structures.";
+            console.error(err);
+        }
     };
-    win.querySelector("#new-file").onclick = async () => {
-        const name = window.prompt("File name", "Documents/New file.txt");
-        if (!name) return;
-        await WebOSFileSystem.putText("/" + name.replace(/^\/+/, ""), "");
-        status.textContent = "Created " + name;
+
+    // Navigational directory backtracking algorithm
+    backBtn.onclick = () => {
+        if (currentPath === "/") return;
+        const segments = currentPath.split("/").filter(Boolean);
+        segments.pop();
+        currentPath = "/" + segments.join("/");
         renderFiles();
     };
-    const picker = win.querySelector("#file-picker");
+
+    // Virtual asset registration prompt paths matching database logic
+    win.querySelector("#new-file").onclick = async () => {
+        const name = window.prompt("Enter filename with extension (e.g. todo.txt, readme.md):", "document.txt");
+        if (!name) return;
+        
+        // Calculate correct absolute database path values safely
+        const prefixPath = currentPath === "/" ? "" : currentPath;
+        const resolvedPath = `${prefixPath}/${name.replace(/^\/+/, "")}`;
+        
+        await window.WebOSFileSystem.putText(resolvedPath, "");
+        status.textContent = `Created asset: ${name}`;
+        renderFiles();
+    };
+
+    // Bind physical file system multi-format upload loops
     win.querySelector("#upload-file").onclick = () => picker.click();
     picker.onchange = async () => {
         const file = picker.files[0];
         if (!file) return;
-        await WebOSFileSystem.putText("/Downloads/" + file.name, await file.text());
-        status.textContent = "Imported " + file.name;
+        
+        const prefixPath = currentPath === "/" ? "" : currentPath;
+        const targetPath = `${prefixPath}/${file.name}`;
+        const dataBody = await file.text();
+        
+        await window.WebOSFileSystem.putText(targetPath, dataBody);
+        status.textContent = `Successfully uploaded file item: ${file.name}`;
         renderFiles();
     };
+
+    // Human-readable size calculations matching backend properties
+    function formatBytes(bytes) {
+        if (bytes === 0 || !bytes) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
     renderFiles();
     return win;
 }
