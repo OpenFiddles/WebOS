@@ -98,30 +98,89 @@ function makeWindowDraggable(win) {
 /* RESIZING */
 
 function makeWindowResizable(win) {
-    const handle = win.querySelector(".ResizeHandle");
-    if (!handle) return; // Safeguard if an app window structure doesn't include a handle
+    // FIX: Select all lowercase resize handles defined in your HTML template
+    const handles = win.querySelectorAll(".resize-handle");
+    if (handles.length === 0) return; // Safeguard if an app window structure doesn't include handles
 
-    handle.addEventListener("pointerdown", (event) => {
-        if (win.classList.contains("is-maximized")) return;
-        event.preventDefault();
-        event.stopPropagation(); // Stops interaction bubbling up to window focus rules
-        
-        handle.setPointerCapture(event.pointerId);
-        
-        const resize = (resizeEvent) => {
-            win.style.width = Math.max(260, resizeEvent.clientX - win.offsetLeft) + "px";
-            win.style.height = Math.max(150, resizeEvent.clientY - win.offsetTop) + "px";
-        };
-        
-        const up = () => {
-            handle.removeEventListener("pointermove", resize);
-            handle.removeEventListener("pointerup", up);
-            // FIX: Explicitly release the pointer capture so the resize bar returns to normal state
-            handle.releasePointerCapture(event.pointerId);
-        };
-        
-        handle.addEventListener("pointermove", resize);
-        handle.addEventListener("pointerup", up);
+    handles.forEach(handle => {
+        handle.addEventListener("pointerdown", (event) => {
+            if (win.classList.contains("is-maximized")) return;
+            event.preventDefault();
+            event.stopPropagation(); // Stops interaction bubbling up to window focus rules
+            
+            const direction = handle.getAttribute("data-direction");
+            
+            // Capture the exact starting geometry of the window
+            const startWidth = win.offsetWidth;
+            const startHeight = win.offsetHeight;
+            const startLeft = win.offsetLeft;
+            const startTop = win.offsetTop;
+            
+            // Capture the initial pointer position
+            const startX = event.clientX;
+            const startY = event.clientY;
+            
+            // Safety constraints
+            const minWidth = 260;
+            const minHeight = 150;
+            const topBoundary = 48; // Keeps window from sliding under your 48px taskbar
+
+            handle.setPointerCapture(event.pointerId);
+            
+            const resize = (resizeEvent) => {
+                // Calculate how far the mouse has moved since clicking
+                const deltaX = resizeEvent.clientX - startX;
+                const deltaY = resizeEvent.clientY - startY;
+                
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                let newLeft = startLeft;
+                let newTop = startTop;
+                
+                // --- HORIZONTAL RESIZING ---
+                // East (Right Edge)
+                if (direction.includes("e")) {
+                    newWidth = Math.max(minWidth, startWidth + deltaX);
+                }
+                // West (Left Edge) - Must shift 'left' position as width changes
+                if (direction.includes("w")) {
+                    const potentialWidth = startWidth - deltaX;
+                    if (potentialWidth >= minWidth) {
+                        newWidth = potentialWidth;
+                        newLeft = startLeft + deltaX;
+                    }
+                }
+                
+                // --- VERTICAL RESIZING ---
+                // South (Bottom Edge)
+                if (direction.includes("s")) {
+                    newHeight = Math.max(minHeight, startHeight + deltaY);
+                }
+                // North (Top Edge) - Must shift 'top' position as height changes
+                if (direction.includes("n")) {
+                    const potentialHeight = startHeight - deltaY;
+                    if (potentialHeight >= minHeight && (startTop + deltaY) >= topBoundary) {
+                        newHeight = potentialHeight;
+                        newTop = startTop + deltaY;
+                    }
+                }
+                
+                // Apply the updated calculations to your window style layout
+                win.style.width = newWidth + "px";
+                win.style.height = newHeight + "px";
+                win.style.left = newLeft + "px";
+                win.style.top = newTop + "px";
+            };
+            
+            const up = () => {
+                handle.removeEventListener("pointermove", resize);
+                handle.removeEventListener("pointerup", up);
+                handle.releasePointerCapture(event.pointerId);
+            };
+            
+            handle.addEventListener("pointermove", resize);
+            handle.addEventListener("pointerup", up);
+        });
     });
 }
 

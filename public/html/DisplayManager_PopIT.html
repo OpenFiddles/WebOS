@@ -10,87 +10,97 @@
 </head>
 <body>
 
-<!-- ---------- WINDOW TEMPLATE ---------- -->
+<!-- ======================================================================= -->
+<!-- SYSTEM APPARATUS TEMPLATES                                              -->
+<!-- ======================================================================= -->
 
-<div class="window-shell glass hidden" id="WindowTemplate" role="dialog" aria-labelledby="WindowTitle-Template" aria-hidden="true">
-    <!-- Active resizing anchors on all outer boundaries -->
-    <div class="resize-handle top" data-direction="n"></div>
-    <div class="resize-handle right" data-direction="e"></div>
-    <div class="resize-handle bottom" data-direction="s"></div>
-    <div class="resize-handle left" data-direction="w"></div>
-    <div class="resize-handle corner-se" data-direction="se"></div>
+<!-- A strict template container prevents layout IDs from colliding with real active DOM nodes -->
+<template id="WindowTemplate">
+    <div class="window-shell glass" role="dialog" aria-modal="false">
+        <!-- Interactive Pointer Boundary Resizers -->
+        <div class="resize-handle top" data-direction="n"></div>
+        <div class="resize-handle right" data-direction="e"></div>
+        <div class="resize-handle bottom" data-direction="s"></div>
+        <div class="resize-handle left" data-direction="w"></div>
+        <div class="resize-handle corner-se" data-direction="se"></div>
 
-    <!-- Titlebar / Window Header -->
-    <header class="window-titlebar">
-        <div class="window-title-content">
-            <img class="window-icon" src="/icons/default-app.png" alt="" aria-hidden="true">
-            <span id="WindowTitle-Template" class="window-title-text">Nothing...</span>
-        </div>
-        <nav class="window-controls" aria-label="Window Actions">
-            <button class="win-btn minimize" aria-label="Minimize Window" title="Minimize">
-                <svg width="12" height="12" viewBox="0 0 12 12"><rect fill="currentColor" x="1" y="5" width="10" height="2"/></svg>
-            </button>
-            <button class="win-btn maximize" aria-label="Maximize Window" title="Maximize">
-                <svg width="12" height="12" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="2" x="2" y="2" width="8" height="8"/></svg>
-            </button>
-            <button class="win-btn close" aria-label="Close Window" title="Close">
-                <svg width="12" height="12" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="2" d="M2,2 L10,10 M10,2 L2,10"/></svg>
-            </button>
-        </nav>
-    </header>
+        <!-- Window Chrome / Management Header -->
+        <header class="window-titlebar">
+            <div class="window-title-content">
+                <img class="window-icon" src="" alt="" aria-hidden="true">
+                <span class="window-title-text">Application</span>
+            </div>
+            <nav class="window-controls" aria-label="Window Management Actions">
+                <button class="win-btn minimize" aria-label="Minimize Window" title="Minimize">
+                    <svg width="12" height="12" viewBox="0 0 12 12"><rect fill="currentColor" x="1" y="5" width="10" height="2"/></svg>
+                </button>
+                <button class="win-btn maximize" aria-label="Maximize Window" title="Maximize">
+                    <svg width="12" height="12" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="2" x="2" y="2" width="8" height="8"/></svg>
+                </button>
+                <button class="win-btn close" aria-label="Close Window" title="Close">
+                    <svg width="12" height="12" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="2" d="M2,2 L10,10 M10,2 L2,10"/></svg>
+                </button>
+            </nav>
+        </header>
 
-    <!-- App / Window Content Frame -->
-    <main class="window-body">
-        <div class="window-content-fallback">
-            <p>Nothing Interesting... :[</p>
-        </div>
-    </main>
-</div>
+        <!-- Dynamic Sandbox App Content Container -->
+        <main class="window-body">
+            <!-- Iframes are dynamically generated here via custom app-registry scripts -->
+        </main>
+    </div>
+</template>
 
-
-<!-- ---------- DESKTOP + TASKBAR + DOCK ---------- -->
+<!-- ======================================================================= -->
+<!-- DESKTOP OPERATING ENVIRONMENT                                           -->
+<!-- ======================================================================= -->
 
 <div id="Desktop">
 
-    <div id="taskbar" role="contentinfo">
+    <!-- Global System Navigation Shell -->
+    <header id="taskbar" role="banner">
         <div id="taskbar-left">
-            <button id="open-launcher" aria-label="Open launcher" title="Open launcher">☰</button>
-            <span>WebOS Launcher</span>
+            <button id="open-launcher" aria-label="Open Application Launcher" aria-haspopup="true" aria-expanded="false" title="Launcher Menu">☰</button>
+            <span class="system-brand-text">WebOS</span>
         </div>
-        <div id="taskbar-apps" role="toolbar" aria-label="Open windows"></div>
+        <nav id="taskbar-apps" role="navigation" aria-label="Active Workspace Windows"></nav>
         <div id="taskbar-right">
-            <button class="StatusButton" id="network-status" title="Network status">Online</button>
-            <button class="StatusButton" id="clock" title="System time"></button>
+            <button class="StatusButton" id="network-status" title="System Connection Status">Online</button>
+            <time class="StatusButton" id="clock" title="System Calendar Time"></time>
         </div>
-    </div>
+    </header>
 
-    <!-- This empty panel zone is where active application window elements dynamically spawn -->
-    <div id="window-workspace"></div>
+    <!-- Isolated Window Execution Layer -->
+    <main id="window-workspace" aria-label="Desktop Workspace Layer"></main>
 
-    <div id="dock" class="dock-glass" aria-label="Favorite apps"></div>
+    <!-- Standard Dock Panel Launcher Pinboard -->
+    <nav id="dock" class="dock-glass" aria-label="Pinned Fast-Launch Applications"></nav>
 
 </div>
 
-<!-- ---------- FULLSCREEN LAUNCHER ---------- -->
+<!-- ======================================================================= -->
+<!-- FULLSCREEN OVERLAY COMPONENT                                           -->
+<!-- ======================================================================= -->
 
-<div id="Launcher" class="LauncherFS">
+<section id="Launcher" class="LauncherFS hidden" role="dialog" aria-modal="true" aria-label="Application Launcher Grid">
     <div class="LauncherInner glass">
-        <div class="LauncherHeader">
-            <span>Launcher</span>
-            <span>Press Esc to close</span>
+        <header class="LauncherHeader">
+            <h1>Launcher</h1>
+            <kbd class="sys-shortcut-hint">Press Esc to exit</kbd>
+        </header>
+        <div class="search-wrapper">
+            <input class="LauncherSearch" id="launcher-search" type="search" placeholder="Search applications..." autocomplete="off" aria-controls="launcher-grid">
         </div>
-        <!-- FIX: Cleaned duplicate layout inputs and mapped accessibility relationships cleanly -->
-        <input class="LauncherSearch" id="launcher-search" type="search" placeholder="Search apps" autocomplete="off" aria-controls="launcher-grid">
-        <div class="LauncherGrid" id="launcher-grid"></div>
+        <div class="LauncherGrid" id="launcher-grid" role="feed" aria-busy="false"></div>
     </div>
-</div>
+</section>
 
-<!-- ---------- SYSTEM RUNTIME SCRIPTS ---------- -->
+<!-- ======================================================================= -->
+<!-- CORE OS ARCHITECTURE RUNTIMES                                           -->
+<!-- ======================================================================= -->
 <script src="../js/os/desktop/filesystem.js"></script>
 <script src="../js/os/desktop/app-registry.js"></script>
 <script src="../js/os/window/WindowManager.js"></script>
 <script src="../js/boot/Popcorn.boot.js"></script>
-
 
 </body>
 </html>

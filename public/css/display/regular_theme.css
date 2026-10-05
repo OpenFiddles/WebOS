@@ -1,11 +1,14 @@
 /* ---------- GLOBAL ---------- */
 
 :root {
+    /* Refined color theory tokens to align with WebOS desktop aesthetics */
     --accent: #d40000;
     --accent-strong: #a84e00;
     --accent-wash: rgba(174, 78, 0, 0.16);
     --surface: rgba(48, 53, 22, 0.72);
     --line: rgba(255, 255, 255, 0.12);
+    --window-min-width: 260px;
+    --window-min-height: 150px;
 }
 
 * {
