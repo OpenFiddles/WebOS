@@ -127,19 +127,18 @@ function makeWindowResizable(win) {
 
 
 /* WINDOW BUTTONS */
-
 function wireWindowButtons(win) {
-    const closeBtn = win.querySelector(".Close");
-    const minimizeBtn = win.querySelector(".Minimize");
-    const maximizeBtn = win.querySelector(".Maximize");
+    // FIX: Changed selectors to lowercase (.close, .minimize, .maximize) to match your HTML template
+    const closeBtn = win.querySelector(".close");
+    const minimizeBtn = win.querySelector(".minimize");
+    const maximizeBtn = win.querySelector(".maximize");
 
     if (closeBtn) {
         closeBtn.addEventListener("pointerdown", (e) => {
-            e.stopPropagation(); // Stop the click from focusing a dying window
+            e.stopPropagation(); 
             win.remove();
             document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.remove();
             
-            // FIX: Find the next remaining window with the highest z-index layer and focus it
             const remainder = Array.from(document.querySelectorAll("[id^='Window_']"))
                 .filter(w => !w.classList.contains("is-minimized"))
                 .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
@@ -156,7 +155,6 @@ function wireWindowButtons(win) {
             win.classList.add("is-minimized");
             document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
             
-            // FIX: Drop focus down to the next visible window when minimizing
             const remainder = Array.from(document.querySelectorAll("[id^='Window_']"))
                 .filter(w => w !== win && !w.classList.contains("is-minimized"))
                 .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
@@ -579,52 +577,60 @@ const launcherSearch = document.getElementById("launcher-search");
 function openBrowser(initialUrl) {
     closeLauncher();
 
-    // 1. IMPROVED HTML: Added layout support for Back, Forward, and Reload controls
-    const htmlTemplate = `
-        <div class="AppPanel BrowserApp" style="display: flex; flex-direction: column; width: 100%; height: 100%; font-family: sans-serif;">
-            <form class="BrowserBar" style="display: flex; gap: 6px; padding: 6px; background: #222; align-items: center;">
-                <div class="BrowserNavigationControls" style="display: flex; gap: 4px;">
-                    <button type="button" class="BrowserBack" title="Back" style="background: #444; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">◀</button>
-                    <button type="button" class="BrowserForward" title="Forward" style="background: #444; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">▶</button>
-                    <button type="button" class="BrowserReload" title="Reload" style="background: #444; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">🔄</button>
-                </div>
-                <input type="url" id="browser-address" placeholder="Enter URL (https://...)" required style="flex-grow: 1; padding: 6px; border: none; border-radius: 4px; background: #333; color: #fff;">
-                <button type="button" class="BrowserOpenExternal" title="Open in new browser tab" style="background: #444; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">🌐</button>
-            </form>
-            <div class="BrowserContainer" style="position: relative; width: 100%; flex-grow: 1; background: #fff;">
-                <iframe class="BrowserFrame" style="width: 100%; height: 100%; border: none;"></iframe>
-                <div class="BrowserHint" style="display: none; position: absolute; top: 0; left: 0; right: 0; background: #ffcccc; color: #330000; padding: 8px; text-align: center; font-size: 14px; z-index: 10;">
-                    The proxy server is taking too long to load this website.
-                </div>
-            </div>
-        </div>
-    `;
-
-    // 2. Initialize the window canvas framework
+    // 1. Initialize the window container layout
     const win = createWindow("Browser", htmlTemplate);
-
-    // Responsive window metrics mapping
-    win.style.width = Math.min(window.innerWidth - 40, 900) + "px";
-    win.style.height = Math.min(window.innerHeight - 110, 620) + "px";
+    win.style.width = Math.min(window.innerWidth - 40, 1000) + "px";
+    win.style.height = Math.min(window.innerHeight - 110, 700) + "px";
     win.style.top = "68px";
 
-    // 3. Cache DOM Elements
+    // 2. Cache Core DOM Handles scoped specifically to this window
+    const tabContainer = win.querySelector(".TabContainer");
+    const newTabBtn = win.querySelector(".NewTabBtn");
     const addressBar = win.querySelector("#browser-address");
-    const frame = win.querySelector(".BrowserFrame");
+    const framesContainer = win.querySelector(".BrowserFramesContainer");
     const hint = win.querySelector(".BrowserHint");
-    const externalButton = win.querySelector(".BrowserOpenExternal");
     const searchForm = win.querySelector(".BrowserBar");
     
-    // Cache new navigation control tags
     const backButton = win.querySelector(".BrowserBack");
     const forwardButton = win.querySelector(".BrowserForward");
     const reloadButton = win.querySelector(".BrowserReload");
+    const externalButton = win.querySelector(".BrowserOpenExternal");
 
-    // 4. State Management (History Buffers)
-    let historyStack = [];
-    let historyPointer = -1;
-    let isNavigatingFromHistory = false;
-    let frameTimer = null;
+    // 3. Tab Engine State Management Properties
+    let tabs = [];
+    let activeTabId = null;
+    let tabIdCounter = 0;
+
+    // 1. IMPROVED HTML: Added layout support for Back, Forward, and Reload controls
+    const htmlTemplate = `
+    <div class="AppPanel BrowserApp" style="display: flex; flex-direction: column; width: 100%; height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1e1e1e; color: #fff; user-select: none;">
+        
+        <!-- 🌐 CHROME-STYLE TAB ROW CONTAINER -->
+        <div class="BrowserTabBar" style="display: flex; background: #141414; padding: 6px 6px 0 6px; gap: 4px; align-items: flex-end; overflow-x: auto; border-bottom: 1px solid #2d2d2d;">
+            <div class="TabContainer" style="display: flex; gap: 4px; align-items: flex-end;"></div>
+            <button type="button" class="NewTabBtn" title="New Tab" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-bottom: 4px; font-size: 14px; display: flex; align-items: center; justify-content: center; height: 28px; width: 28px; transition: background 0.2s;">+</button>
+        </div>
+
+        <!-- 🛠️ INTERACTION CONTROLS BAR -->
+        <form class="BrowserBar" action="javascript:void(0);" style="display: flex; gap: 6px; padding: 8px; background: #1e1e1e; align-items: center;">
+            <div class="BrowserNavigationControls" style="display: flex; gap: 4px;">
+                <button type="button" class="BrowserBack" title="Back" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">◀</button>
+                <button type="button" class="BrowserForward" title="Forward" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">▶</button>
+                <button type="button" class="BrowserReload" title="Reload" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">🔄</button>
+            </div>
+            <input type="text" name="url" class="BrowserAddressInput" id="browser-address" placeholder="Search Google or enter web address..." required style="flex-grow: 1; padding: 7px 14px; border: 1px solid #3a3a3a; border-radius: 6px; background: #2a2a2a; color: #fff; outline: none; font-size: 13px; transition: border-color 0.2s;">
+            <button type="button" class="BrowserOpenExternal" title="Open in physical browser tab" style="background: #2d2d2d; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">🌐</button>
+        </form>
+
+        <!-- 🖼️ IFRAME WORKSPACE ZONE -->
+        <div class="BrowserFramesContainer" style="position: relative; width: 100%; flex-grow: 1; background: #fff;">
+            <div class="BrowserHint" style="display: none; position: absolute; top: 0; left: 0; right: 0; background: #cf3c3c; color: #fff; padding: 10px; text-align: center; font-size: 13px; z-index: 100; font-weight: 500; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                The proxy server is taking too long to load this website or connection was refused.
+            </div>
+        </div>
+    </div>
+    `;
+
 
     // 5. Navigation Controller
     const navigate = (url, trackingEnabled = true) => {
@@ -722,10 +728,18 @@ function openBrowser(initialUrl) {
         }
     });
 
+    newTabBtn.addEventListener("click", () => createNewTab("https://example.com"));
+
     searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        navigate(addressBar.value);
+        event.stopPropagation();
+        const activeTab = tabs.find(t => t.id === activeTabId);
+        if (activeTab) {
+            navigate(activeTab, addressBar.value);
+        }
     });
+
+    setupStaticControls(backButton, forwardButton, reloadButton, externalButton, () => tabs.find(t => t.id === activeTabId));
 
     // Run core initialization sequence
     navigate(initialUrl || "https://example.com");
