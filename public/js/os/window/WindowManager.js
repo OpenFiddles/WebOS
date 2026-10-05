@@ -66,9 +66,14 @@ function createWindow(title, content) {
 /* DRAGGING */
 
 function makeWindowDraggable(win) {
-    const titleBar = win.querySelector(".WindowTitleBar");
+    // FIX: Changed selector from .WindowTitleBar to .window-titlebar to match your HTML
+    const titleBar = win.querySelector(".window-titlebar");
+    if (!titleBar) return; // Fail-safe to prevent crashes if template structure alters
+
     titleBar.addEventListener("pointerdown", (event) => {
-        if (event.target.closest(".WindowButtons") || win.classList.contains("is-maximized")) return;
+        // FIX: Changed selector from .WindowButtons to .window-controls to match your HTML
+        if (event.target.closest(".window-controls") || win.classList.contains("is-maximized")) return;
+        
         const offsetX = event.clientX - win.offsetLeft;
         const offsetY = event.clientY - win.offsetTop;
         
@@ -82,7 +87,6 @@ function makeWindowDraggable(win) {
         const up = () => {
             titleBar.removeEventListener("pointermove", move);
             titleBar.removeEventListener("pointerup", up);
-            // FIX: Explicitly release the pointer so the browser knows dragging is completely over
             titleBar.releasePointerCapture(event.pointerId); 
         };
         
