@@ -576,32 +576,6 @@ const launcherSearch = document.getElementById("launcher-search");
 
 function openBrowser(initialUrl) {
     closeLauncher();
-
-    // 1. Initialize the window container layout
-    const win = createWindow("Browser", htmlTemplate);
-    win.style.width = Math.min(window.innerWidth - 40, 1000) + "px";
-    win.style.height = Math.min(window.innerHeight - 110, 700) + "px";
-    win.style.top = "68px";
-
-    // 2. Cache Core DOM Handles scoped specifically to this window
-    const tabContainer = win.querySelector(".TabContainer");
-    const newTabBtn = win.querySelector(".NewTabBtn");
-    const addressBar = win.querySelector("#browser-address");
-    const framesContainer = win.querySelector(".BrowserFramesContainer");
-    const hint = win.querySelector(".BrowserHint");
-    const searchForm = win.querySelector(".BrowserBar");
-    
-    const backButton = win.querySelector(".BrowserBack");
-    const forwardButton = win.querySelector(".BrowserForward");
-    const reloadButton = win.querySelector(".BrowserReload");
-    const externalButton = win.querySelector(".BrowserOpenExternal");
-
-    // 3. Tab Engine State Management Properties
-    let tabs = [];
-    let activeTabId = null;
-    let tabIdCounter = 0;
-
-    // 1. IMPROVED HTML: Added layout support for Back, Forward, and Reload controls
     const htmlTemplate = `
     <div class="AppPanel BrowserApp" style="display: flex; flex-direction: column; width: 100%; height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1e1e1e; color: #fff; user-select: none;">
         
@@ -630,6 +604,32 @@ function openBrowser(initialUrl) {
         </div>
     </div>
     `;
+    // 1. Initialize the window container layout
+    const win = createWindow("Browser", htmlTemplate);
+    win.style.width = Math.min(window.innerWidth - 40, 1000) + "px";
+    win.style.height = Math.min(window.innerHeight - 110, 700) + "px";
+    win.style.top = "68px";
+
+    // 2. Cache Core DOM Handles scoped specifically to this window
+    const tabContainer = win.querySelector(".TabContainer");
+    const newTabBtn = win.querySelector(".NewTabBtn");
+    const addressBar = win.querySelector("#browser-address");
+    const framesContainer = win.querySelector(".BrowserFramesContainer");
+    const hint = win.querySelector(".BrowserHint");
+    const searchForm = win.querySelector(".BrowserBar");
+    
+    const backButton = win.querySelector(".BrowserBack");
+    const forwardButton = win.querySelector(".BrowserForward");
+    const reloadButton = win.querySelector(".BrowserReload");
+    const externalButton = win.querySelector(".BrowserOpenExternal");
+
+    // 3. Tab Engine State Management Properties
+    let tabs = [];
+    let activeTabId = null;
+    let tabIdCounter = 0;
+
+    // 1. IMPROVED HTML: Added layout support for Back, Forward, and Reload controls
+    
 
 
     // 5. Navigation Controller
