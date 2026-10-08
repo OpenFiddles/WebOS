@@ -3,6 +3,39 @@
  * Core Application Registry and Execution Lifecycle for WebOS.
  */
 (() => {
+    // =======================================================================
+    // EMBEDDED WEBOS APP CLIENT PROXY
+    // Resolves Uncaught ReferenceErrors and bridges app contexts to the FS
+    // =======================================================================
+    if (typeof window.WebOSAppClient === "undefined") {
+        class WebOSAppClient {
+            constructor(appId) {
+                this.appId = appId;
+            }
+
+            // Bridge to allow apps to natively read files safely via parent/local scope
+            async read(path) {
+                const fs = window.WebOSFileSystem || (window.parent && window.parent.WebOSFileSystem);
+                if (fs && typeof fs.read === "function") {
+                    return await fs.read(path);
+                }
+                throw new Error(`[WebOS App Client] Read failed: FileSystem layer is missing for app ${this.appId}`);
+            }
+
+            // Bridge to allow apps to natively write files safely via parent/local scope
+            async putText(path, content) {
+                const fs = window.WebOSFileSystem || (window.parent && window.parent.WebOSFileSystem);
+                if (fs && typeof fs.putText === "function") {
+                    return await fs.putText(path, content);
+                }
+                throw new Error(`[WebOS App Client] Write failed: FileSystem layer is missing for app ${this.appId}`);
+            }
+        }
+        
+        // Expose it globally to the active frame engine environment
+        window.WebOSAppClient = WebOSAppClient;
+    }
+
     const definitions = new Map();
 
     function register(definition) {
@@ -37,7 +70,7 @@
         // Dynamically instantiate a custom sandboxed API context client 
         // using the app's unique registry id token metadata boundary.
         // ================================================================
-        const appAPIInstance = new WebOSAppClient(definition.id);
+        const appAPIInstance = new window.WebOSAppClient(definition.id);
         
         // Execute app logic: Passes the API proxy first, then any custom initial arguments
         return handler(appAPIInstance, argument);
