@@ -308,4 +308,17 @@ async function move(sourcePath, destinationPath) {
         tx.onerror = () => reject(tx.error);
     });
 }
+
+window.WebOSFileSystem = Object.freeze({
+    openDatabase,
+    normalize,
+    ensureSeeded,
+    list,
+    read,
+    putText,
+    remove,
+    exists,
+    copy,
+    move
+});
 })

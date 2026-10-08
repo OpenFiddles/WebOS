@@ -917,8 +917,6 @@ function openWasmLab() {
 
 
 
-const launcherSearch = document.getElementById("launcher-search");
-
 function openBrowser(initialUrl) {
     closeLauncher();
     const htmlTemplate = `
