@@ -77,7 +77,8 @@
     }
 
     function render() {
-        const grid = document.querySelector(".LauncherGrid");
+        // FIX: Match the exact uppercase class name from your index.html layout template
+        const grid = document.querySelector(".LauncherGrid"); 
         const dock = document.getElementById("dock");
         if (!grid || !dock) return;
         
@@ -115,6 +116,7 @@
             }
         });
     }
+
 
     window.WebOSAppRegistry = Object.freeze({ register, all, launch, render });
 })();
