@@ -1,0 +1,359 @@
+/* ---------- WINDOWS (LIQUID GLASS) ---------- */
+
+/* Base Window Wrapper Layout */
+.window-shell {
+    width: 360px;
+    height: 230px;
+    min-width: 260px;
+    min-height: 150px;
+    position: absolute;
+    top: 70px;
+    left: 40px;
+    z-index: 10;
+    
+    /* Layout Container Mechanics */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    
+    /* Fluid Hardware-Accelerated Animations */
+    will-change: transform, opacity;
+    animation: window-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Glassmorphic Shell Aesthetic Engine */
+.window-shell.glass {
+    border-radius: 14px;
+    background: rgba(20, 20, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Window Drag Titlebar Layout */
+.window-titlebar {
+    height: 38px;
+    padding: 0 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    cursor: move;
+    touch-action: none;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+/* App Identity Context (Icon + Text Alignment) */
+.window-title-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.window-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+/* Window Command Buttons Container */
+.window-controls {
+    display: flex;
+    gap: 8px;
+}
+
+/* Modern Button Base Engine */
+.win-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.win-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.win-btn:active {
+    transform: scale(0.92);
+}
+
+/* Specific Contextual Button Accents */
+.win-btn.close:hover {
+    background: #e81123 !important;
+    color: #ffffff !important;
+}
+
+/* Isolated Scroll Window Body Content Frame */
+.window-body {
+    flex-grow: 1;
+    overflow: auto;
+    position: relative;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.window-content-fallback {
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* --- Omnidirectional Resize Handle Overlay Matrix --- */
+.resize-handle {
+    position: absolute;
+    z-index: 100;
+}
+.resize-handle.top    { top: -3px; left: 4px; right: 4px; height: 6px; cursor: n-resize; }
+.resize-handle.bottom { bottom: -3px; left: 4px; right: 4px; height: 6px; cursor: s-resize; }
+.resize-handle.left   { left: -3px; top: 4px; bottom: 4px; width: 6px; cursor: w-resize; }
+.resize-handle.right  { right: -3px; top: 4px; bottom: 4px; width: 6px; cursor: e-resize; }
+.resize-handle.corner-se { bottom: 0; right: 0; width: 12px; height: 12px; cursor: se-resize; z-index: 101; }
+
+/* --- Window State Modifiers Engine --- */
+.window-shell.hidden {
+    display: none !important;
+}
+
+.window-shell.is-minimized {
+    transform: scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.window-shell.is-closing {
+    animation: window-out 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+}
+
+/* Maximized Window Execution Parameters */
+.window-shell.is-maximized {
+    top: 54px !important;
+    left: 12px !important;
+    width: calc(100vw - 24px) !important;
+    height: calc(100vh - 116px) !important;
+    border-radius: 8px !important; /* Slightly rounded corners look better when maximized */
+    box-shadow: none !important;
+}
+
+.window-shell.is-maximized .resize-handle {
+    display: none !important; /* Disable resizing boundaries when maximized */
+}
+
+/* --- System Animation Core Keyframes --- */
+@keyframes window-in {
+    0% { transform: scale(0.92) translateY(10px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes window-out {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.94); opacity: 0; }
+}
+
+.AppPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.AppPanel h2,
+.AppPanel p {
+    margin: 0;
+}
+
+.AppPanel input,
+.AppPanel textarea,
+.AppPanel button,
+.AppPanel select,
+.LauncherSearch {
+    box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.28);
+    color: inherit;
+    font: inherit;
+}
+
+.AppPanel input,
+.AppPanel textarea,
+.LauncherSearch {
+    user-select: text;
+}
+
+.AppPanel select {
+    color-scheme: dark;
+}
+
+.AppPanel textarea {
+    flex: 1;
+    min-height: 120px;
+    resize: none;
+}
+
+.AppPanel button {
+    align-self: flex-start;
+    background: var(--accent-strong);
+    border: 0;
+    cursor: pointer;
+}
+
+.AppList {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.AppList li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+}
+
+.FileToolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.AppOutput {
+    min-height: 90px;
+    margin: 0;
+    padding: 10px;
+    overflow: auto;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.28);
+    color: #b9ffe8;
+    white-space: pre-wrap;
+}
+
+.EmulatorWindow .WindowBody {
+    display: flex;
+    padding: 0;
+    overflow: hidden;
+    background: #0d0d0d;
+}
+
+.EmulatorFrame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    border: 0;
+    background: #0d0d0d;
+}
+
+.BrowserShell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    min-height: 0;
+}
+
+.BrowserBar {
+    display: flex;
+    gap: 6px;
+    padding: 2px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 9px;
+}
+
+.BrowserAddress {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.35);
+    color: white;
+    user-select: text;
+}
+
+.BrowserBar button {
+    padding: 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--accent-strong);
+    color: white;
+    cursor: pointer;
+}
+
+.BrowserFrame {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    border: 0;
+    background: white;
+    border-radius: 8px;
+}
+
+.BrowserHint {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 180, 110, 0.3);
+    border-radius: 8px;
+    background: rgba(115, 62, 28, 0.25);
+    color: #ffd7ae;
+    font-size: 12px;
+}
+
+.BrowserHint.visible {
+    display: flex;
+}
+
+.BrowserHint button {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: #ffb36b;
+    color: #24150c;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+}
+
+/* resize handle */
+
+.ResizeHandle {
+    width: 12px;
+    height: 12px;
+    background: rgba(255,255,255,0.25);
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    border-radius: 4px;
+    cursor: se-resize;
+}
+
+

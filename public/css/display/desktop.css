@@ -1,0 +1,46 @@
+
+/* ---------- DESKTOP ---------- */
+
+#Desktop {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    padding-top: 42px;
+}
+
+@media (max-width: 680px) {
+    #taskbar {
+        padding: 0 8px;
+    }
+
+    #taskbar-left span,
+    #network-status {
+        display: none;
+    }
+
+    #taskbar-apps {
+        margin: 0 6px;
+    }
+
+    .LauncherInner {
+        margin: 54px 12px 0;
+        padding: 18px;
+    }
+
+    .LauncherGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .AppIcon {
+        padding: 15px 8px;
+        font-size: 14px;
+    }
+
+    .WindowDesign {
+        left: 10px !important;
+        top: 54px !important;
+        width: calc(100vw - 20px) !important;
+        height: calc(100vh - 116px) !important;
+    }
+}

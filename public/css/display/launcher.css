@@ -1,0 +1,108 @@
+
+/* ---------- LAUNCHER (FULLSCREEN, LIQUID GLASS) ---------- */
+
+.LauncherFS {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top, rgba(0,0,0,0.75), rgba(0,0,0,0.95));
+    backdrop-filter: blur(26px) saturate(160%);
+    z-index: 9500;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px) scale(0.98);
+    transition:
+        opacity 0.28s ease-out,
+        transform 0.32s cubic-bezier(0.23, 0.9, 0.35, 1.2);
+}
+
+.LauncherFS.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+/* launcher content */
+
+.LauncherInner {
+    max-width: 720px;
+    margin: 80px auto 0 auto;
+    padding: 24px 26px 30px 26px;
+    animation: launcher-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.LauncherSearch {
+    width: 100%;
+    margin-bottom: 18px;
+    background: rgba(0,0,0,0.32);
+}
+
+.LauncherHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+.LauncherGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+}
+
+.AppIcon[hidden] {
+    display: none;
+}
+
+/* app icons */
+
+.AppIcon {
+    border: 0;
+    background: linear-gradient(135deg, rgba(25, 234, 208, 0.92), rgba(0, 124, 157, 0.92));
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.6);
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+    animation: icon-in 0.35s ease both;
+    font: inherit;
+}
+
+.AppIcon strong,
+.AppIcon span,
+.AppIcon small {
+    display: block;
+}
+
+.AppIcon strong {
+    margin-bottom: 6px;
+    font-size: 24px;
+}
+
+.AppIcon small {
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.72;
+}
+
+.AppIcon:nth-child(2) { animation-delay: 0.04s; }
+.AppIcon:nth-child(3) { animation-delay: 0.08s; }
+.AppIcon:nth-child(4) { animation-delay: 0.12s; }
+.AppIcon:nth-child(5) { animation-delay: 0.16s; }
+.AppIcon:nth-child(6) { animation-delay: 0.20s; }
+.AppIcon:nth-child(7) { animation-delay: 0.24s; }
+.AppIcon:nth-child(8) { animation-delay: 0.28s; }
+
+.AppIcon:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 18px 36px rgba(0,0,0,0.75);
+}
