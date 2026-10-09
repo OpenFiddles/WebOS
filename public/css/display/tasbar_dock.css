@@ -1,6 +1,4 @@
-
-
-/* ---------- TASKBAR + DOCK ---------- */
+/* ---------- TASKBAR + DOCK (FIRYFIRST SYSTEM LAYER) ---------- */
 
 #taskbar {
     position: fixed;
@@ -13,9 +11,10 @@
     justify-content: space-between;
     padding: 0 12px;
     z-index: 9000;
-    background: linear-gradient(180deg, rgba(10,10,20,0.85), rgba(5,5,10,0.9));
+    background: var(--surface);
     backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--line);
+    will-change: transform, opacity;
     animation: slide-down 0.45s ease both;
 }
 
@@ -41,6 +40,11 @@
     overflow: auto;
 }
 
+/* Hide taskbar scrollbars for a cleaner navigation tray layout */
+#taskbar-apps::-webkit-scrollbar {
+    display: none;
+}
+
 .TaskButton,
 .StatusButton {
     border: 1px solid transparent;
@@ -62,7 +66,7 @@
 .TaskButton:hover,
 .TaskButton.active {
     background: var(--accent-wash);
-    border-color: rgba(255,255,255,0.12);
+    border-color: var(--line);
 }
 
 .StatusButton {
@@ -70,7 +74,7 @@
 }
 
 .StatusButton:hover {
-    color: #7ee8dc;
+    color: var(--accent);
 }
 
 #open-launcher {
@@ -78,7 +82,7 @@
     padding: 4px 10px;
     border: none;
     border-radius: 999px;
-    background: linear-gradient(135deg, #19ead0, #0088a8);
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
     color: white;
     cursor: pointer;
     box-shadow: 0 8px 18px rgba(0,0,0,0.4);
@@ -87,10 +91,10 @@
 
 #open-launcher:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.5), 0 0 12px var(--accent-wash);
 }
 
-/* iOS-style dock */
+/* iOS-style Dock Matrix */
 
 #dock {
     position: fixed;
@@ -102,21 +106,23 @@
     gap: 14px;
     align-items: center;
     max-width: 420px;
+    z-index: 9000;
 }
 
 .dock-glass {
-    background: rgba(20, 20, 30, 0.55);
+    background: var(--surface);
     border-radius: 22px;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 18px 40px rgba(0,0,0,0.6);
-    backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.6), inset 0 1px 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
 }
 
 .DockIcon {
     width: 46px;
     height: 46px;
     border-radius: 14px;
-    background: linear-gradient(135deg, #19ead0, #0088a8);
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -125,6 +131,7 @@
     cursor: pointer;
     box-shadow: 0 10px 22px rgba(0,0,0,0.5);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    will-change: transform, opacity;
     animation: dock-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -134,5 +141,5 @@
 
 .DockIcon:hover {
     transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 16px 30px rgba(0,0,0,0.7);
+    box-shadow: 0 16px 30px rgba(0,0,0,0.7), 0 0 14px var(--accent-wash);
 }

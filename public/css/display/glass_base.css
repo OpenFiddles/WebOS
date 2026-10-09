@@ -1,7 +1,17 @@
+/* ---------- REFINED STANDALONE LIQUID GLASS UTILITY ---------- */
 .glass {
     background: var(--surface);
     border-radius: 14px;
     border: 1px solid var(--line);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    
+    /* Smooth, deep composite shadow engine for realistic desktop element layering */
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55),
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+                
+    /* Hardware accelerated frost mechanics with fallback saturation scaling */
     backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    
+    /* Isolation layers to keep blurred content safely clipped within borders */
+    overflow: hidden; 
 }

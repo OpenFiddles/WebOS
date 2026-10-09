@@ -1,4 +1,3 @@
-
 /* ---------- DESKTOP ---------- */
 
 #Desktop {
@@ -6,6 +5,9 @@
     height: 100vh;
     position: relative;
     padding-top: 42px;
+    box-sizing: border-box;
+    /* Enforces that user elements cannot be dragged out of the active window frame */
+    overflow: hidden; 
 }
 
 @media (max-width: 680px) {
@@ -22,6 +24,7 @@
         margin: 0 6px;
     }
 
+    /* Launcher Responsive Architecture overrides */
     .LauncherInner {
         margin: 54px 12px 0;
         padding: 18px;
@@ -35,12 +38,22 @@
     .AppIcon {
         padding: 15px 8px;
         font-size: 14px;
+        border-radius: 14px; /* Slightly tighter corner-radius on compact displays */
     }
 
-    .WindowDesign {
+    /* Responsive Mobile Sandbox Window Constraints */
+    .WindowDesign,
+    .window-shell {
         left: 10px !important;
         top: 54px !important;
         width: calc(100vw - 20px) !important;
         height: calc(100vh - 116px) !important;
+        border-radius: 12px !important; /* Matches maximized style constraints */
+    }
+    
+    /* Disable drag-indicators and edge resizing blocks on smaller mobile bounds */
+    .resize-handle,
+    .ResizeHandle {
+        display: none !important;
     }
 }
