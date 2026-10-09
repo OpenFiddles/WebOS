@@ -1,4 +1,4 @@
-import { closeLauncher } from "./Launcher"
+import { closeLauncher } from "./Launcher.js"
 function openNotes() {
     // Fail-safe launcher check
     if (typeof closeLauncher === "function") closeLauncher();
