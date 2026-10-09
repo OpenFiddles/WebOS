@@ -69,7 +69,7 @@ app.get('/api/browser-proxy', async (req, res) => {
     } catch (error) {
         res.status(500).send(`
             <div style="background:#1e1e1e; color:#ff6b6b; font-family:sans-serif; padding:20px; border:2px solid #ff3333; border-radius:5px; margin:20px;">
-                <h3>🌐 Browser Proxy Navigation Failure</h3>
+                <h3>Unable to connect... Sorry :[</h3>
                 <p>WebOS couldn't connect to: <strong>${targetUrl}</strong></p>
                 <p><small>Reason: ${error.message}</small></p>
             </div>
