@@ -22,17 +22,7 @@
 </head>
 <body>
     <div id="terminal-wrapper">
-        <div id="mode-toolbar">
-            <span>ALPINE / CHEERPX</span>
-            <button id="restart-guest" type="button">Restart</button>
-            <progress id="boot-progress" max="100" value="0" aria-label="Alpine boot progress"></progress>
-            <span id="mode-status" aria-live="polite">Preparing Alpine userspace...</span>
-        </div>
-        <div id="output-display"><span class="system">WebOS Terminal | Alpine Linux userspace via CheerpX\n</span></div>
-        <div id="input-container">
-            <span id="prompt-label">webos:~$</span>
-            <input type="text" id="user-input" autocomplete="off" placeholder="Type webos or an Alpine command..." />
-        </div>
+        <iframe src="https://openfiddles.github.io/FlairOS"></iframe>
     </div>
 
     <script type="module">
