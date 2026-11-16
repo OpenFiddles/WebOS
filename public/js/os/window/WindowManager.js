@@ -1,5 +1,4 @@
 
-
 let windowCount = 0;
 const BASE_WINDOW_LAYER = 20;
 
@@ -306,3 +305,10 @@ function updateClock() {
 document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
 updateClock();
 setInterval(updateClock, 30000);
+
+// Expose globally for non-imported module scripts and inline handlers
+window.createWindow = createWindow;
+window.focusWindow = focusWindow;
+
+// Also export for ES module imports
+export { createWindow, focusWindow };
