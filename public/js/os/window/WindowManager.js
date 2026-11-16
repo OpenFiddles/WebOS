@@ -25,39 +25,53 @@ function focusWindow(win) {
 
 function createWindow(title, content) {
     const template = document.getElementById("WindowTemplate");
-    if (!template) return console.error("System Error: WindowTemplate missing from DOM.");
-    
-    // CRITICAL FIX: Clone from template.content to extract the inner elements cleanly
+    if (!template) {
+        console.error("System Error: WindowTemplate missing from DOM.");
+        return null;
+    }
+
+    // Clone from template.content to extract the inner elements cleanly
     const winClone = template.content.cloneNode(true);
     const win = winClone.querySelector(".window-shell");
+    if (!win) {
+        console.error("System Error: .window-shell missing inside WindowTemplate.");
+        return null;
+    }
 
-    // Assign a unique runtime system tracking tracker ID
-    win.id = "Window_" + Date.now() + "_" + (typeof windowCount !== 'undefined' ? windowCount++ : 0);
+    // Assign a unique runtime system tracking ID
+    win.id = "Window_" + Date.now() + "_" + (typeof windowCount !== "undefined" ? windowCount++ : 0);
 
     // Populate metadata utilizing your exact lowercase template classes
-    win.querySelector(".window-title-text").textContent = title;
-    
-    // Check if content looks like a URL string, if so render isolated application iframe
+    const titleText = win.querySelector(".window-title-text");
+    if (titleText) titleText.textContent = title;
+
+    // Check if content looks like a URL or relative HTML path, if so render isolated application iframe
     const bodyContainer = win.querySelector(".window-body");
-    if (typeof content === "string" && (content.startsWith("http") || content.startsWith("/") || content.endsWith(".html"))) {
-        const iframe = document.createElement("iframe");
-        iframe.src = content;
-        iframe.loading = "lazy";
-        bodyContainer.appendChild(iframe);
-    } else {
-        bodyContainer.innerHTML = content;
+    const isUrl = typeof content === "string" && /^(https?:\/\/|\.{0,2}\/|.*\.html(\?.*)?$)/i.test(content.trim());
+
+    if (bodyContainer) {
+        if (isUrl) {
+            const iframe = document.createElement("iframe");
+            iframe.src = content.trim();
+            iframe.loading = "lazy";
+            bodyContainer.appendChild(iframe);
+        } else if (content instanceof HTMLElement) {
+            bodyContainer.appendChild(content);
+        } else {
+            bodyContainer.innerHTML = content ?? "";
+        }
     }
 
     // Dynamic cascade window positioning offsets
     win.style.left = (40 + Math.random() * 80) + "px";
     win.style.top = (80 + Math.random() * 80) + "px";
 
-    // Bind operational controllers
-    makeWindowDraggable(win);
-    makeWindowResizable(win);
-    wireWindowButtons(win);
+    // Bind operational controllers safely
+    if (typeof makeWindowDraggable === "function") makeWindowDraggable(win);
+    if (typeof makeWindowResizable === "function") makeWindowResizable(win);
+    if (typeof wireWindowButtons === "function") wireWindowButtons(win);
 
-    // CRITICAL FIX: Mount inside workspace layer instead of the unconstrained body root
+    // Mount inside workspace layer instead of the unconstrained body root
     const workspace = document.getElementById("window-workspace") || document.body;
     workspace.appendChild(win);
 
@@ -74,17 +88,17 @@ function createWindow(title, content) {
         }
         focusWindow(win);
     });
-    
+
     const taskbarApps = document.getElementById("taskbar-apps");
     if (taskbarApps) taskbarApps.appendChild(taskButton);
-    
+
     // Focus tracking mechanics execution hooks
     const titleBar = win.querySelector(".window-titlebar");
     if (titleBar) {
         titleBar.addEventListener("pointerdown", () => focusWindow(win));
     }
     win.addEventListener("pointerdown", () => focusWindow(win));
-    
+
     focusWindow(win);
     return win;
 }
@@ -306,9 +320,4 @@ document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
 updateClock();
 setInterval(updateClock, 30000);
 
-// Expose globally for non-imported module scripts and inline handlers
-window.createWindow = createWindow;
-window.focusWindow = focusWindow;
 
-// Also export for ES module imports
-export { createWindow, focusWindow };
