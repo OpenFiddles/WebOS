@@ -373,6 +373,18 @@ function updateClock() {
 }
 
 document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
+document.body.dataset.motion = localStorage.getItem("webos-motion-style") || "smooth";
+document.body.dataset.reducedMotion = localStorage.getItem("webos-reduced-motion") === "true" ? "true" : "false";
+const savedAccent = localStorage.getItem("webos-accent");
+if (savedAccent) document.body.style.setProperty("--accent", savedAccent);
+const savedWallpaper = localStorage.getItem("webos-wallpaper") || "aurora";
+const savedCustomWallpaper = localStorage.getItem("webos-custom-wallpaper");
+document.body.dataset.wallpaper = savedCustomWallpaper ? "custom" : savedWallpaper;
+if (savedCustomWallpaper) {
+    document.body.style.backgroundImage = `linear-gradient(135deg, rgba(4, 10, 20, .30), rgba(4, 10, 20, .55)), url("${savedCustomWallpaper}")`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+}
 updateClock();
 setInterval(updateClock, 30000);
 

@@ -322,6 +322,8 @@ function openSettings() {
                         <option value="ocean">Ocean</option>
                         <option value="mint">Mint</option>
                         <option value="sunset">Sunset</option>
+                        <option value="midnight">Midnight</option>
+                        <option value="lavender">Lavender</option>
                     </select>
                 </div>
                 
@@ -456,7 +458,7 @@ function openSettings() {
     wallpaperChoice.value = savedCustomWallpaper ? "custom" : savedWallpaper;
     document.body.dataset.reducedMotion = String(motion.checked);
     document.body.dataset.motion = animationChoice.value;
-    document.documentElement.style.setProperty("--accent", accentChoice.value);
+    document.body.style.setProperty("--accent", accentChoice.value);
 
     if (savedCustomWallpaper) {
         document.body.dataset.wallpaper = "custom";
@@ -510,8 +512,8 @@ function openSettings() {
     wallpaperFile.addEventListener("change", () => {
         const file = wallpaperFile.files && wallpaperFile.files[0];
         if (!file) return;
-        if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
-            status.textContent = "Choose an image under 5 MB.";
+        if (!file.type.startsWith("image/") || file.size > 2500000) {
+            status.textContent = "Choose an image under 2.5 MB.";
             wallpaperFile.value = "";
             return;
         }
@@ -560,7 +562,7 @@ function openSettings() {
         document.body.dataset.wallpaper = "aurora";
         document.body.dataset.motion = "smooth";
         document.body.dataset.reducedMotion = "false";
-        document.documentElement.style.setProperty("--accent", "#53b5ff");
+        document.body.style.removeProperty("--accent");
         document.body.style.removeProperty("background-image");
         document.body.style.removeProperty("background-size");
         document.body.style.removeProperty("background-position");
