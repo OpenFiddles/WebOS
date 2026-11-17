@@ -471,9 +471,9 @@ function openSettings() {
 
     // 2. Initialize application UI layout window context
     const win = createWindow("Better Settings", htmlTemplate);
-    
+    if (!win) return null;
     const fullCssEditor = win.querySelector("#css-full-editor");
-    if (!win || !fullCssEditor) return win;
+    if (!fullCssEditor) { console.error("Settings UI is missing #css-full-editor."); return win; }
 
     // Ensure our global injection style element target path exists
     let styleElement = document.getElementById("custom-user-styles");
