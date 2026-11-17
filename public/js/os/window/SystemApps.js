@@ -660,7 +660,7 @@ function openSettings() {
             let selector = el.nodeName.toLowerCase();
             if (el.className && typeof el.className === "string") {
                 const classes = el.className.trim().split(/\s+/).filter(c => c && !c.includes("inspect"));
-                if (classes.length) selector += `.${classes.join(".")}`;
+                if (classes.length) selector += "." + classes.map(c => CSS.escape(c)).join(".");
             }
             if (el.id) {
                 selector = `#${el.id}`;
@@ -673,33 +673,44 @@ function openSettings() {
         return path.join(" > ");
     }
 
+    const inspectorOriginalOutlines = new WeakMap();
+    function isInspectableTarget(target) {
+        return target instanceof Element && !win.contains(target) &&
+            !target.closest("#Launcher, .WebOSContextMenu") &&
+            !["HTML", "BODY", "SCRIPT", "STYLE"].includes(target.tagName);
+    }
+
     function onWorkspaceMouseOver(e) {
-        if (win.contains(e.target)) return;
-        e.target.style.outline = "2px dashed #007acc";
+        if (!isInspectableTarget(e.target)) return;
+        if (!inspectorOriginalOutlines.has(e.target)) inspectorOriginalOutlines.set(e.target, e.target.style.outline);
+        e.target.style.outline = "2px dashed #48c8ff";
     }
 
     function onWorkspaceMouseOut(e) {
-        if (win.contains(e.target)) return;
-        e.target.style.outline = "";
+        if (!(e.target instanceof Element) || !inspectorOriginalOutlines.has(e.target)) return;
+        e.target.style.outline = inspectorOriginalOutlines.get(e.target) || "";
+        inspectorOriginalOutlines.delete(e.target);
     }
 
     function onWorkspaceClick(e) {
-        if (win.contains(e.target)) return;
+        if (!isInspectableTarget(e.target)) return;
         e.preventDefault();
         e.stopPropagation();
-
-        selectedDomSelector = generateUniqueSelector(e.target);
+        const picked = e.target; // Inspect iframe elements without crossing their document boundary.
+        selectedDomSelector = generateUniqueSelector(picked);
         insSelectorInput.value = selectedDomSelector;
-        e.target.style.outline = "";
+        if (inspectorOriginalOutlines.has(picked)) {
+            picked.style.outline = inspectorOriginalOutlines.get(picked) || "";
+            inspectorOriginalOutlines.delete(picked);
+        }
 
-        // Pull out and check current main style sheet code states dynamically
         cssInputs.forEach(input => {
             const propName = input.id.replace("css-", "");
-            const regex = new RegExp(`${selectedDomSelector.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\s*{[^}]*?${propName}:\\s*([^;!]+)[^}]*?}`, "i");
+            const escapedSelector = selectedDomSelector.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+            const regex = new RegExp(escapedSelector + "\\s*{[^}]*?" + propName + ":\\s*([^;!]+)[^}]*?}", "i");
             const match = styleElement.textContent.match(regex);
-            input.value = match ? match.trim() : "";
+            input.value = match ? match[1].trim() : "";
         });
-
         btnSaveCss.disabled = false;
         stopSpectatingMode();
     }
