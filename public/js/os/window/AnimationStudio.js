@@ -16,7 +16,7 @@ function openAnimationStudio() {
      <label>Fill mode<select id="as-fill"><option value="both">Both</option><option value="forwards">Forwards</option><option value="backwards">Backwards</option><option value="none">None</option></select></label>
     </div>
    </div>
-   <div class="as-actions"><button type="button" id="as-play">▶ Preview target</button><button type="button" id="as-stop" class="as-secondary">Stop</button><button type="button" id="as-apply" class="as-secondary">Apply to target</button><button type="button" id="as-save" class="as-secondary">Save preset</button></div>
+   <div class="as-actions"><button type="button" id="as-inspect" class="as-secondary">🎯 Inspect element</button><button type="button" id="as-play">▶ Preview target</button><button type="button" id="as-stop" class="as-secondary">Stop</button><button type="button" id="as-apply" class="as-secondary">Apply to target</button><button type="button" id="as-save" class="as-secondary">Save preset</button></div>
    <div class="as-presets"><label>Presets<select id="as-preset"><option value="float">Soft float</option><option value="pop">Pop in</option><option value="shimmer">Shimmer</option><option value="pulse">Pulse</option><option value="custom">Saved custom</option></select></label><button type="button" id="as-load" class="as-secondary">Load</button></div>
    <p id="as-status" class="as-status" role="status">Ready. Try a preset or edit the keyframes.</p>
   </section><aside class="as-preview"><div class="as-section-title"><strong>Preview canvas</strong><span>Sample</span></div><div class="as-stage"><div id="as-preview-card" class="as-preview-card"><span>W</span><strong>WebOS</strong><small>Motion in progress</small></div></div><div class="as-tip"><strong>Tip</strong><p>Try selectors like <code>.window-shell</code>, <code>#dock</code>, or <code>.TaskButton</code>. Applying affects matching desktop elements until changed or reloaded.</p></div><div class="as-warning">Experimental: presets are stored locally and respect Reduce Motion.</div></aside></div>
@@ -25,6 +25,25 @@ function openAnimationStudio() {
  win.style.width=Math.min(window.innerWidth-36,1060)+"px";win.style.height=Math.min(window.innerHeight-100,760)+"px";
  const $=id=>win.querySelector("#"+id), editor=$("as-keyframes"),target=$("as-target"),status=$("as-status"),preview=$("as-preview-card");
  const duration=$("as-duration"),delay=$("as-delay"),easing=$("as-easing"),iterations=$("as-iterations"),direction=$("as-direction"),fill=$("as-fill");
+ let picking=false, highlighted=null, previousOutline="";
+ const inspectButton=$("as-inspect");
+ function selectorFor(el){
+  if(el.id)return "#"+CSS.escape(el.id);
+  const parts=[];let node=el;
+  while(node&&node.nodeType===1&&node!==document.body){
+   let part=node.tagName.toLowerCase();
+   if(node.classList.length)part+="."+Array.from(node.classList).slice(0,3).map(c=>CSS.escape(c)).join(".");
+   const parent=node.parentElement;
+   if(parent){const siblings=Array.from(parent.children).filter(x=>x.tagName===node.tagName);if(siblings.length>1)part+=":nth-of-type("+(siblings.indexOf(node)+1)+")";}
+   parts.unshift(part);node=parent;if(node&&node.id){parts.unshift("#"+CSS.escape(node.id));break;}
+  } return parts.join(" > ");
+ }
+ function clearHighlight(){if(highlighted){highlighted.style.outline=previousOutline;highlighted=null;}}
+ function stopPicking(){picking=false;document.removeEventListener("pointerover",onPickOver,true);document.removeEventListener("pointerout",onPickOut,true);document.removeEventListener("click",onPickClick,true);clearHighlight();inspectButton.textContent="🎯 Inspect element";}
+ function onPickOver(e){const el=e.target;if(!(el instanceof Element)||win.contains(el)||el===document.body||el===document.documentElement)return;clearHighlight();highlighted=el;previousOutline=el.style.outline;el.style.outline="2px dashed #48c8ff";}
+ function onPickOut(e){if(highlighted===e.target)clearHighlight();}
+ function onPickClick(e){const el=e.target;if(!(el instanceof Element)||win.contains(el)||el===document.body||el===document.documentElement)return;e.preventDefault();e.stopPropagation();target.value=selectorFor(el);status.textContent=el.tagName==="IFRAME"?"Selected iframe element; its document remains isolated.":"Selected "+target.value;stopPicking();}
+ inspectButton.onclick=()=>{if(picking){stopPicking();return;}picking=true;inspectButton.textContent="Cancel inspect";status.textContent="Click a desktop element to select it. Iframes are selected as frame elements.";document.addEventListener("pointerover",onPickOver,true);document.addEventListener("pointerout",onPickOut,true);document.addEventListener("click",onPickClick,true);};
  let style=document.getElementById("webos-animation-studio-style");if(!style){style=document.createElement("style");style.id="webos-animation-studio-style";document.head.appendChild(style);}
  const samples={
   float:"@keyframes webos-studio-motion {\n  0% { transform: translateY(0) rotate(0); }\n  50% { transform: translateY(-18px) rotate(-2deg); }\n  100% { transform: translateY(0) rotate(0); }\n}",
@@ -33,7 +52,7 @@ function openAnimationStudio() {
   pulse:"@keyframes webos-studio-motion {\n  0%,100% { transform: scale(1); opacity: 1; }\n  50% { transform: scale(1.07); opacity: .78; }\n}"
  };
  editor.value=samples.float;
- function validate(){const css=editor.value.trim();if(!/@keyframes\s+webos-studio-motion\b/i.test(css))throw Error("Keep the keyframe name webos-studio-motion.");if(/@import|javascript:|expression\s*\(/i.test(css))throw Error("Unsafe CSS token detected.");const sheet=new CSSStyleSheet();sheet.replaceSync(css);if(!Array.from(sheet.cssRules).some(rule=>rule.type===CSSRule.KEYFRAMES_RULE))throw Error("No valid @keyframes rule found.");style.textContent=css;}
+ function validate(){const css=editor.value.trim();if(!/@keyframes\s+webos-studio-motion\b/i.test(css))throw Error("Keep the keyframe name webos-studio-motion.");if(/@import|javascript:|expression\s*\(/i.test(css))throw Error("Unsafe CSS token detected.");const probe=document.createElement("style");probe.textContent=css;document.head.appendChild(probe);try{const rules=probe.sheet?Array.from(probe.sheet.cssRules):[];if(!rules.some(rule=>rule.type===CSSRule.KEYFRAMES_RULE))throw Error("No valid @keyframes rule found.");}finally{probe.remove();}style.textContent=css;}
  function options(){return{duration:Math.max(80,Math.min(12000,Number(duration.value)||700)),delay:Math.max(0,Math.min(10000,Number(delay.value)||0)),easing:easing.value,iterations:iterations.value==="infinite"?Infinity:Number(iterations.value),direction:direction.value,fill:fill.value};}
  function animate(element){const o=options();element.style.animation="none";void element.offsetWidth;element.style.animation="webos-studio-motion "+o.duration+"ms "+o.easing+" "+o.delay+"ms "+o.iterations+" "+o.direction+" "+o.fill;}
  $("as-play").onclick=()=>{try{validate();animate(preview);let el;try{el=document.querySelector(target.value.trim());}catch(_){throw Error("Invalid target selector.");}if(el&&!win.contains(el))animate(el);status.textContent="Preview running on sample and first matching target.";}catch(e){status.textContent="Preview failed: "+e.message;}};
@@ -41,6 +60,6 @@ function openAnimationStudio() {
  $("as-apply").onclick=()=>{try{validate();const nodes=Array.from(document.querySelectorAll(target.value.trim())).filter(el=>!win.contains(el));if(!nodes.length)throw Error("No matching desktop elements.");nodes.forEach(animate);status.textContent="Applied to "+nodes.length+" matching element(s).";}catch(e){status.textContent="Apply failed: "+e.message;}};
  $("as-save").onclick=()=>{try{validate();localStorage.setItem("webos-animation-preset",JSON.stringify({css:editor.value,duration:duration.value,delay:delay.value,easing:easing.value,iterations:iterations.value,direction:direction.value,fill:fill.value}));status.textContent="Custom preset saved on this device.";}catch(e){status.textContent="Save failed: "+e.message;}};
  $("as-load").onclick=()=>{const name=$("as-preset").value;if(name==="custom"){try{const v=JSON.parse(localStorage.getItem("webos-animation-preset")||"null");if(!v)throw Error("No custom preset saved.");editor.value=v.css;duration.value=v.duration;delay.value=v.delay;easing.value=v.easing;iterations.value=v.iterations;direction.value=v.direction;fill.value=v.fill;}catch(e){status.textContent=e.message;}}else editor.value=samples[name]||samples.float;};
- win.addEventListener("webos:window-close",()=>{preview.style.animation="none";});
+ win.addEventListener("webos:window-close",()=>{stopPicking();preview.style.animation="none";try{document.querySelectorAll(target.value.trim()).forEach(el=>{if(!win.contains(el))el.style.animation="";});}catch(_){}});
  return win;
 }
