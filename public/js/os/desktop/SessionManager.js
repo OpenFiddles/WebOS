@@ -19,8 +19,8 @@
     }catch(error){console.warn("WebOS could not snapshot every profile preference:",error)}
   }
   const save=()=>{localStorage.setItem(KEY,JSON.stringify(users));localStorage.setItem(CURRENT,current.id)};
-  function activateProfile(profile){
-    saveCurrentProfile();
+  function activateProfile(profile,persistCurrent=true){
+    if(persistCurrent)saveCurrentProfile();
     const snapshot=safeRead(PROFILE_PREFIX+profile.id,{});
     const remove=[];
     for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key&&!isMetaKey(key)&&!key.startsWith("sb-")&&key!=="webos-custom-wallpaper")remove.push(key)}
@@ -64,7 +64,7 @@
       const select=document.createElement("select");users.forEach(profile=>{const option=document.createElement("option");option.value=profile.id;option.textContent=profile.avatar+"  "+profile.name;select.appendChild(option)});select.value=current.id;
       const switchButton=document.createElement("button");switchButton.textContent="Continue";switchButton.addEventListener("click",()=>activateProfile(users.find(profile=>profile.id===select.value)||users[0]));
       const createButton=document.createElement("button");createButton.className="secondary";createButton.textContent="＋ Add user";
-      createButton.addEventListener("click",()=>{const name=prompt("Name for the new local WebOS profile:");if(!name||!name.trim())return;saveCurrentProfile();const profile={id:"user-"+Date.now().toString(36),name:name.trim().slice(0,32),avatar:"◉"};users.push(profile);current=profile;save();activateProfile(profile)});
+      createButton.addEventListener("click",()=>{const name=prompt("Name for the new local WebOS profile:");if(!name||!name.trim())return;saveCurrentProfile();const profile={id:"user-"+Date.now().toString(36),name:name.trim().slice(0,32),avatar:"◉"};users.push(profile);current=profile;save();activateProfile(profile,false)});
       const back=document.createElement("button");back.className="secondary";back.textContent="Cancel";back.addEventListener("click",finish);card.append(select,switchButton,createButton,back);
       if(mode==="users"){} 
     }
