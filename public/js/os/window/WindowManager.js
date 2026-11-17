@@ -400,6 +400,7 @@ function openEmulator() {
     ["monitor", "System Monitor", "M", "Inspect desktop state", "openSystemMonitor", false],
     ["calculator", "Calculator", "C", "Open the calculator", "openCalculator", false],
     ["about", "About", "i", "About WebOS", "openAbout", false],
+    ["docs", "Documentation", "📚", "Read the WebOS user and developer guide", "openDocumentation", false],
     ["appcreator", "App Creator", "🧩", "Build and install custom WebOS apps", "openAppCreator", false]
 ].forEach(([id, name, icon, description, handler, dock]) => {
     WebOSAppRegistry.register({ id, name, icon, description, handler, dock });
