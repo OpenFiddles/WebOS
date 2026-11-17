@@ -736,6 +736,7 @@ function openSettings() {
     btnSpectate.onclick = () => {
         if (isSpectating) stopSpectatingMode(); else startSpectatingMode();
     };
+    win.addEventListener("webos:window-close", stopSpectatingMode);
 
     /* ---------- MAIN MODIFICATION WRITER ENGINE ---------- */
 
