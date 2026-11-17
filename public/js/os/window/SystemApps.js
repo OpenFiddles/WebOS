@@ -70,7 +70,7 @@ function openNotes() {
                 const marker = fence[1][0], size = fence[1].length, language = fence[2];
                 i++;
                 const code = [];
-                while (i < lines.length && !new RegExp("^ {0,3}" + marker + "{" + size + ",}\\\\s*$").test(lines[i])) code.push(lines[i++]);
+                while (i < lines.length && !new RegExp("^ {0,3}" + marker + "{" + size + ",}\\s*$").test(lines[i])) code.push(lines[i++]);
                 if (i < lines.length) i++;
                 out.push('<pre><code' + (language ? ' class="language-' + escapeHTML(language) + '"' : "") + '>' + escapeHTML(code.join("\n")) + "</code></pre>");
                 continue;
