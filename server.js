@@ -135,6 +135,13 @@ async function browserProxy(req, res) {
     res.status(502).type('text/plain').send('WebOS Browser could not load this page: ' + error.message);
   }
 }
+app.options('/api/browser-proxy', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Content-Type, Accept');
+  res.setHeader('Access-Control-Max-Age', '600');
+  res.status(204).end();
+});
 app.all('/api/browser-proxy', (req, res) => {
   if (!['GET', 'HEAD', 'POST'].includes(req.method)) return res.status(405).send('This browser proxy currently supports GET, HEAD, and POST requests.');
   browserProxy(req, res);
