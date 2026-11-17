@@ -123,10 +123,31 @@ function makeWindowDraggable(win) {
             win.style.top = Math.max(48, moveEvent.clientY - offsetY) + "px";
         };
         
-        const up = () => {
+        const up = (upEvent) => {
             titleBar.removeEventListener("pointermove", move);
             titleBar.removeEventListener("pointerup", up);
-            titleBar.releasePointerCapture(event.pointerId); 
+            if (titleBar.hasPointerCapture(event.pointerId)) titleBar.releasePointerCapture(event.pointerId);
+
+            // Top edge maximizes; side edges tile the window to half the workspace.
+            if (!win.isConnected || win.classList.contains("is-maximized")) return;
+            const edge = 14;
+            if (upEvent.clientY <= 50) {
+                win.classList.add("is-maximized");
+                win.style.left = "";
+                win.style.top = "";
+                win.style.width = "";
+                win.style.height = "";
+            } else if (upEvent.clientX <= edge) {
+                win.style.left = "8px";
+                win.style.top = "54px";
+                win.style.width = "calc(50vw - 12px)";
+                win.style.height = "calc(100vh - 116px)";
+            } else if (upEvent.clientX >= window.innerWidth - edge) {
+                win.style.left = "calc(50vw + 4px)";
+                win.style.top = "54px";
+                win.style.width = "calc(50vw - 12px)";
+                win.style.height = "calc(100vh - 116px)";
+            }
         };
         
         titleBar.addEventListener("pointermove", move);
@@ -387,5 +408,112 @@ if (savedCustomWallpaper) {
 }
 updateClock();
 setInterval(updateClock, 30000);
+
+// ---------------------------------------------------------------------------
+// DESKTOP QUALITY-OF-LIFE: context menu and global keyboard shortcuts
+// ---------------------------------------------------------------------------
+(() => {
+    const desktop = document.getElementById("Desktop");
+    if (!desktop) return;
+
+    let contextMenu = null;
+    const closeContextMenu = () => {
+        if (contextMenu) {
+            contextMenu.remove();
+            contextMenu = null;
+        }
+    };
+
+    desktop.addEventListener("contextmenu", (event) => {
+        const workspace = document.getElementById("window-workspace");
+        if (event.target !== desktop && event.target !== workspace) return;
+        event.preventDefault();
+        closeContextMenu();
+
+        const menu = document.createElement("div");
+        menu.className = "WebOSContextMenu";
+        menu.setAttribute("role", "menu");
+        menu.setAttribute("aria-label", "Desktop actions");
+
+        const actions = [
+            ["Open Launcher", "☰", () => document.getElementById("open-launcher")?.click()],
+            ["Open Files", "📁", () => launchApp("files")],
+            ["New Note", "📝", () => launchApp("notes")],
+            ["Settings", "⚙", () => launchApp("settings")],
+            ["New Desktop Folder", "＋", async () => {
+                const name = window.prompt("Name your new folder:");
+                if (!name || !name.trim()) return;
+                const safeName = name.trim().replace(/[\\/:*?"<>|]/g, "-");
+                try {
+                    await window.WebOSFileSystem.makeDirectory("/Desktop/" + safeName);
+                    launchApp("files");
+                } catch (error) {
+                    window.alert("Could not create folder: " + error.message);
+                }
+            }]
+        ];
+
+        actions.forEach(([label, icon, action]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "WebOSContextMenuItem";
+            button.setAttribute("role", "menuitem");
+            const glyph = document.createElement("span");
+            glyph.textContent = icon;
+            const caption = document.createElement("span");
+            caption.textContent = label;
+            button.append(glyph, caption);
+            button.addEventListener("click", () => {
+                closeContextMenu();
+                action();
+            });
+            menu.appendChild(button);
+        });
+
+        document.body.appendChild(menu);
+        contextMenu = menu;
+        const left = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8);
+        const top = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8);
+        menu.style.left = Math.max(8, left) + "px";
+        menu.style.top = Math.max(48, top) + "px";
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+        if (contextMenu && !contextMenu.contains(event.target)) closeContextMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeContextMenu();
+
+        // Ctrl+Alt shortcuts avoid stealing common browser and editor shortcuts.
+        if (!(event.ctrlKey && event.altKey) || event.repeat) return;
+        const target = event.target;
+        if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+
+        const shortcuts = {
+            l: () => document.getElementById("open-launcher")?.click(),
+            b: () => launchApp("browser"),
+            e: () => launchApp("files"),
+            n: () => launchApp("notes"),
+            s: () => launchApp("settings"),
+            f: () => launchApp("alpine")
+        };
+        const action = shortcuts[event.key.toLowerCase()];
+        if (action) {
+            event.preventDefault();
+            action();
+        }
+    });
+
+    // Alt+F4 closes the topmost non-minimized WebOS window.
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "F4" || !event.altKey) return;
+        const windows = Array.from(document.querySelectorAll("[id^='Window_']"))
+            .filter((win) => !win.classList.contains("is-minimized") && !win.classList.contains("is-closing"))
+            .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
+        if (!windows.length) return;
+        event.preventDefault();
+        windows[0].querySelector(".close")?.click();
+    });
+})();
 
 

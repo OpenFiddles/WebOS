@@ -460,3 +460,43 @@
     background: #080d14;
 }
 .window-shell.is-maximized .window-titlebar { cursor: default; }
+
+
+/* Native-feeling desktop context menu */
+.WebOSContextMenu {
+    position: fixed;
+    z-index: 12000;
+    min-width: 210px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(18, 24, 34, .94);
+    color: #fff;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, .48), inset 0 1px rgba(255,255,255,.08);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.WebOSContextMenuItem {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.WebOSContextMenuItem:hover,
+.WebOSContextMenuItem:focus-visible {
+    outline: none;
+    background: var(--accent-wash);
+}
+.WebOSContextMenuItem span:first-child {
+    width: 20px;
+    text-align: center;
+}
