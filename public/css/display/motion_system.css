@@ -1,0 +1,6 @@
+:root{--motion-fast:180ms;--motion-medium:320ms;--motion-slow:520ms;--motion-ease:cubic-bezier(.2,.8,.2,1)}
+body[data-motion="snappy"]{--motion-fast:110ms;--motion-medium:180ms;--motion-slow:260ms;--motion-ease:cubic-bezier(.2,.9,.25,1)}
+body[data-motion="cinematic"]{--motion-fast:240ms;--motion-medium:460ms;--motion-slow:720ms;--motion-ease:cubic-bezier(.16,1,.3,1)}
+.window-shell{transition-duration:var(--motion-medium);transition-timing-function:var(--motion-ease)}.window-shell:not(.is-minimized):not(.is-closing){animation-duration:var(--motion-medium)}.window-shell.is-closing{animation-duration:var(--motion-fast)}
+.TaskButton,.DesktopShortcut,#dock button,.LauncherApp{transition:transform var(--motion-fast) var(--motion-ease),background var(--motion-fast) ease,box-shadow var(--motion-fast) ease}.TaskButton:hover,.DesktopShortcut:hover,#dock button:hover,.LauncherApp:hover{transform:translateY(-2px)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

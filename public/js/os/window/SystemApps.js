@@ -402,11 +402,10 @@ function openSettings() {
                 <div class="setting-field">
                     <label for="animation-choice">Animation style</label>
                     <select id="animation-choice">
-                        <option value="smooth">Smooth</option>
-                        <option value="snappy">Snappy</option>
-                        <option value="cinematic">Cinematic</option>
+                        <option value="smooth">Smooth</option><option value="snappy">Snappy</option><option value="cinematic">Cinematic</option>
                     </select>
                 </div>
+                <div class="setting-field liquid-glass-setting"><label><input id="liquid-glass-choice" type="checkbox"> Experimental Liquid Glass</label><small>Layered backdrop blur, spectral highlights and supported SVG displacement effects. Rendering varies by browser and GPU.</small></div>
                 <button type="button" id="reset-appearance">Restore appearance defaults</button>
             </section>
 
@@ -491,6 +490,7 @@ function openSettings() {
     const wallpaperChoice = win.querySelector("#wallpaper-choice");
     const wallpaperFile = win.querySelector("#wallpaper-file");
     const animationChoice = win.querySelector("#animation-choice");
+    const liquidGlassChoice = win.querySelector("#liquid-glass-choice");
     const status = win.querySelector("#settings-status");
     
     const btnSpectate = win.querySelector("#btn-spectate");
@@ -511,6 +511,8 @@ function openSettings() {
     motion.checked = localStorage.getItem("webos-reduced-motion") === "true";
     accentChoice.value = localStorage.getItem("webos-accent") || "#53b5ff";
     animationChoice.value = localStorage.getItem("webos-motion-style") || "smooth";
+    liquidGlassChoice.checked = localStorage.getItem("webos-liquid-glass") === "true";
+    document.body.dataset.liquidGlass = String(liquidGlassChoice.checked);
     const savedWallpaper = localStorage.getItem("webos-wallpaper") || "aurora";
     const savedCustomWallpaper = localStorage.getItem("webos-custom-wallpaper");
     wallpaperChoice.value = savedCustomWallpaper ? "custom" : savedWallpaper;
@@ -550,6 +552,11 @@ function openSettings() {
     animationChoice.addEventListener("change", () => {
         localStorage.setItem("webos-motion-style", animationChoice.value);
         document.body.dataset.motion = animationChoice.value;
+    });
+    liquidGlassChoice.addEventListener("change", () => {
+        localStorage.setItem("webos-liquid-glass", String(liquidGlassChoice.checked));
+        document.body.dataset.liquidGlass = String(liquidGlassChoice.checked);
+        status.textContent = liquidGlassChoice.checked ? "Experimental Liquid Glass enabled. Refraction varies by browser support." : "Liquid Glass disabled.";
     });
 
     wallpaperChoice.addEventListener("change", () => {
@@ -616,6 +623,9 @@ function openSettings() {
         wallpaperChoice.value = "aurora";
         animationChoice.value = "smooth";
         motion.checked = false;
+        liquidGlassChoice.checked = false;
+        localStorage.removeItem("webos-liquid-glass");
+        document.body.dataset.liquidGlass = "false";
         document.body.dataset.theme = "ocean";
         document.body.dataset.wallpaper = "aurora";
         document.body.dataset.motion = "smooth";
