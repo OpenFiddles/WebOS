@@ -37,6 +37,8 @@ function setWindowMaximized(win, maximize) {
         } catch (_) {}
         delete win.dataset.restoreGeometry;
     }
+    const anyMaximized = !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-closing)");
+    document.body.classList.toggle("webos-maximized-open", anyMaximized);
 }
 
 function createWindow(title, content) {

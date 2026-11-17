@@ -6,6 +6,8 @@
     <title>WebOS Launcher</title>
     <link rel="stylesheet" href="../css/universal_css_native_stuff.css"/>
     <link rel="stylesheet" href="../css/display/regular_theme.css"/>
+    <link rel="stylesheet" href="../css/display/tasbar_dock.css"/>
+    <link rel="stylesheet" href="../css/display/notifications.css"/>
     <link rel="manifest" href="../site.webmanifest"/>
 </head>
 <body>
@@ -80,6 +82,7 @@
         <nav id="taskbar-apps" role="navigation" aria-label="Active Workspace Windows"></nav>
         <div id="taskbar-right">
             <button class="StatusButton" id="network-status" title="System Connection Status">Online</button>
+            <button class="StatusButton" id="notification-toggle" type="button" aria-label="Notifications" aria-expanded="false" title="Notifications">♢ <span id="notification-count" hidden>0</span></button>
             <time class="StatusButton" id="clock" title="System Calendar Time"></time>
         </div>
     </header>
@@ -120,5 +123,6 @@
 <script defer src="../js/os/window/SystemApps.js"></script>
 <script defer src="../js/os/window/Documentation.js"></script>
 <script defer src="../js/os/window/AnimationStudio.js"></script>
+<script defer src="../js/os/desktop/Notifications.js"></script>
 </body>
 </html>

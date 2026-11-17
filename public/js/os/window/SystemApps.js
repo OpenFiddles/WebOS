@@ -1482,3 +1482,111 @@ WebOSAppRegistry.register({
 
     return win;
 }
+
+
+// App Creator Studio v2 — portable XIP packages and live JavaScript highlighting.
+function openAppCreator() {
+    if (typeof closeLauncher === "function") closeLauncher();
+    const html = `
+    <section class="xip-studio">
+      <header class="xip-header"><div><h2>App Creator Studio</h2><p>Build, preview, install and package WebOS applications.</p></div><span class="xip-version">XIP · v1</span></header>
+      <div class="xip-fields">
+        <label>App ID<input id="xip-id" placeholder="com.example.myapp" autocomplete="off"></label>
+        <label>Display name<input id="xip-name" placeholder="My WebOS App"></label>
+        <label>Icon<input id="xip-icon" value="🧩" maxlength="8"></label>
+        <label class="xip-dock-check"><input id="xip-dock" type="checkbox" checked> Pin to dock</label>
+        <label class="xip-description">Description<textarea id="xip-description" rows="2" placeholder="What does your app do?"></textarea></label>
+      </div>
+      <div class="xip-editor-head"><strong>JavaScript handler</strong><span>async function(api, argument)</span><button id="xip-template" type="button">Reset template</button></div>
+      <div class="xip-code-wrap"><pre id="xip-highlight" aria-hidden="true"></pre><textarea id="xip-code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="JavaScript source"></textarea></div>
+      <details class="xip-style"><summary>Optional app stylesheet</summary><textarea id="xip-css" spellcheck="false" placeholder=".my-app { padding: 1rem; }"></textarea></details>
+      <div class="xip-actions"><label class="xip-import">Import .xip<input id="xip-import-file" type="file" accept=".xip,application/x-webos-xip,application/json"></label><button id="xip-export" type="button">Export .xip</button><button id="xip-install" type="button" class="primary">Install app</button></div>
+      <p id="xip-status" role="status" aria-live="polite">Ready. Export creates a portable WebOS app package.</p>
+    </section>`;
+    const win = createWindow("App Creator Studio", html);
+    if (!win) return null;
+    const $ = id => win.querySelector("#" + id);
+    const code = $("xip-code"), highlight = $("xip-highlight"), status = $("xip-status");
+    const starter = `// Your handler receives the WebOS app API and launch argument.
+const panel = document.createElement("section");
+panel.className = "my-app";
+panel.innerHTML = "<h2>Hello, WebOS!</h2><p>Your app is ready.</p>";
+const appWindow = window.createWindow("My App", panel);
+return appWindow;`;
+    const escape = value => String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+    function colorize(source) {
+        const token = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|export|extends|false|finally|for|from|function|if|import|in|instanceof|let|new|null|of|return|static|super|switch|this|throw|true|try|typeof|var|void|while|yield)\b|\b\d+(?:\.\d+)?\b)/g;
+        let out="", last=0, match;
+        while ((match=token.exec(source))) {
+            out += escape(source.slice(last,match.index));
+            const value=match[0], type=value.startsWith("//")||value.startsWith("/*")?"comment":/^[\"'`]/.test(value)?"string":/^\d/.test(value)?"number":/^(true|false|null)$/.test(value)?"literal":"keyword";
+            out += '<span class="tok-'+type+'">'+escape(value)+'</span>'; last=token.lastIndex;
+        }
+        return out+escape(source.slice(last))+"\n";
+    }
+    code.value = starter;
+    function paint(){highlight.innerHTML=colorize(code.value);highlight.scrollTop=code.scrollTop;highlight.scrollLeft=code.scrollLeft;}
+    code.addEventListener("input",paint);
+    code.addEventListener("scroll",paint);
+    $("xip-template").addEventListener("click",()=>{code.value=starter;paint();});
+    paint();
+    const manifest = () => ({
+      id:$("xip-id").value.trim().toLowerCase(),
+      name:$("xip-name").value.trim(),
+      icon:$("xip-icon").value.trim()||"📦",
+      description:$("xip-description").value.trim(),
+      dock:$("xip-dock").checked
+    });
+    const validate = m => {
+      if(!/^[a-z0-9][a-z0-9._-]{1,63}$/.test(m.id)) throw new Error("App ID must be 2–64 characters: letters, numbers, dots, underscores or hyphens.");
+      if(!m.name) throw new Error("Enter an app display name.");
+      if(!code.value.trim()) throw new Error("The JavaScript handler is empty.");
+      new Function("api","argument",code.value);
+      return m;
+    };
+    const download = (name, contents, type) => {
+      const url=URL.createObjectURL(new Blob([contents],{type}));
+      const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1500);
+    };
+    $("xip-export").addEventListener("click",()=>{
+      try {
+        const m=validate(manifest());
+        const bundle={format:"webos-xip",version:1,manifest:m,entry:{type:"javascript",handler:"main.js"},files:{"main.js":code.value,"styles.css":$("xip-css").value},metadata:{createdAt:new Date().toISOString(),minimumWebOSVersion:"1.0"}};
+        download(m.id+".xip",JSON.stringify(bundle,null,2),"application/x-webos-xip+json");
+        status.textContent="Exported "+m.id+".xip";
+      } catch(error){status.textContent=error.message;}
+    });
+    $("xip-import-file").addEventListener("change",async event=>{
+      const file=event.target.files?.[0];if(!file)return;
+      try{
+        const bundle=JSON.parse(await file.text());
+        if(bundle.format!=="webos-xip"||bundle.version!==1||!bundle.manifest||typeof bundle.files?.["main.js"]!=="string")throw new Error("This is not a supported WebOS XIP v1 package.");
+        $("xip-id").value=bundle.manifest.id||"";$("xip-name").value=bundle.manifest.name||"";
+        $("xip-icon").value=bundle.manifest.icon||"📦";$("xip-description").value=bundle.manifest.description||"";
+        $("xip-dock").checked=bundle.manifest.dock!==false;code.value=bundle.files["main.js"];
+        $("xip-css").value=bundle.files["styles.css"]||"";paint();status.textContent="Loaded "+file.name+". Review it before installing.";
+      }catch(error){status.textContent="Import failed: "+error.message;}
+      event.target.value="";
+    });
+    $("xip-install").addEventListener("click",async()=>{
+      try{
+        const m=validate(manifest()), handlerName="WebOS_AppHandler_"+m.id.replace(/[^a-z0-9]/g,"_");
+        const fn=new Function("api","argument",code.value);
+        window[handlerName]=fn;
+        const cssText=$("xip-css").value;
+        if(cssText){
+          const styleId="webos-app-style-"+m.id;
+          let style=document.getElementById(styleId);if(!style){style=document.createElement("style");style.id=styleId;document.head.appendChild(style);}
+          style.textContent=cssText;
+        }
+        await window.WebOSFileSystem?.putText?.("/Desktop/Apps/"+m.id+".js",code.value);
+        await window.WebOSFileSystem?.putText?.("/Desktop/Apps/"+m.id+".css",cssText);
+        window.WebOSAppRegistry.register({...m,handler:handlerName});
+        window.WebOSAppRegistry.render();
+        status.textContent="Installed "+m.name+". Export its .xip package to share it.";
+        window.WebOSNotifications?.notify("App installed",m.name+" is ready in your launcher.",{icon:m.icon});
+      }catch(error){status.textContent="Install failed: "+error.message;}
+    });
+    return win;
+}
