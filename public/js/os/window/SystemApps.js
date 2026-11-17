@@ -308,7 +308,6 @@ function openFiles() {
             if(current!==token || !win.isConnected) return;
             const q=search.value.trim().toLowerCase();
             const rows=entries.filter(e=>name(e).toLowerCase().includes(q));
-            rows.forEach((entry,index)=>{ /* staggered entrance for explorer rows */ });
             rows.sort((a,b)=>{
                 if(a.type!==b.type) return a.type==="directory"?-1:1;
                 if(sort.value==="modified") return (b.modified||0)-(a.modified||0);
