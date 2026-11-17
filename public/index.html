@@ -42,7 +42,7 @@
                 window.screen?.width || window.innerWidth,
                 window.screen?.height || window.innerHeight
             );
-            const compactTouchScreen = touchDevice && screenSize <= 900;
+            const compactTouchScreen = touchDevice && screenSize <= 820;
             const isMobile = mobileUA || compactTouchScreen;
 
             frame.src = isMobile
