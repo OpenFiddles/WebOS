@@ -11,25 +11,52 @@
         class WebOSAppClient {
             constructor(appId) {
                 this.appId = appId;
+                this.filesystem = Object.freeze({
+                    list: async path => { await this.require("filesystem.read"); return this.fs().list(path); },
+                    read: async path => { await this.require("filesystem.read"); return this.fs().read(path); },
+                    writeText: async (path, content) => { await this.require("filesystem.write"); return this.fs().putText(path, content); },
+                    makeDirectory: async path => { await this.require("filesystem.write"); return this.fs().makeDirectory(path); },
+                    remove: async path => { await this.require("filesystem.delete"); return this.fs().remove(path); },
+                    exists: async path => { await this.require("filesystem.read"); return this.fs().exists(path); }
+                });
+                this.geolocation = Object.freeze({
+                    getCurrentPosition: async options => {
+                        await this.require("geolocation", "This app wants to access your device location.");
+                        if (!navigator.geolocation) throw new Error("Geolocation is unavailable in this browser.");
+                        return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, options));
+                    }
+                });
+                this.clipboard = Object.freeze({
+                    readText: async () => {
+                        await this.require("clipboard.read", "This app wants to read text from your clipboard.");
+                        if (!navigator.clipboard?.readText) throw new Error("Clipboard reading is unavailable in this browser.");
+                        return navigator.clipboard.readText();
+                    },
+                    writeText: async value => {
+                        await this.require("clipboard.write", "This app wants to write text to your clipboard.");
+                        if (!navigator.clipboard?.writeText) throw new Error("Clipboard writing is unavailable in this browser.");
+                        return navigator.clipboard.writeText(String(value));
+                    }
+                });
             }
-
-            // Bridge to allow apps to natively read files safely via parent/local scope
-            async read(path) {
-                const fs = window.WebOSFileSystem || (window.parent && window.parent.WebOSFileSystem);
-                if (fs && typeof fs.read === "function") {
-                    return await fs.read(path);
-                }
-                throw new Error(`[WebOS App Client] Read failed: FileSystem layer is missing for app ${this.appId}`);
+            fs() {
+                if (!window.WebOSFileSystem) throw new Error("WebOS filesystem is unavailable.");
+                return window.WebOSFileSystem;
             }
-
-            // Bridge to allow apps to natively write files safely via parent/local scope
-            async putText(path, content) {
-                const fs = window.WebOSFileSystem || (window.parent && window.parent.WebOSFileSystem);
-                if (fs && typeof fs.putText === "function") {
-                    return await fs.putText(path, content);
-                }
-                throw new Error(`[WebOS App Client] Write failed: FileSystem layer is missing for app ${this.appId}`);
+            async require(permission, reason) {
+                if (!window.WebOSPermissions?.request) throw new Error("WebOS permission service is unavailable.");
+                return window.WebOSPermissions.request(this.appId, permission, reason);
             }
+            requestPermission(permission, reason) { return this.require(permission, reason); }
+            getPermissionState(permission) { return window.WebOSPermissions?.query(this.appId, permission) || "unavailable"; }
+            async read(path) { await this.require("filesystem.read"); return this.fs().read(path); }
+            async putText(path, content) { await this.require("filesystem.write"); return this.fs().putText(path, content); }
+            async notify(title, message, options = {}) {
+                await this.require("notifications");
+                if (!window.WebOSNotifications?.notify) throw new Error("WebOS notifications are unavailable.");
+                return window.WebOSNotifications.notify(String(title), String(message), options);
+            }
+            getCurrentPosition(options) { return this.geolocation.getCurrentPosition(options); }
         }
         
         // Expose it globally to the active frame engine environment

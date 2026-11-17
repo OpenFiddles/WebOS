@@ -15,11 +15,15 @@ function openDocumentation() {
       '<button class="docs-nav-item" data-doc="notes">✎ <span>Notes & Markdown</span></button>',
       '<button class="docs-nav-item" data-doc="creator">⌘ <span>App Creator</span></button>',
       '<button class="docs-nav-item" data-doc="developers">〈/〉 <span>Developer guide</span></button>',
+      '<button class="docs-nav-item" data-doc="architecture">◇ <span>Architecture</span></button>',
+      '<button class="docs-nav-item" data-doc="api">⌘ <span>API reference</span></button>',
+      '<button class="docs-nav-item" data-doc="permissions">♢ <span>Permissions</span></button>',
+      '<button class="docs-nav-item" data-doc="examples">⌁ <span>Examples</span></button>',
       '<button class="docs-nav-item" data-doc="shortcuts">⌨ <span>Keyboard shortcuts</span></button>',
       '<button class="docs-nav-item" data-doc="troubleshooting">ⓘ <span>Troubleshooting</span></button>',
       '</nav><div class="docs-sidebar-foot">OPENFIDDLES · WEBOS</div></aside>',
       '<main class="docs-main"><header class="docs-topbar"><span id="docs-breadcrumb">Documentation / Welcome</span><button id="docs-print" type="button">Print / Save PDF</button></header>',
-      '<article id="docs-content" class="docs-content"></article><footer class="docs-footer"><span>WebOS Documentation</span><span id="docs-result-count">10 topics</span></footer></main>'
+      '<article id="docs-content" class="docs-content"></article><footer class="docs-footer"><span>WebOS Documentation</span><span id="docs-result-count">14 topics</span></footer></main>'
     ].join("");
     const win = createWindow("WebOS Documentation", shell);
     if (!win) return null;
@@ -35,7 +39,61 @@ function openDocumentation() {
       files:["Files & storage","YOUR VIRTUAL FILE SYSTEM","Files helps organize content stored locally by WebOS.",'<h2>Organize</h2><p>Navigate folders, search the current folder, sort items, and switch between list and grid views.</p><h2>Manage items</h2><p>Create folders and text files, rename, delete, download, and edit supported text files.</p><div class="docs-callout"><b>Text formats only</b><p>The current importer supports text formats such as TXT, Markdown, JSON, JavaScript, HTML, CSS, SVG, CSV, YAML, and XML. General binary-file storage is not currently supported.</p></div><h2>Where files live</h2><p>Files are stored in the browser local WebOS virtual file system, not automatically uploaded to a cloud drive.</p>'],
       notes:["Notes & Markdown","WRITE & PREVIEW","Notes combines a Markdown editor with a live preview.",'<h2>Formatting</h2><p>Use toolbar buttons for headings, bold, italic, inline code, lists, and quotes. Supported syntax also includes fenced code blocks, links, images, task lists, tables, and horizontal rules.</p><h2>Save and export</h2><p>Notes autosaves and has a Save button. Export a <code>.md</code> file for a separate copy. The default note path is <code>/Documents/Notes.md</code>.</p>'],
       creator:["App Creator","MAKE SOMETHING","Define a custom app and register it in the current WebOS session.",'<h2>App identity</h2><p>Choose a unique ID, display name, icon, description, and whether to pin it to the dock. Use letters, numbers, hyphens, or underscores in the ID.</p><h2>Handler code</h2><p>The handler is JavaScript called with an API client and optional argument.</p><pre><code>function (api, argument) {\n  const win = window.createWindow("My App", "&lt;div&gt;&lt;h2&gt;Hello!&lt;/h2&gt;&lt;/div&gt;");\n  return win;\n}</code></pre><h2>Install</h2><p>The generated JavaScript is saved under <code>/Desktop/Apps/</code> and the app is registered in the current session.</p><div class="docs-callout"><b>Important</b><p>Custom handlers execute JavaScript in the WebOS page context. Only install code you understand. Saved app files are not automatically reloaded as installed apps after a browser refresh yet.</p></div>'],
-      developers:["Developer guide","EXTEND WEBOS","A quick overview of the registry and APIs used by built-in apps.",'<h2>Register an app</h2><pre><code>WebOSAppRegistry.register({\n  id: "example", name: "Example App",\n  icon: "✨", description: "Sample application",\n  handler: "openExample", dock: false\n});\nWebOSAppRegistry.render();</code></pre><h2>Launch handlers</h2><p>The handler is a globally named function. It receives <code>(api, argument)</code> and can return a window created with <code>createWindow(title, content)</code>.</p><h2>Filesystem API</h2><pre><code>const text = await api.read("/Documents/example.txt");\nawait api.putText("/Documents/example.txt", "Hello");</code></pre><h2>Core source files</h2><ul><li><code>public/js/os/desktop/app-registry.js</code> — app registration and launch.</li><li><code>public/js/os/window/WindowManager.js</code> — windows and built-in app registry.</li><li><code>public/js/os/window/SystemApps.js</code> — built-in apps.</li><li><code>public/js/os/desktop/filesystem.js</code> — virtual file system.</li></ul>'],
+      developers:["Developer guide","BUILD FOR WEBOS","Build apps with the registry, the documented app client, and capability-based permission requests.",'<h2>Quick start</h2><pre><code>function openExample(api, argument) {
+  const win = window.createWindow("Example", "&lt;main&gt;&lt;h2&gt;Hello WebOS&lt;/h2&gt;&lt;/main&gt;");
+  return win;
+}
+WebOSAppRegistry.register({
+  id: "example", name: "Example", icon: "✨",
+  description: "A sample app", handler: "openExample"
+});
+WebOSAppRegistry.render();</code></pre><h2>Handler contract</h2><p>Handlers receive <code>(api, argument)</code>. The first argument is a WebOSAppClient instance. Register a globally named handler before registering the app.</p><h2>Runtime security</h2><p>Custom handlers currently execute in the WebOS page JavaScript context. Permission checks are cooperative API gates, not a secure sandbox. Do not run untrusted app code.</p><h2>Source map</h2><ul><li><code>public/js/os/desktop/app-registry.js</code> — app registration and API client.</li><li><code>public/js/os/desktop/Permissions.js</code> — permission prompt and decisions.</li><li><code>public/js/os/desktop/filesystem.js</code> — virtual filesystem.</li><li><code>public/js/os/window/WindowManager.js</code> — window creation.</li><li><code>public/js/os/desktop/Notifications.js</code> — notifications.</li></ul>'],
+      architecture:["Platform architecture","THE THREE LAYERS","WebOS runs inside a host browser. The host browser remains the authority for operating-system and device permissions.",'<h2>Capability flow</h2><pre><code>WebOS app
+  → WebOS API
+  → WebOS permission prompt
+  → host browser API
+  → browser-native permission (when required)
+  → available device capability</code></pre><h2>WebOS layer</h2><p>Owns app registration, windows, virtual files, notifications and app-level permission prompts.</p><h2>Host browser layer</h2><p>Enforces origin security, secure-context rules, iframe policies, user-gesture requirements and native permission prompts.</p><h2>Operating system layer</h2><p>Hardware and operating-system features are exposed only through APIs the browser supports. WebOS cannot override browser security, access arbitrary host files, or silently install software.</p>'],
+      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",'<h2>Core methods</h2><pre><code>await api.requestPermission(name, reason)
+api.getPermissionState(name)
+await api.read(path)              // filesystem.read
+await api.putText(path, content)  // filesystem.write
+await api.notify(title, message, options)</code></pre><h2>Filesystem namespace</h2><pre><code>await api.filesystem.list("/Documents")
+await api.filesystem.read("/Documents/readme.txt")
+await api.filesystem.writeText("/Documents/readme.txt", "Hello")
+await api.filesystem.makeDirectory("/Documents/Demo")
+await api.filesystem.remove("/Documents/old.txt")
+await api.filesystem.exists("/Documents/readme.txt")</code></pre><p>These paths address the WebOS virtual filesystem, not the host computer's files. Read, write and delete operations request separate permissions.</p><h2>Geolocation</h2><pre><code>const position = await api.geolocation.getCurrentPosition({
+  enableHighAccuracy: false, timeout: 10000
+});
+console.log(position.coords.latitude, position.coords.longitude);</code></pre><p>Requests WebOS approval first, then calls the host browser API. The browser may show its own native prompt. A secure context and browser support are required.</p><h2>Clipboard</h2><pre><code>const text = await api.clipboard.readText();
+await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li></ul>'],
+      permissions:["Permissions & security","ASK BEFORE ACCESS","Apps should request only the capabilities they need and explain why.",'<h2>Request access</h2><pre><code>await api.requestPermission(
+  "geolocation",
+  "Show nearby places on the map."
+);</code></pre><h2>Permission states</h2><pre><code>api.getPermissionState("geolocation");
+// "granted", "denied", or "prompt"</code></pre><h2>Two permission layers</h2><p>WebOS identifies the requesting app and asks the user. If approved, the app API calls the browser capability. The browser can still show its own native prompt and can deny access.</p><h2>Current limitations</h2><ul><li>Decisions are session-scoped and reset on a full reload.</li><li>These prompts gate documented API methods; they do not isolate JavaScript.</li><li>Apps currently run in the same page realm and can bypass cooperative checks by using global browser APIs directly.</li><li>The host browser remains responsible for device security.</li></ul><h2>Best practices</h2><p>Ask at the moment a feature is used, explain the reason, handle denial gracefully, and never assume a capability is available.</p>'],
+      examples:["Developer examples","COPY, ADAPT, BUILD","Patterns for common WebOS app tasks.",'<h2>Read a file</h2><pre><code>async function readWelcome(api) {
+  const file = await api.filesystem.read("/Documents/Welcome.txt");
+  if (!file) throw new Error("File not found");
+  return file.content;
+}</code></pre><h2>Save a file</h2><pre><code>async function saveText(api, text) {
+  await api.filesystem.writeText("/Documents/MyNote.txt", text);
+}</code></pre><h2>Notify the user</h2><pre><code>await api.notify("Export complete", "Your file is ready.");</code></pre><h2>Handle denied access</h2><pre><code>async function locate(api) {
+  try { return await api.geolocation.getCurrentPosition(); }
+  catch (error) {
+    console.warn("Location unavailable:", error.message);
+    return null;
+  }
+}</code></pre><h2>Register an app</h2><pre><code>function openDemo(api, argument) {
+  const root = document.createElement("section");
+  root.textContent = "Hello " + (argument || "WebOS");
+  return window.createWindow("Demo App", root);
+}
+WebOSAppRegistry.register({
+  id: "demo-app", name: "Demo App", icon: "🧪",
+  description: "API example", handler: "openDemo"
+});</code></pre>'],
       shortcuts:["Keyboard shortcuts","WORK FASTER","A few shortcuts make the desktop easier to navigate.",'<div class="docs-shortcut-list"><div><span>Open / close launcher</span><kbd>Ctrl</kbd> + <kbd>Space</kbd></div><div><span>Close launcher</span><kbd>Esc</kbd></div><div><span>Save in Notes</span><kbd>Ctrl</kbd> + <kbd>S</kbd></div><div><span>Indent in Notes</span><kbd>Tab</kbd></div></div><p>Command-key equivalents are also supported on macOS-style keyboards.</p>'],
       troubleshooting:["Troubleshooting","WHEN THINGS GO WRONG","Checks for common WebOS issues.",'<h2>An app does not appear</h2><p>Close and reopen the launcher. Check that the app registered and its ID is unique.</p><h2>A window is missing</h2><p>Look for its taskbar button and select it to bring the window forward.</p><h2>A website will not load</h2><p>Some sites block iframe embedding or require browser features a proxy cannot provide. Try opening the site in a separate tab.</p><h2>Files did not import</h2><p>Check that the extension is a supported text format. Binary formats are not supported by the current importer.</p><h2>Changes are not visible</h2><p>Wait for hosting deployment to finish, then reload. A hard refresh may clear stale cached assets.</p>']
     };
