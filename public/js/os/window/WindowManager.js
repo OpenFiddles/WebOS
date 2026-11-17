@@ -311,13 +311,13 @@ function openEmulator() {
 
     const frame = document.createElement("iframe");
     frame.className = "EmulatorFrame";
-    frame.src = "https://openfiddles.github.io/FlairOS/";
+    frame.src = "/api/browser-proxy?url=" + encodeURIComponent("https://openfiddles.github.io/FlairOS/");
     frame.title = "FlairOS emulator";
     frame.loading = "eager";
     frame.referrerPolicy = "strict-origin-when-cross-origin";
     frame.allowFullscreen = true;
     frame.setAttribute("allow", "fullscreen; clipboard-read; clipboard-write");
-    frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-downloads");
+    frame.setAttribute("sandbox", "allow-scripts allow-forms allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-downloads");
 
     shell.appendChild(toolbar);
     shell.appendChild(frame);

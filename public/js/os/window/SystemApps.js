@@ -1019,175 +1019,159 @@ function openWasmLab() {
 
 
 function openBrowser(initialUrl) {
-    closeLauncher();
-    const htmlTemplate = `
-    <div class="AppPanel BrowserApp" style="display: flex; flex-direction: column; width: 100%; height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1e1e1e; color: #fff; user-select: none;">
-        
-        <!-- 🌐 CHROME-STYLE TAB ROW CONTAINER -->
-        <div class="BrowserTabBar" style="display: flex; background: #141414; padding: 6px 6px 0 6px; gap: 4px; align-items: flex-end; overflow-x: auto; border-bottom: 1px solid #2d2d2d;">
-            <div class="TabContainer" style="display: flex; gap: 4px; align-items: flex-end;"></div>
-            <button type="button" class="NewTabBtn" title="New Tab" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-bottom: 4px; font-size: 14px; display: flex; align-items: center; justify-content: center; height: 28px; width: 28px; transition: background 0.2s;">+</button>
-        </div>
+    if (typeof closeLauncher === "function") closeLauncher();
 
-        <!-- 🛠️ INTERACTION CONTROLS BAR -->
-        <form class="BrowserBar" action="javascript:void(0);" style="display: flex; gap: 6px; padding: 8px; background: #1e1e1e; align-items: center;">
-            <div class="BrowserNavigationControls" style="display: flex; gap: 4px;">
-                <button type="button" class="BrowserBack" title="Back" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">◀</button>
-                <button type="button" class="BrowserForward" title="Forward" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">▶</button>
-                <button type="button" class="BrowserReload" title="Reload" style="background: #2d2d2d; color: #fff; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">🔄</button>
-            </div>
-            <input type="text" name="url" class="BrowserAddressInput" id="browser-address" placeholder="Search Google or enter web address..." required style="flex-grow: 1; padding: 7px 14px; border: 1px solid #3a3a3a; border-radius: 6px; background: #2a2a2a; color: #fff; outline: none; font-size: 13px; transition: border-color 0.2s;">
-            <button type="button" class="BrowserOpenExternal" title="Open in physical browser tab" style="background: #2d2d2d; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px; transition: background 0.2s; font-size: 12px;">🌐</button>
+    const htmlTemplate = \`
+    <div class="AppPanel BrowserApp" style="display:flex;flex-direction:column;width:100%;height:100%;font-family:system-ui,sans-serif;background:#1e1e1e;color:#fff;user-select:none;">
+        <div class="BrowserTabBar" style="display:flex;background:#141414;padding:6px 6px 0;gap:4px;align-items:flex-end;overflow-x:auto;border-bottom:1px solid #2d2d2d;">
+            <div class="TabContainer" style="display:flex;gap:4px;align-items:flex-end;flex:1;"></div>
+            <button type="button" class="NewTabBtn" title="New tab" style="background:#2d2d2d;color:#fff;border:0;padding:6px 10px;cursor:pointer;border-radius:4px;margin-bottom:4px;">+</button>
+        </div>
+        <form class="BrowserBar" style="display:flex;gap:6px;padding:8px;background:#1e1e1e;align-items:center;">
+            <button type="button" class="BrowserBack" title="Back">◀</button>
+            <button type="button" class="BrowserForward" title="Forward">▶</button>
+            <button type="button" class="BrowserReload" title="Reload">↻</button>
+            <input type="text" class="BrowserAddressInput" placeholder="Search or enter a web address…" required style="flex:1;min-width:0;padding:8px;border:1px solid #3a3a3a;border-radius:6px;background:#2a2a2a;color:#fff;">
+            <button type="button" class="BrowserOpenExternal" title="Open in your normal browser">↗</button>
         </form>
-
-        <!-- 🖼️ IFRAME WORKSPACE ZONE -->
-        <div class="BrowserFramesContainer" style="position: relative; width: 100%; flex-grow: 1; background: #fff;">
-            <div class="BrowserHint" style="display: none; position: absolute; top: 0; left: 0; right: 0; background: #cf3c3c; color: #fff; padding: 10px; text-align: center; font-size: 13px; z-index: 100; font-weight: 500; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                The proxy server is taking too long to load this website or connection was refused.
-            </div>
+        <div class="BrowserFramesContainer" style="position:relative;display:flex;flex:1;min-height:0;background:#fff;">
+            <div class="BrowserHint" role="status" style="display:none;position:absolute;top:0;left:0;right:0;background:#9d3030;color:#fff;padding:10px;text-align:center;z-index:5;">The page is taking a while to respond. It may block embedding or the proxy may be unavailable.</div>
         </div>
-    </div>
-    `;
-    // 1. Initialize the window container layout
+    </div>\`;
+    
     const win = createWindow("Browser", htmlTemplate);
+    if (!win) return null;
     win.style.width = Math.min(window.innerWidth - 40, 1000) + "px";
     win.style.height = Math.min(window.innerHeight - 110, 700) + "px";
     win.style.top = "68px";
 
-    // 2. Cache Core DOM Handles scoped specifically to this window
     const tabContainer = win.querySelector(".TabContainer");
     const newTabBtn = win.querySelector(".NewTabBtn");
-    const addressBar = win.querySelector("#browser-address");
+    const addressBar = win.querySelector(".BrowserAddressInput");
     const framesContainer = win.querySelector(".BrowserFramesContainer");
     const hint = win.querySelector(".BrowserHint");
     const searchForm = win.querySelector(".BrowserBar");
-    
     const backButton = win.querySelector(".BrowserBack");
     const forwardButton = win.querySelector(".BrowserForward");
     const reloadButton = win.querySelector(".BrowserReload");
     const externalButton = win.querySelector(".BrowserOpenExternal");
 
-    // 3. Tab Engine State Management Properties
-    let tabs = [];
-    let activeTabId = null;
-    let tabIdCounter = 0;
+    const tabs = [];
+    let activeTab = null;
+    let nextTabId = 1;
 
-    // 1. IMPROVED HTML: Added layout support for Back, Forward, and Reload controls
-    
+    function normalizeUrl(input) {
+        let value = String(input || "").trim();
+        if (!value) throw new Error("Enter a web address.");
+        if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) {
+            value = value.includes(".") && !/\\s/.test(value)
+                ? "https://" + value
+                : "https://www.google.com/search?q=" + encodeURIComponent(value);
+        }
+        const parsed = new URL(value);
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("Only HTTP and HTTPS pages are supported.");
+        return parsed.href;
+    }
 
+    function updateControls(tab) {
+        const hasPage = !!(tab && tab.history.length);
+        backButton.disabled = !hasPage || tab.pointer <= 0;
+        forwardButton.disabled = !hasPage || tab.pointer >= tab.history.length - 1;
+        reloadButton.disabled = !hasPage;
+        externalButton.disabled = !hasPage;
+        if (hasPage) addressBar.value = tab.history[tab.pointer];
+    }
 
-    // 5. Navigation Controller
-    const navigate = (url, trackingEnabled = true) => {
-        try {
-            // Auto-prepend protocol format layers
-            if (!/^https?:\/\//i.test(url)) {
-                url = "https://" + url;
-            }
+    function activateTab(tab) {
+        activeTab = tab;
+        tabs.forEach(item => {
+            item.frame.style.display = item === tab ? "block" : "none";
+            item.button.classList.toggle("active", item === tab);
+            item.button.setAttribute("aria-selected", item === tab ? "true" : "false");
+        });
+        hint.style.display = "none";
+        updateControls(tab);
+    }
 
-            const parsed = new URL(url);
-            if (!["http:", "https:"].includes(parsed.protocol)) {
-                throw new Error("Unsupported protocol");
-            }
-
-            // Sync state elements
-            addressBar.value = parsed.href;
-            
-            // Manage custom history array stacks manually for sandboxed proxies
-            if (trackingEnabled && !isNavigatingFromHistory) {
-                // If we navigate to a new site while sitting back in history, slice the forward chain
-                historyStack = historyStack.slice(0, historyPointer + 1);
-                historyStack.push(parsed.href);
-                historyPointer = historyStack.length - 1;
-            }
-
-            // Update state tracking
-            isNavigatingFromHistory = false;
-            hint.style.display = "none";
-            clearTimeout(frameTimer);
-
-            // Execute conditional source load routing rules
-            if (parsed.origin === window.location.origin) {
-                frame.src = parsed.href;
-            } else {
-                frame.src = `/api/browser-proxy?url=${encodeURIComponent(parsed.href)}`;
-            }
-
-            // Network failure boundary safety trigger
-            frameTimer = setTimeout(() => {
-                hint.style.display = "block";
-            }, 6000);
-
-            // Update layout button disabled statuses cleanly
-            backButton.style.opacity = historyPointer > 0 ? "1" : "0.4";
-            forwardButton.style.opacity = historyPointer < historyStack.length - 1 ? "1" : "0.4";
-
-        } catch (error) {
+    function navigate(input, addToHistory = true) {
+        if (!activeTab) return;
+        let url;
+        try { url = normalizeUrl(input); }
+        catch (error) {
             addressBar.value = "";
-            addressBar.placeholder = "Invalid URL. Use http:// or https:// formats.";
+            addressBar.placeholder = error.message;
+            return;
         }
-    };
+        const tab = activeTab;
+        if (addToHistory) {
+            tab.history = tab.history.slice(0, tab.pointer + 1);
+            tab.history.push(url);
+            tab.pointer = tab.history.length - 1;
+        }
+        addressBar.value = url;
+        hint.style.display = "none";
+        clearTimeout(tab.timer);
+        const parsed = new URL(url);
+        tab.frame.src = parsed.origin === window.location.origin
+            ? url
+            : "/api/browser-proxy?url=" + encodeURIComponent(url);
+        tab.timer = window.setTimeout(() => {
+            if (activeTab === tab) hint.style.display = "block";
+        }, 12000);
+        updateControls(tab);
+    }
 
-    // 6. Navigation Button Direct Bindings
+    function createTab(url = "https://example.com") {
+        const id = nextTabId++;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "BrowserTab";
+        button.textContent = "New Tab";
+        button.style.cssText = "background:#292929;color:#fff;border:0;border-radius:5px 5px 0 0;padding:7px 12px;cursor:pointer;";
+        const frame = document.createElement("iframe");
+        frame.title = "Browser tab " + id;
+        frame.style.cssText = "display:none;width:100%;height:100%;border:0;background:#fff;";
+        frame.referrerPolicy = "strict-origin-when-cross-origin";
+        const tab = { id, button, frame, history: [], pointer: -1, timer: null };
+        frame.addEventListener("load", () => clearTimeout(tab.timer));
+        button.addEventListener("click", () => activateTab(tab));
+        tabs.push(tab);
+        tabContainer.appendChild(button);
+        framesContainer.appendChild(frame);
+        activateTab(tab);
+        navigate(url);
+        return tab;
+    }
+
     backButton.addEventListener("click", () => {
-        if (historyPointer > 0) {
-            isNavigatingFromHistory = true;
-            historyPointer--;
-            navigate(historyStack[historyPointer], false);
+        if (activeTab && activeTab.pointer > 0) {
+            activeTab.pointer--;
+            navigate(activeTab.history[activeTab.pointer], false);
         }
     });
-
     forwardButton.addEventListener("click", () => {
-        if (historyPointer < historyStack.length - 1) {
-            isNavigatingFromHistory = true;
-            historyPointer++;
-            navigate(historyStack[historyPointer], false);
+        if (activeTab && activeTab.pointer < activeTab.history.length - 1) {
+            activeTab.pointer++;
+            navigate(activeTab.history[activeTab.pointer], false);
         }
     });
-
     reloadButton.addEventListener("click", () => {
-        if (historyStack[historyPointer]) {
-            navigate(historyStack[historyPointer], false);
+        if (activeTab && activeTab.pointer >= 0) {
+            const current = activeTab.history[activeTab.pointer];
+            navigate(current, false);
         }
     });
-
     externalButton.addEventListener("click", () => {
-        if (historyStack[historyPointer]) {
-            window.open(historyStack[historyPointer], "_blank", "noopener,noreferrer");
-        }
+        if (activeTab && activeTab.pointer >= 0) window.open(activeTab.history[activeTab.pointer], "_blank", "noopener,noreferrer");
     });
-
-    // 7. System Iframe Content Listener Optimization
-    frame.addEventListener("load", () => {
-        clearTimeout(frameTimer);
-        
-        try {
-            // Monitor same-origin title fallbacks cleanly
-            const title = frame.contentDocument?.title || "";
-            if (title.toLowerCase().includes("refused") || title.toLowerCase().includes("blocked")) {
-                hint.style.display = "block";
-            }
-        } catch (crossOriginError) {
-            // standard cross-origin boundaries prevent parent DOM scanning. 
-            // This is completely expected for external proxy sites.
-        }
-    });
-
-    newTabBtn.addEventListener("click", () => createNewTab("https://example.com"));
-
-    searchForm.addEventListener("submit", (event) => {
+    newTabBtn.addEventListener("click", () => createTab());
+    searchForm.addEventListener("submit", event => {
         event.preventDefault();
-        event.stopPropagation();
-        const activeTab = tabs.find(t => t.id === activeTabId);
-        if (activeTab) {
-            navigate(activeTab, addressBar.value);
-        }
+        navigate(addressBar.value);
     });
+    win.addEventListener("webos:window-close", () => tabs.forEach(tab => clearTimeout(tab.timer)));
 
-    setupStaticControls(backButton, forwardButton, reloadButton, externalButton, () => tabs.find(t => t.id === activeTabId));
-
-    // Run core initialization sequence
-    navigate(initialUrl || "https://example.com");
-
+    createTab(initialUrl || "https://example.com");
     return win;
 }
 function openAppCreator() {

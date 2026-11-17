@@ -60,9 +60,10 @@ app.get('/api/browser-proxy', async (req, res) => {
         // URL REWRITING ENGINE:
         let htmlContent = response.data;
         const parsedUrl = new URL(targetUrl);
-        const baseTag = `<base href="${parsedUrl.origin}/">`;
+        const baseTag = `<base href="${parsedUrl.href}">`;
         
-        htmlContent = htmlContent.replace('<head>', `<head>${baseTag}`);
+        htmlContent = htmlContent.replace(/<head(\\s[^>]*)?>/i, match => match + baseTag);
+        htmlContent = htmlContent.replace(/<meta\\s+[^>]*http-equiv=[\"']?content-security-policy[\"']?[^>]*>/gi, "");
 
         res.send(htmlContent);
 
