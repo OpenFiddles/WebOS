@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#080d16">
+    <title>WebOS Mobile Home</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #080d16;
+            color: #f4f7ff;
+            font-synthesis: none;
+        }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+        body {
+            min-height: 100dvh;
+            background:
+                radial-gradient(ellipse at 18% 8%, rgba(67, 112, 190, .22), transparent 42%),
+                radial-gradient(ellipse at 90% 85%, rgba(125, 79, 180, .16), transparent 38%),
+                #080d16;
+        }
+        .home {
+            min-height: 100%;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: max(28px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom));
+        }
+        .topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #aab8ce;
+            font-size: 13px;
+            letter-spacing: .04em;
+        }
+        .brand { font-weight: 750; color: #fff; letter-spacing: .12em; }
+        .hero { margin: auto 0; padding: 44px 0 52px; }
+        .orb {
+            width: 76px;
+            height: 76px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 28px;
+            border: 1px solid rgba(180, 205, 255, .25);
+            border-radius: 25px;
+            background: linear-gradient(145deg, rgba(103, 150, 232, .3), rgba(111, 81, 164, .16));
+            box-shadow: 0 18px 55px rgba(34, 76, 145, .2), inset 0 1px rgba(255,255,255,.15);
+            font-size: 32px;
+        }
+        h1 { margin: 0; font-size: clamp(38px, 11vw, 54px); line-height: 1.02; letter-spacing: -.055em; }
+        .subhead { max-width: 340px; margin: 16px 0 0; color: #aab8ce; font-size: 16px; line-height: 1.6; }
+        .launch {
+            width: 100%;
+            min-height: 58px;
+            margin-top: 34px;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 17px;
+            background: linear-gradient(110deg, #477bd0, #6954ad);
+            color: #fff;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            box-shadow: 0 12px 32px rgba(50, 91, 170, .25);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .launch:active { transform: scale(.985); }
+        .foot { color: #73839c; font-size: 12px; line-height: 1.5; }
+        .system-frame {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            border: 0;
+            background: #080d16;
+        }
+        .system-frame[hidden] { display: none; }
+        .home[hidden] { display: none; }
+        @media (min-width: 700px) {
+            .home { max-width: 520px; margin: 0 auto; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="home" id="home">
+        <div class="topline">
+            <span class="brand">OPENFIDDLES</span>
+            <span id="date-label">WEBOS MOBILE</span>
+        </div>
+        <section class="hero" aria-labelledby="welcome-title">
+            <div class="orb" aria-hidden="true">◈</div>
+            <h1 id="welcome-title">WebOS,<br>on the go.</h1>
+            <p class="subhead">A mobile-friendly way into your WebOS environment. Your workspace opens in its own frame.</p>
+            <button class="launch" id="launch-os" type="button">Enter WebOS <span aria-hidden="true">→</span></button>
+        </section>
+        <p class="foot">OpenFiddles · For the community, by the community.</p>
+    </main>
+    <iframe
+        class="system-frame"
+        id="system-frame"
+        title="WebOS workspace"
+        allow="fullscreen"
+        scrolling="no"
+        hidden
+    ></iframe>
+    <script>
+        const home = document.getElementById("home");
+        const frame = document.getElementById("system-frame");
+        const launchButton = document.getElementById("launch-os");
+        document.getElementById("date-label").textContent =
+            new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date()).toUpperCase();
+
+        launchButton.addEventListener("click", () => {
+            frame.hidden = false;
+            home.hidden = true;
+            if (!frame.src || frame.src === "about:blank") {
+                frame.src = "/html/DisplayManager_PopIT.html";
+            }
+        });
+    </script>
+</body>
+</html>
