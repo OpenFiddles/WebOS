@@ -1,122 +1,219 @@
 
 function openNotes() {
-    // Fail-safe launcher check
     if (typeof closeLauncher === "function") closeLauncher();
+    const markup = [
+        '<div class="notes-app-container">',
+        '<div class="notes-toolbar"><div class="notes-toolbar-group">',
+        '<button class="notes-btn" type="button" data-md="h1">H1</button><button class="notes-btn" type="button" data-md="bold"><b>B</b></button><button class="notes-btn" type="button" data-md="italic"><i>I</i></button><button class="notes-btn" type="button" data-md="code">&lt;/&gt;</button><button class="notes-btn" type="button" data-md="list">• List</button><button class="notes-btn" type="button" data-md="quote">❝</button>',
+        '</div><div class="notes-toolbar-group notes-toolbar-end"><button class="notes-btn notes-secondary" id="notes-download" type="button">Export .md</button><button class="notes-btn notes-secondary" id="notes-preview-toggle" type="button" aria-pressed="false">Preview only</button><button class="notes-btn save-btn" id="notes-save" type="button">Save</button></div></div>',
+        '<div class="notes-workspace"><section class="notes-pane editor-pane"><div class="pane-label">Markdown editor <span id="notes-editor-count">0 words</span></div><textarea id="notes-editor" spellcheck="true" aria-label="Markdown source" placeholder="# Your note&#10;&#10;Write something brilliant...&#10;&#10;Try **bold**, lists, quotes, tables and fenced code blocks."></textarea></section>',
+        '<section class="notes-pane preview-pane"><div class="pane-label">Live preview</div><article id="notes-preview" class="markdown-body"></article></section></div>',
+        '<footer class="notes-footer"><span id="notes-status" class="notes-status-text" aria-live="polite">Loading note…</span><span id="notes-stats">0 characters · 0 lines</span></footer></div>'
+    ].join("");
 
-    // Semantic, split-pane layout structural template
-    const notesHTML = `
-        <div class="notes-app-container">
-            <div class="notes-toolbar">
-                <button type="button" class="notes-btn save-btn" id="notes-save">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                    Save Note
-                </button>
-                <span class="notes-status-text" id="notes-status" aria-live="polite">Ready</span>
-            </div>
-            <div class="notes-workspace">
-                <div class="notes-pane editor-pane">
-                    <div class="pane-label">Markdown Input</div>
-                    <textarea id="notes-editor" placeholder="# Hello World\\n\\nWrite some **markdown** here...\\n- Bullet items\\n- *Italics* work too!"></textarea>
-                </div>
-                <div class="notes-pane preview-pane">
-                    <div class="pane-label">Live Preview</div>
-                    <div id="notes-preview" class="markdown-body"></div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    const win = createWindow("Notes & Markdown Editor", notesHTML);
-    
+    const win = createWindow("Notes & Markdown Studio", markup);
+    if (!win) return null;
     const editor = win.querySelector("#notes-editor");
     const preview = win.querySelector("#notes-preview");
-    const saveBtn = win.querySelector("#notes-save");
     const status = win.querySelector("#notes-status");
+    const stats = win.querySelector("#notes-stats");
+    const wordCount = win.querySelector("#notes-editor-count");
+    const workspace = win.querySelector(".notes-workspace");
+    const toggle = win.querySelector("#notes-preview-toggle");
+    const notePath = "/Documents/Notes.md";
+    let dirty = false, timer = null, revision = 0, queue = Promise.resolve();
 
-    // Highly efficient lightweight Vanilla JS Markdown Parser engine
-        function parseMarkdown(markdownText) {
-            if (!markdownText) return "";
-            
-            // 1. Sanitize HTML input injection vulnerabilities
-            let html = markdownText
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
-    
-            // 2. Parse Headers, inline text styling, and lists
-            html = html
-                .replace(/^### (.*)\$/gim, '<h3>\$1</h3>')              // H3 Headers
-                .replace(/^## (.*)\$/gim, '<h2>\$1</h2>')               // H2 Headers
-                .replace(/^# (.*)\$/gim, '<h1>\$1</h1>')                // H1 Headers
-                .replace(/\*\*(.*?)\*\*/gim, '<strong>\$1</strong>')   // Bold text **bold**
-                .replace(/\*(.*?)\*/gim, '<em>\$1</em>')               // Italic text *italic*
-                .replace(/`(.*?)`/gim, '<code>\$1</code>')             // Inline Code blocks `code`
-                .replace(/^\s*-\s(.*)\$/gim, '<li>\$1</li>');           // List items - item
-    
-            // 3. Wrap adjacent list items gracefully into semantic UL structures
-            html = html.replace(/(<li>.*?<\/li>)(?:\s*\n?\s*(<li>.*?<\/li>))*/gim, function(match) {
-                return '<ul>' + match + '</ul>';
-            });
-    
-            // 4. Structural paragraph blocks split on double lines breaks or individual cleanup
-            return html.split(/\n\n+/).map(p => {
-                const trimmed = p.trim();
-                if (!trimmed) return '';
-                // Skip structural paragraph elements if they are already standard layout blocks
-                if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<li')) {
-                    return trimmed;
-                }
-                return `<p>${trimmed.replace(/\n/g, '<br />')}</p>`; // Converts single returns to line breaks inside paragraphs
-            }).join('');
-        }
-    
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, ch => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    })[ch]);
 
-    // Trigger parsing update dynamically when typing
-    editor.addEventListener("input", () => {
-        preview.innerHTML = parseMarkdown(editor.value);
-    });
-
-    // Unified Virtual File Tree & LocalStorage reading stack
-    if (typeof WebOSFileSystem !== "undefined" && WebOSFileSystem.read) {
-        WebOSFileSystem.read("/Documents/Notes.md").then((entry) => {
-            const rawContent = entry?.content || localStorage.getItem("webos-notes-md") || "";
-            editor.value = rawContent;
-            preview.innerHTML = parseMarkdown(rawContent);
-        }).catch(() => {
-            // Fallback safety if file path does not exist yet
-            const fallbackContent = localStorage.getItem("webos-notes-md") || "";
-            editor.value = fallbackContent;
-            preview.innerHTML = parseMarkdown(fallbackContent);
-        });
-    } else {
-        const localOnly = localStorage.getItem("webos-notes-md") || "";
-        editor.value = localOnly;
-        preview.innerHTML = parseMarkdown(localOnly);
+    function safeHref(value) {
+        const href = String(value || "").trim();
+        return /^(https?:|mailto:)/i.test(href) || /^#[\w-]+$/.test(href) ? href : "";
     }
 
-    // Save event processing hook
-    saveBtn.addEventListener("click", () => {
-        const dataValue = editor.value;
-        
-        const executeLocalSave = () => {
-            localStorage.setItem("webos-notes-md", dataValue);
-            status.textContent = "Saved at " + new Date().toLocaleTimeString();
-            status.classList.add("success");
-            setTimeout(() => status.classList.remove("success"), 3000);
+    function inlineMarkdown(source) {
+        const saved = [];
+        const protect = html => {
+            const token = "\u0000" + saved.length + "\u0000";
+            saved.push(html);
+            return token;
         };
+        let text = escapeHTML(source);
+        text = text.replace(/\`([^\`\n]+)\`/g, (_, code) => protect("<code>" + code + "</code>"));
+        text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, alt, url) => {
+            const href = safeHref(url);
+            return href ? protect('<img src="' + escapeHTML(href) + '" alt="' + alt + '" loading="lazy">') : alt;
+        });
+        text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+            const href = safeHref(url);
+            return href ? protect('<a href="' + escapeHTML(href) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>') : label;
+        });
+        text = text.replace(/~~(.+?)~~/g, "<del>$1</del>")
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/__(.+?)__/g, "<strong>$1</strong>")
+            .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+            .replace(/(^|[^_])_([^_\n]+)_/g, "$1<em>$2</em>");
+        return text.replace(/\u0000(\d+)\u0000/g, (_, n) => saved[Number(n)]);
+    }
 
-        if (typeof WebOSFileSystem !== "undefined" && WebOSFileSystem.putText) {
-            WebOSFileSystem.putText("/Documents/Notes.md", dataValue)
-                .then(executeLocalSave)
-                .catch(err => {
-                    console.error("FS error, saving locally:", err);
-                    executeLocalSave();
-                });
+    function parseMarkdown(source) {
+        const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n");
+        const out = [];
+        let i = 0;
+        const special = line => /^ {0,3}(#{1,6}\s|[\`~]{3}|>|[-*_]\s*[-*_]\s*[-*_]\s*$|[-+*]\s|\d+[.)]\s)/.test(line);
+        while (i < lines.length) {
+            const line = lines[i];
+            if (!line.trim()) { i++; continue; }
+            const fence = line.match(/^ {0,3}(\`{3,}|~{3,})\s*([\w+-]*)/);
+            if (fence) {
+                const marker = fence[1][0], size = fence[1].length, language = fence[2];
+                i++;
+                const code = [];
+                while (i < lines.length && !new RegExp("^ {0,3}" + marker + "{" + size + ",}\\\\s*$").test(lines[i])) code.push(lines[i++]);
+                if (i < lines.length) i++;
+                out.push('<pre><code' + (language ? ' class="language-' + escapeHTML(language) + '"' : "") + '>' + escapeHTML(code.join("\n")) + "</code></pre>");
+                continue;
+            }
+            const heading = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+            if (heading) {
+                const tag = "h" + heading[1].length;
+                out.push("<" + tag + ">" + inlineMarkdown(heading[2]) + "</" + tag + ">");
+                i++; continue;
+            }
+            if (/^ {0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) { out.push("<hr>"); i++; continue; }
+            if (/^ {0,3}>/.test(line)) {
+                const quote = [];
+                while (i < lines.length && /^ {0,3}>/.test(lines[i])) quote.push(lines[i++].replace(/^ {0,3}>\s?/, ""));
+                out.push("<blockquote>" + parseMarkdown(quote.join("\n")) + "</blockquote>");
+                continue;
+            }
+            if (line.includes("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[i + 1])) {
+                const cells = row => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(x => x.trim());
+                const headers = cells(line), aligns = cells(lines[i + 1]).map(x => x.startsWith(":") && x.endsWith(":") ? "center" : x.endsWith(":") ? "right" : x.startsWith(":") ? "left" : "");
+                i += 2;
+                let table = "<table><thead><tr>";
+                headers.forEach((x,n) => table += '<th' + (aligns[n] ? ' style="text-align:' + aligns[n] + '"' : "") + ">" + inlineMarkdown(x) + "</th>");
+                table += "</tr></thead><tbody>";
+                while (i < lines.length && lines[i].includes("|") && lines[i].trim()) {
+                    const values = cells(lines[i++]);
+                    table += "<tr>";
+                    headers.forEach((_,n) => table += '<td' + (aligns[n] ? ' style="text-align:' + aligns[n] + '"' : "") + ">" + inlineMarkdown(values[n] || "") + "</td>");
+                    table += "</tr>";
+                }
+                out.push(table + "</tbody></table>");
+                continue;
+            }
+            const list = line.match(/^ {0,3}([-+*]|\d+[.)])\s+(.*)$/);
+            if (list) {
+                const ordered = /^\d/.test(list[1]), tag = ordered ? "ol" : "ul", items = [];
+                while (i < lines.length) {
+                    const match = lines[i].match(/^ {0,3}([-+*]|\d+[.)])\s+(.*)$/);
+                    if (!match || /^\d/.test(match[1]) !== ordered) break;
+                    const task = match[2].match(/^\[([ xX])\]\s+(.*)$/);
+                    items.push("<li>" + (task ? '<input type="checkbox" disabled ' + (task[1].toLowerCase() === "x" ? "checked" : "") + '> ' : "") + inlineMarkdown(task ? task[2] : match[2]) + "</li>");
+                    i++;
+                }
+                out.push("<" + tag + ">" + items.join("") + "</" + tag + ">");
+                continue;
+            }
+            const paragraph = [line.trim()];
+            i++;
+            while (i < lines.length && lines[i].trim() && !special(lines[i])) paragraph.push(lines[i++].trim());
+            out.push("<p>" + paragraph.map(inlineMarkdown).join("<br>") + "</p>");
+        }
+        return out.join("\n");
+    }
+
+    function render() {
+        preview.innerHTML = parseMarkdown(editor.value);
+        const words = editor.value.trim() ? editor.value.trim().split(/\s+/).length : 0;
+        wordCount.textContent = words + (words === 1 ? " word" : " words");
+        stats.textContent = editor.value.length + " characters · " + (editor.value ? editor.value.split("\n").length : 0) + " lines";
+    }
+
+    function setStatus(message, success = false) {
+        status.textContent = message;
+        status.classList.toggle("success", success);
+    }
+
+    function save() {
+        const value = editor.value, version = revision;
+        try { localStorage.setItem("webos-notes-md", value); } catch (error) {}
+        queue = queue.then(async () => {
+            if (window.WebOSFileSystem?.putText) await window.WebOSFileSystem.putText(notePath, value);
+            if (revision === version) {
+                dirty = false;
+                setStatus("Saved · " + new Date().toLocaleTimeString(), true);
+            }
+        }).catch(error => {
+            setStatus("Browser copy saved · " + (error.message || "File storage unavailable"));
+            console.warn("Notes save:", error);
+        });
+        return queue;
+    }
+
+    function changed() {
+        dirty = true; revision++;
+        setStatus("Unsaved changes…");
+        clearTimeout(timer);
+        timer = setTimeout(save, 850);
+    }
+
+    function insert(type) {
+        const start = editor.selectionStart, end = editor.selectionEnd;
+        const selected = editor.value.slice(start, end);
+        const wrappers = { bold:["**","**","bold"], italic:["*","*","italic"], code:["\`","\`","code"] };
+        if (wrappers[type]) {
+            const [before,after,fallback] = wrappers[type];
+            editor.setRangeText(before + (selected || fallback) + after, start, end, "select");
         } else {
-            executeLocalSave();
+            const prefix = { h1:"# ", list:"- ", quote:"> " }[type];
+            const lineStart = editor.value.lastIndexOf("\n", start - 1) + 1;
+            editor.setRangeText(prefix, lineStart, lineStart, "end");
+        }
+        editor.focus(); render(); changed();
+    }
+
+    win.querySelectorAll("[data-md]").forEach(button => button.addEventListener("click", () => insert(button.dataset.md)));
+    editor.addEventListener("input", () => { render(); changed(); });
+    editor.addEventListener("keydown", event => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+            event.preventDefault(); clearTimeout(timer); save();
+        }
+        if (event.key === "Tab") {
+            event.preventDefault();
+            editor.setRangeText("    ", editor.selectionStart, editor.selectionEnd, "end");
+            render(); changed();
         }
     });
+    win.querySelector("#notes-save").addEventListener("click", () => { clearTimeout(timer); save(); });
+    toggle.addEventListener("click", () => {
+        const only = workspace.classList.toggle("preview-only");
+        toggle.setAttribute("aria-pressed", String(only));
+        toggle.textContent = only ? "Back to editor" : "Preview only";
+    });
+    win.querySelector("#notes-download").addEventListener("click", () => {
+        const url = URL.createObjectURL(new Blob([editor.value], {type:"text/markdown;charset=utf-8"}));
+        const a = document.createElement("a"); a.href = url; a.download = "Notes.md";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
 
+    function loadFallback() {
+        let value = "";
+        try { value = localStorage.getItem("webos-notes-md") || ""; } catch (error) {}
+        editor.value = value; render(); setStatus("Ready");
+    }
+    if (window.WebOSFileSystem?.read) {
+        window.WebOSFileSystem.read(notePath).then(entry => {
+            if (!win.isConnected || dirty) return;
+            let local = "";
+            try { local = localStorage.getItem("webos-notes-md") || ""; } catch (error) {}
+            editor.value = entry?.content ?? local;
+            render(); setStatus("Ready");
+        }).catch(loadFallback);
+    } else loadFallback();
     return win;
 }
 
