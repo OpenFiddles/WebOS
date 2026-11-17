@@ -459,8 +459,7 @@ document.querySelectorAll("[data-desktop-app]").forEach(button => {
     };
 
     desktop.addEventListener("contextmenu", (event) => {
-        const workspace = document.getElementById("window-workspace");
-        if (event.target !== desktop && event.target !== workspace) return;
+        if (event.target.closest("#taskbar, #dock, #Launcher, .window-shell, .DesktopShortcut, .WebOSContextMenu")) return;
         event.preventDefault();
         closeContextMenu();
 
