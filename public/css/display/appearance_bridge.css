@@ -5,8 +5,6 @@ body[data-theme="sunset"]{--surface:rgba(47,23,35,.84);--line:rgba(255,190,160,.
 body[data-theme="midnight"]{--surface:rgba(17,17,39,.88);--line:rgba(185,185,255,.22)}
 body[data-theme="lavender"]{--surface:rgba(35,24,54,.84);--line:rgba(224,194,255,.24)}
 /* Theme presets supply surfaces; the user's custom accent always wins. */
-body[data-theme]{--accent:var(--webos-accent,var(--accent))}
-body{--webos-accent:var(--accent)}
 body #Desktop{background-color:transparent}
 body[data-wallpaper="aurora"] #Desktop{background:radial-gradient(ellipse at 18% 22%,rgba(30,210,190,.25),transparent 35%),radial-gradient(ellipse at 78% 72%,rgba(92,98,255,.32),transparent 38%),linear-gradient(135deg,#06131f,#102e43 52%,#191c43)}
 body[data-wallpaper="midnight"] #Desktop{background:radial-gradient(circle at 50% 0%,rgba(92,92,170,.2),transparent 45%),linear-gradient(145deg,#050711,#11152a 58%,#080b18)}
