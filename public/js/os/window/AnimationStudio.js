@@ -1,6 +1,6 @@
 function openAnimationStudio() {
  if (typeof closeLauncher==="function") closeLauncher();
- const html = \`
+ const html = `
  <div class="AppPanel animation-studio">
   <header class="as-header"><div><span class="as-eyebrow">MOTION DESIGNER</span><h2>Animation Studio</h2><p>Author keyframes, tune timing, and preview motion on desktop elements.</p></div><span class="as-live-dot">LIVE PREVIEW</span></header>
   <div class="as-layout"><section class="as-editor">
@@ -20,20 +20,20 @@ function openAnimationStudio() {
    <div class="as-presets"><label>Presets<select id="as-preset"><option value="float">Soft float</option><option value="pop">Pop in</option><option value="shimmer">Shimmer</option><option value="pulse">Pulse</option><option value="custom">Saved custom</option></select></label><button type="button" id="as-load" class="as-secondary">Load</button></div>
    <p id="as-status" class="as-status" role="status">Ready. Try a preset or edit the keyframes.</p>
   </section><aside class="as-preview"><div class="as-section-title"><strong>Preview canvas</strong><span>Sample</span></div><div class="as-stage"><div id="as-preview-card" class="as-preview-card"><span>W</span><strong>WebOS</strong><small>Motion in progress</small></div></div><div class="as-tip"><strong>Tip</strong><p>Try selectors like <code>.window-shell</code>, <code>#dock</code>, or <code>.TaskButton</code>. Applying affects matching desktop elements until changed or reloaded.</p></div><div class="as-warning">Experimental: presets are stored locally and respect Reduce Motion.</div></aside></div>
- </div>\`;
+ </div>`;
  const win=createWindow("Animation Studio",html); if(!win)return null;
  win.style.width=Math.min(window.innerWidth-36,1060)+"px";win.style.height=Math.min(window.innerHeight-100,760)+"px";
  const $=id=>win.querySelector("#"+id), editor=$("as-keyframes"),target=$("as-target"),status=$("as-status"),preview=$("as-preview-card");
  const duration=$("as-duration"),delay=$("as-delay"),easing=$("as-easing"),iterations=$("as-iterations"),direction=$("as-direction"),fill=$("as-fill");
  let style=document.getElementById("webos-animation-studio-style");if(!style){style=document.createElement("style");style.id="webos-animation-studio-style";document.head.appendChild(style);}
  const samples={
-  float:"@keyframes webos-studio-motion {\\n  0% { transform: translateY(0) rotate(0); }\\n  50% { transform: translateY(-18px) rotate(-2deg); }\\n  100% { transform: translateY(0) rotate(0); }\\n}",
-  pop:"@keyframes webos-studio-motion {\\n  0% { opacity: 0; transform: translateY(24px) scale(.82); }\\n  70% { opacity: 1; transform: translateY(-4px) scale(1.03); }\\n  100% { opacity: 1; transform: translateY(0) scale(1); }\\n}",
-  shimmer:"@keyframes webos-studio-motion {\\n  0% { filter: brightness(.85) saturate(1); }\\n  50% { filter: brightness(1.45) saturate(1.5); }\\n  100% { filter: brightness(.85) saturate(1); }\\n}",
-  pulse:"@keyframes webos-studio-motion {\\n  0%,100% { transform: scale(1); opacity: 1; }\\n  50% { transform: scale(1.07); opacity: .78; }\\n}"
+  float:"@keyframes webos-studio-motion {\n  0% { transform: translateY(0) rotate(0); }\n  50% { transform: translateY(-18px) rotate(-2deg); }\n  100% { transform: translateY(0) rotate(0); }\n}",
+  pop:"@keyframes webos-studio-motion {\n  0% { opacity: 0; transform: translateY(24px) scale(.82); }\n  70% { opacity: 1; transform: translateY(-4px) scale(1.03); }\n  100% { opacity: 1; transform: translateY(0) scale(1); }\n}",
+  shimmer:"@keyframes webos-studio-motion {\n  0% { filter: brightness(.85) saturate(1); }\n  50% { filter: brightness(1.45) saturate(1.5); }\n  100% { filter: brightness(.85) saturate(1); }\n}",
+  pulse:"@keyframes webos-studio-motion {\n  0%,100% { transform: scale(1); opacity: 1; }\n  50% { transform: scale(1.07); opacity: .78; }\n}"
  };
  editor.value=samples.float;
- function validate(){const css=editor.value.trim();if(!/@keyframes\\s+webos-studio-motion\\b/i.test(css))throw Error("Keep the keyframe name webos-studio-motion.");if(/@import|javascript:|expression\\s*\\(/i.test(css))throw Error("Unsafe CSS token detected.");const sheet=new CSSStyleSheet();sheet.replaceSync(css);if(!Array.from(sheet.cssRules).some(rule=>rule.type===CSSRule.KEYFRAMES_RULE))throw Error("No valid @keyframes rule found.");style.textContent=css;}
+ function validate(){const css=editor.value.trim();if(!/@keyframes\s+webos-studio-motion\b/i.test(css))throw Error("Keep the keyframe name webos-studio-motion.");if(/@import|javascript:|expression\s*\(/i.test(css))throw Error("Unsafe CSS token detected.");const sheet=new CSSStyleSheet();sheet.replaceSync(css);if(!Array.from(sheet.cssRules).some(rule=>rule.type===CSSRule.KEYFRAMES_RULE))throw Error("No valid @keyframes rule found.");style.textContent=css;}
  function options(){return{duration:Math.max(80,Math.min(12000,Number(duration.value)||700)),delay:Math.max(0,Math.min(10000,Number(delay.value)||0)),easing:easing.value,iterations:iterations.value==="infinite"?Infinity:Number(iterations.value),direction:direction.value,fill:fill.value};}
  function animate(element){const o=options();element.style.animation="none";void element.offsetWidth;element.style.animation="webos-studio-motion "+o.duration+"ms "+o.easing+" "+o.delay+"ms "+o.iterations+" "+o.direction+" "+o.fill;}
  $("as-play").onclick=()=>{try{validate();animate(preview);let el;try{el=document.querySelector(target.value.trim());}catch(_){throw Error("Invalid target selector.");}if(el&&!win.contains(el))animate(el);status.textContent="Preview running on sample and first matching target.";}catch(e){status.textContent="Preview failed: "+e.message;}};
