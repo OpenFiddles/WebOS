@@ -1291,6 +1291,8 @@ function openBrowser(initialUrl) {
         frame.title = "Browser tab " + id;
         frame.style.cssText = "display:none;width:100%;height:100%;border:0;background:#fff;";
         frame.referrerPolicy = "strict-origin-when-cross-origin";
+        // Remote pages run in an opaque-origin sandbox so they cannot reach the WebOS parent window.
+        frame.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads");
         const tab = { id, button, frame, history: [], pointer: -1, timer: null };
         frame.addEventListener("load", () => clearTimeout(tab.timer));
         button.addEventListener("click", () => activateTab(tab));

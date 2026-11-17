@@ -15,7 +15,7 @@
 .webos-power-menu{position:fixed;z-index:15000;top:calc(var(--taskbar-height,44px) + 8px);right:12px;width:min(270px,calc(100vw - 24px));padding:9px;border:1px solid var(--line);border-radius:15px;background:color-mix(in srgb,var(--surface) 96%,#050b16 4%);box-shadow:0 18px 55px rgba(0,0,0,.48);backdrop-filter:blur(24px);color:#fff}
 .webos-power-user{padding:9px 10px 12px;border-bottom:1px solid var(--line);margin-bottom:6px}
 .webos-power-user strong,.webos-power-user small{display:block}.webos-power-user small{opacity:.65;margin-top:3px;font-size:11px}
-.webos-power-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:0;border-radius:9px;background:transparent;color:inherit;text-align:left;font:500 13px inherit;cursor:pointer}
+.webos-power-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:0;border-radius:9px;background:transparent;color:inherit;text-align:left;font:500 13px/1.4 system-ui,sans-serif;cursor:pointer}
 .webos-power-menu button:hover{background:var(--accent-wash)}
 .webos-power-menu button span:first-child{width:22px;text-align:center}
 .webos-session-overlay{position:fixed;inset:0;z-index:30000;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 25%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 55%),rgba(3,7,15,.96);backdrop-filter:blur(26px);color:#fff}
