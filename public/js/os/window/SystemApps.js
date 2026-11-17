@@ -127,7 +127,7 @@ function openFiles() {
         '<div class="files-toolbar-row"><button type="button" class="files-icon-btn" id="file-back">↑ Back</button><div class="files-path-breadcrumb" id="files-current-path">/</div></div>',
         '<div class="files-toolbar-row files-toolbar-actions"><input id="files-search" type="search" placeholder="Search this folder…" aria-label="Search files">',
         '<select id="files-sort" aria-label="Sort files"><option value="name">Name</option><option value="modified">Date modified</option><option value="size">Size</option><option value="type">File type</option></select>',
-        '<button type="button" class="files-action-btn" id="new-folder">＋ Folder</button><button type="button" class="files-action-btn" id="new-file">＋ File</button><button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false">▦</button><input id="file-picker" type="file" multiple hidden>',
+        '<button type="button" class="files-action-btn" id="new-folder">＋ Folder</button><button type="button" class="files-action-btn" id="new-file">＋ File</button><button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false">▦</button><input id="file-picker" type="file" accept=".txt,.md,.json,.js,.mjs,.ts,.html,.htm,.css,.xml,.svg,.csv,.yml,.yaml,.toml,.ini,.log,.py,.sh,.sql" multiple hidden>',
         '</div></header><main class="files-grid-workspace"><ul class="files-node-list" id="file-list" aria-label="Folder contents"></ul></main>',
         '<footer class="files-statusbar"><span id="file-status" aria-live="polite">IndexedDB storage · Ready</span><span id="files-count">0 items</span></footer></div>'
     ].join("");
@@ -247,8 +247,11 @@ function openFiles() {
     win.querySelector("#upload-file").addEventListener("click",()=>picker.click());
     picker.addEventListener("change",async()=>{
         const files=Array.from(picker.files||[]);
-        for(const file of files) await window.WebOSFileSystem.putText(target(file.name),await file.text());
-        if(files.length)status.textContent="Imported "+files.length+" text file(s)";
+        const textPattern=/\.(txt|md|json|js|mjs|ts|html?|css|xml|svg|csv|ya?ml|toml|ini|log|py|sh|sql)$/i;
+        const accepted=files.filter(file=>file.type.startsWith("text/")||file.type==="application/json"||file.type==="image/svg+xml"||textPattern.test(file.name));
+        const skipped=files.length-accepted.length;
+        for(const file of accepted) await window.WebOSFileSystem.putText(target(file.name),await file.text());
+        if(files.length) status.textContent="Imported "+accepted.length+" text file(s)"+(skipped ? " · skipped "+skipped+" unsupported binary file(s)" : "");
         picker.value="";render();
     });
     win.addEventListener("webos:window-close",()=>{++token;picker.value="";});
