@@ -122,190 +122,138 @@ function openNotes() {
 
 function openFiles() {
     if (typeof closeLauncher === "function") closeLauncher();
-
-    // Clean structural template designed to mimic native operating system environments
-    const filesAppHTML = `
-        <div class="files-app-container">
-            <header class="files-app-toolbar">
-                <div class="toolbar-nav-group">
-                    <button type="button" class="files-icon-btn" id="file-back" title="Go Up A Folder">⬆ Back</button>
-                    <span class="files-path-breadcrumb" id="files-current-path">/</span>
-                </div>
-                <div class="toolbar-action-group">
-                    <button type="button" class="files-action-btn" id="new-file">＋ New File</button>
-                    <button type="button" class="files-action-btn variant-secondary" id="upload-file">🗂 Import File</button>
-                    <input id="file-picker" type="file" style="display: none;">
-                </div>
-            </header>
-            
-            <main class="files-grid-workspace">
-                <ul class="files-node-list" id="file-list"></ul>
-            </main>
-
-            <footer class="files-statusbar">
-                <span id="file-status" aria-live="polite">IndexedDB File System Active</span>
-            </footer>
-        </div>
-    `;
-
-    const win = createWindow("File Explorer", filesAppHTML);
-    
-    const list = win.querySelector("#file-list");
-    const status = win.querySelector("#file-status");
-    const pathIndicator = win.querySelector("#files-current-path");
-    const picker = win.querySelector("#file-picker");
-    const backBtn = win.querySelector("#file-back");
-
-    // Keep track of the real state context of directory navigation
-    let currentPath = "/";
-
-    const renderFiles = async () => {
-        list.replaceChildren();
-        pathIndicator.textContent = currentPath;
-        
-        // Disable back button at root directory index properties
-        backBtn.disabled = currentPath === "/";
-
+    const html = [
+        '<div class="files-app-container"><header class="files-app-toolbar">',
+        '<div class="files-toolbar-row"><button type="button" class="files-icon-btn" id="file-back">↑ Back</button><div class="files-path-breadcrumb" id="files-current-path">/</div></div>',
+        '<div class="files-toolbar-row files-toolbar-actions"><input id="files-search" type="search" placeholder="Search this folder…" aria-label="Search files">',
+        '<select id="files-sort" aria-label="Sort files"><option value="name">Name</option><option value="modified">Date modified</option><option value="size">Size</option><option value="type">File type</option></select>',
+        '<button type="button" class="files-action-btn" id="new-folder">＋ Folder</button><button type="button" class="files-action-btn" id="new-file">＋ File</button><button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false">▦</button><input id="file-picker" type="file" multiple hidden>',
+        '</div></header><main class="files-grid-workspace"><ul class="files-node-list" id="file-list" aria-label="Folder contents"></ul></main>',
+        '<footer class="files-statusbar"><span id="file-status" aria-live="polite">IndexedDB storage · Ready</span><span id="files-count">0 items</span></footer></div>'
+    ].join("");
+    const win = createWindow("File Explorer", html);
+    if (!win) return null;
+    const list = win.querySelector("#file-list"), status = win.querySelector("#file-status");
+    const count = win.querySelector("#files-count"), pathLabel = win.querySelector("#files-current-path");
+    const picker = win.querySelector("#file-picker"), back = win.querySelector("#file-back");
+    const search = win.querySelector("#files-search"), sort = win.querySelector("#files-sort");
+    const view = win.querySelector("#files-view");
+    let path = "/", grid = false, token = 0;
+    const name = e => e.path.split("/").pop() || "/";
+    const parent = p => "/" + p.split("/").filter(Boolean).slice(0,-1).join("/");
+    const target = n => (path === "/" ? "" : path) + "/" + n;
+    const clean = n => n.trim().replace(/[\/\\:*?"<>|]/g,"-");
+    const size = e => e.type === "directory" ? 0 : (e.size ?? new Blob([e.content || ""]).size);
+    const prettySize = n => {
+        if (!n) return "0 B";
+        const units=["B","KB","MB","GB"], i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),3);
+        return (n/Math.pow(1024,i)).toFixed(i ? 1 : 0)+" "+units[i];
+    };
+    const icon = e => {
+        if (e.type==="directory") return "folder";
+        const ext=name(e).split(".").pop().toLowerCase();
+        if (["png","jpg","jpeg","gif","webp","bmp"].includes(ext)) return "image";
+        if (ext==="svg") return "svg";
+        if (["js","ts","html","css","json","xml","py","sh","wasm"].includes(ext)) return "code";
+        if (["mp3","wav","ogg","flac"].includes(ext)) return "audio";
+        if (["mp4","webm","mov"].includes(ext)) return "video";
+        if (["zip","7z","tar","gz"].includes(ext)) return "archive";
+        return "file";
+    };
+    async function render() {
+        const current=++token;
+        list.replaceChildren(); pathLabel.textContent=path; back.disabled=path==="/";
         try {
-            // Read records safely using your database abstraction layers
-            const entries = await window.WebOSFileSystem.list(currentPath);
-            
-            if (entries.length === 0) {
-                const emptyMsg = document.createElement("div");
-                emptyMsg.className = "files-empty-state-notice";
-                emptyMsg.textContent = "This folder workspace is empty.";
-                list.appendChild(emptyMsg);
-                return;
-            }
-
-            entries.forEach((entry) => {
-                const item = document.createElement("li");
-                item.className = `file-node-item ${entry.type === "directory" ? "node-type-folder" : "node-type-file"}`;
-                
-                const nodeName = entry.path.split("/").pop() || "/";
-                const displaySize = entry.type === "directory" ? "System Folder" : (entry.content ? formatBytes(entry.content.length) : "0 Bytes");
-                
-                item.innerHTML = `
-                    <div class="node-meta-wrapper">
-                        <span class="node-graphic-icon">${entry.type === "directory" ? "📁" : "📄"}</span>
-                        <div class="node-text-details">
-                            <span class="node-filename-label">${nodeName}</span>
-                            <small class="node-filesize-sublabel">${displaySize}</small>
-                        </div>
-                    </div>
-                    <button type="button" class="node-delete-trigger-btn" title="Delete Permanent Item">×</button>
-                `;
-
-                // Single click routing for directory jumps
-                item.addEventListener("click", (e) => {
-                    if (e.target.classList.contains("node-delete-trigger-btn")) return;
-                    
-                    if (entry.type === "directory") {
-                        currentPath = entry.path;
-                        renderFiles();
-                    }
-                });
-
-                // Double click behavior mappings
-                if (entry.type === "file") {
-                    item.title = "Double-click to view asset contents";
-                    item.addEventListener("dblclick", async () => {
-                        const file = await window.WebOSFileSystem.read(entry.path);
-                        
-                        // INTEGRATION HOOK: If file extension matches Markdown format rules, trigger notes app!
-                        if (nodeName.toLowerCase().endsWith(".md") && typeof openNotes === "function") {
-                            openNotes();
-                        } else {
-                            // Unified plaintext edit interface template fallback
-                            const cleanTextValue = file ? file.content : "";
-                            const editorWin = createWindow(nodeName, `
-                                <div class="file-editor-container">
-                                    <textarea class="raw-code-textarea">${cleanTextValue}</textarea>
-                                    <div class="editor-action-footer">
-                                        <button type="button" class="editor-save-action-btn">Save Changes</button>
-                                    </div>
-                                </div>
-                            `);
-                            
-                            editorWin.querySelector(".editor-save-action-btn").onclick = async function() {
-                                const activeTextData = editorWin.querySelector(".raw-code-textarea").value;
-                                await window.WebOSFileSystem.putText(entry.path, activeTextData);
-                                status.textContent = `Updates verified on path: ${nodeName}`;
-                                renderFiles();
-                            };
-                        }
-                    });
-                }
-
-                // Delete behavior linked safely to your background .remove method
-                item.querySelector(".node-delete-trigger-btn").onclick = async (e) => {
-                    e.stopPropagation();
-                    if (confirm(`Confirm permanent erasure sequence for node: ${nodeName}?`)) {
-                        await window.WebOSFileSystem.remove(entry.path);
-                        status.textContent = `Removed item: ${nodeName}`;
-                        renderFiles();
-                    }
-                };
-
-                list.appendChild(item);
+            const entries=await window.WebOSFileSystem.list(path);
+            if(current!==token || !win.isConnected) return;
+            const q=search.value.trim().toLowerCase();
+            const rows=entries.filter(e=>name(e).toLowerCase().includes(q));
+            rows.sort((a,b)=>{
+                if(a.type!==b.type) return a.type==="directory"?-1:1;
+                if(sort.value==="modified") return (b.modified||0)-(a.modified||0);
+                if(sort.value==="size") return size(b)-size(a);
+                if(sort.value==="type") return name(a).split(".").pop().localeCompare(name(b).split(".").pop());
+                return name(a).localeCompare(name(b),undefined,{numeric:true,sensitivity:"base"});
             });
-        } catch (err) {
-            status.textContent = "Error parsing file nodes layer structures.";
-            console.error(err);
-        }
-    };
-
-    // Navigational directory backtracking algorithm
-    backBtn.onclick = () => {
-        if (currentPath === "/") return;
-        const segments = currentPath.split("/").filter(Boolean);
-        segments.pop();
-        currentPath = "/" + segments.join("/");
-        renderFiles();
-    };
-
-    // Virtual asset registration prompt paths matching database logic
-    win.querySelector("#new-file").onclick = async () => {
-        const name = window.prompt("Enter filename with extension (e.g. todo.txt, readme.md):", "document.txt");
-        if (!name) return;
-        
-        // Calculate correct absolute database path values safely
-        const prefixPath = currentPath === "/" ? "" : currentPath;
-        const resolvedPath = `${prefixPath}/${name.replace(/^\/+/, "")}`;
-        
-        await window.WebOSFileSystem.putText(resolvedPath, "");
-        status.textContent = `Created asset: ${name}`;
-        renderFiles();
-    };
-
-    // Bind physical file system multi-format upload loops
-    win.querySelector("#upload-file").onclick = () => picker.click();
-    picker.onchange = async () => {
-        const file = picker.files[0];
-        if (!file) return;
-        
-        const prefixPath = currentPath === "/" ? "" : currentPath;
-        const targetPath = `${prefixPath}/${file.name}`;
-        const dataBody = await file.text();
-        
-        await window.WebOSFileSystem.putText(targetPath, dataBody);
-        status.textContent = `Successfully uploaded file item: ${file.name}`;
-        renderFiles();
-    };
-
-    // Human-readable size calculations matching backend properties
-    function formatBytes(bytes) {
-        if (bytes === 0 || !bytes) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            count.textContent=rows.length+" of "+entries.length+" items";
+            if(!rows.length) {
+                const empty=document.createElement("li"); empty.className="files-empty-state-notice";
+                empty.textContent=q?"No matching files in this folder.":"This folder is empty. Create a folder or import a file to get started.";
+                list.appendChild(empty); return;
+            }
+            rows.forEach(entry=>{
+                const n=name(entry), item=document.createElement("li");
+                item.className="file-node-item "+(entry.type==="directory"?"node-type-folder":"node-type-file");
+                const open=document.createElement("button"); open.type="button"; open.className="files-node-open";
+                const graphic=document.createElement("span"); graphic.className="node-graphic-icon";
+                const img=document.createElement("img"); img.className="files-preset-icon"; img.src="../images/icons/"+icon(entry)+".svg"; img.alt="";
+                graphic.appendChild(img);
+                const details=document.createElement("span"); details.className="node-text-details";
+                const label=document.createElement("span"); label.className="node-filename-label"; label.textContent=n;
+                const meta=document.createElement("small"); meta.className="node-filesize-sublabel";
+                meta.textContent=entry.type==="directory"?"Folder":prettySize(size(entry))+" · "+new Date(entry.modified||Date.now()).toLocaleDateString();
+                details.append(label,meta); open.append(graphic,details);
+                open.addEventListener("click",()=>{if(entry.type==="directory"){path=entry.path;search.value="";render();}else openFile(entry);});
+                const tools=document.createElement("div"); tools.className="files-node-actions";
+                const rename=document.createElement("button"); rename.type="button"; rename.textContent="Rename"; rename.title="Rename item";
+                rename.addEventListener("click",async()=>{
+                    const next=window.prompt("Rename item:",n); if(!next||!next.trim()||next.trim()===n)return;
+                    try{await window.WebOSFileSystem.move(entry.path,target(clean(next)));status.textContent="Renamed "+n;render();}
+                    catch(err){window.alert("Rename failed: "+err.message);}
+                });
+                const dl=document.createElement("button"); dl.type="button"; dl.textContent="↓"; dl.title="Download file"; dl.disabled=entry.type==="directory";
+                dl.addEventListener("click",()=>downloadEntry(entry));
+                const del=document.createElement("button"); del.type="button"; del.className="danger"; del.textContent="×"; del.title="Delete item";
+                del.addEventListener("click",async()=>{
+                    if(!window.confirm('Permanently delete "'+n+'" from WebOS storage?'))return;
+                    await window.WebOSFileSystem.remove(entry.path);status.textContent="Deleted "+n;render();
+                });
+                tools.append(rename,dl,del); item.append(open,tools); list.appendChild(item);
+            });
+            status.textContent=path+" · IndexedDB";
+        } catch(err){status.textContent="Could not read folder: "+err.message;console.error("WebOS Files:",err);}
     }
-
-    renderFiles();
-    return win;
+    async function openFile(entry) {
+        const file=await window.WebOSFileSystem.read(entry.path); if(!file)return;
+        const panel=document.createElement("div");panel.className="file-editor-container";
+        const info=document.createElement("div");info.className="file-editor-info";info.textContent=entry.path+" · "+prettySize(size(file));
+        const editor=document.createElement("textarea");editor.className="raw-code-textarea";editor.spellcheck=false;editor.value=file.content||"";
+        const footer=document.createElement("div");footer.className="editor-action-footer";
+        const save=document.createElement("button");save.type="button";save.className="files-action-btn";save.textContent="Save";
+        const dl=document.createElement("button");dl.type="button";dl.className="files-action-btn variant-secondary";dl.textContent="Download";
+        const state=document.createElement("span");state.setAttribute("aria-live","polite");state.textContent="Stored locally in this browser.";
+        save.addEventListener("click",async()=>{await window.WebOSFileSystem.putText(entry.path,editor.value);state.textContent="Saved at "+new Date().toLocaleTimeString();render();});
+        dl.addEventListener("click",()=>downloadText(name(entry),editor.value));
+        footer.append(save,dl,state);panel.append(info,editor,footer);createWindow(name(entry),panel);
+    }
+    function downloadText(filename,content) {
+        const blob=new Blob([content],{type:"application/octet-stream"}),url=URL.createObjectURL(blob);
+        const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+    async function downloadEntry(entry){const file=await window.WebOSFileSystem.read(entry.path);if(file)downloadText(name(entry),file.content||"");}
+    back.addEventListener("click",()=>{if(path==="/")return;path=parent(path);search.value="";render();});
+    search.addEventListener("input",render);sort.addEventListener("change",render);
+    view.addEventListener("click",()=>{grid=!grid;list.classList.toggle("files-grid-view",grid);view.setAttribute("aria-pressed",String(grid));view.textContent=grid?"☰":"▦";});
+    win.querySelector("#new-folder").addEventListener("click",async()=>{
+        const n=window.prompt("New folder name:","New Folder");if(!n||!n.trim())return;
+        try{await window.WebOSFileSystem.makeDirectory(target(clean(n)));status.textContent="Created folder "+n;render();}
+        catch(err){window.alert("Could not create folder: "+err.message);}
+    });
+    win.querySelector("#new-file").addEventListener("click",async()=>{
+        const n=window.prompt("New file name:","untitled.txt");if(!n||!n.trim())return;
+        await window.WebOSFileSystem.putText(target(clean(n)),"");status.textContent="Created file "+n;render();
+    });
+    win.querySelector("#upload-file").addEventListener("click",()=>picker.click());
+    picker.addEventListener("change",async()=>{
+        const files=Array.from(picker.files||[]);
+        for(const file of files) await window.WebOSFileSystem.putText(target(file.name),await file.text());
+        if(files.length)status.textContent="Imported "+files.length+" text file(s)";
+        picker.value="";render();
+    });
+    win.addEventListener("webos:window-close",()=>{++token;picker.value="";});
+    render();return win;
 }
-
 function openSettings() {
     if (typeof closeLauncher === "function") closeLauncher();
 
