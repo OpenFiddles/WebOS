@@ -3,7 +3,8 @@
  * High-Performance, Persistent IndexedDB Virtual Filesystem with Advanced API Utilities for WebOS.
  */
 (() => {
-    const databaseName = "webos-filesystem";
+    const profileId = (localStorage.getItem("webos-current-user") || "default").replace(/[^a-z0-9_-]/gi, "");
+    const databaseName = "webos-filesystem-" + (profileId || "default");
     const storeName = "entries";
     let databasePromise = null;
 

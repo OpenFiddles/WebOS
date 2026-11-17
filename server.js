@@ -71,11 +71,22 @@ function rewriteCss(css, baseUrl) {
 }
 function rewriteHtml(html, baseUrl) {
   const removeCsp = html.replace(/<meta\b[^>]*http-equiv\s*=\s*(['"]?)content-security-policy\1[^>]*>/gi, '');
-  const attrs = removeCsp.replace(/\b(src|href|poster|action|data)\s*=\s*(['"])(.*?)\2/gi, (all, attr, quote, value) => {
+  const withoutBase = removeCsp.replace(/<base\b[^>]*>/gi, '');
+  let attrs = withoutBase.replace(/\b(src|href|poster|action|data)\s*=\s*(['"])(.*?)\2/gi, (all, attr, quote, value) => {
     const raw = value.trim();
     if (!raw || /^(?:#|data:|blob:|javascript:|mailto:|tel:)/i.test(raw)) return all;
     try { return attr + '=' + quote + proxyUrl(new URL(raw, baseUrl).href, baseUrl) + quote; } catch (_) { return all; }
   });
+  attrs = attrs.replace(/\bsrcset\s*=\s*(['"])(.*?)\1/gi, (all, quote, value) => {
+    const rewritten = value.split(',').map(candidate => {
+      const parts = candidate.trim().split(/\s+/); if (!parts[0]) return candidate;
+      try { parts[0] = proxyUrl(new URL(parts[0], baseUrl).href, baseUrl); } catch (_) {}
+      return parts.join(' ');
+    }).join(', ');
+    return 'srcset=' + quote + rewritten + quote;
+  });
+  attrs = attrs.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/gi, (all, open, css, close) => open + rewriteCss(css, baseUrl) + close);
+  attrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/gi, (all, quote, css) => 'style=' + quote + rewriteCss(css, baseUrl) + quote);
   const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var u=new URL(typeof v==="string"?v:(v&&v.url)||"",base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?url="+encodeURIComponent(u.href)+"&ref="+encodeURIComponent(base)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};})();</script>';
   return attrs.replace(/<head(\s[^>]*)?>/i, match => match + bridge);
 }

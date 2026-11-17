@@ -5,7 +5,29 @@
   let users=safeRead(KEY,[{id:"default",name:"WebOS User",avatar:"◉"}]);
   if(!Array.isArray(users)||!users.length)users=[{id:"default",name:"WebOS User",avatar:"◉"}];
   let current=users.find(user=>user.id===localStorage.getItem(CURRENT))||users[0];
+  const PROFILE_PREFIX="webos-profile-data-";
+  const isMetaKey=key=>key===KEY||key===CURRENT||key.startsWith(PROFILE_PREFIX);
+  function saveCurrentProfile(){
+    const snapshot={};
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(!key||isMetaKey(key)||key.startsWith("sb-")||key==="webos-custom-wallpaper")continue;
+        snapshot[key]=localStorage.getItem(key);
+      }
+      localStorage.setItem(PROFILE_PREFIX+current.id,JSON.stringify(snapshot));
+    }catch(error){console.warn("WebOS could not snapshot every profile preference:",error)}
+  }
   const save=()=>{localStorage.setItem(KEY,JSON.stringify(users));localStorage.setItem(CURRENT,current.id)};
+  function activateProfile(profile){
+    saveCurrentProfile();
+    const snapshot=safeRead(PROFILE_PREFIX+profile.id,{});
+    const remove=[];
+    for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key&&!isMetaKey(key)&&!key.startsWith("sb-")&&key!=="webos-custom-wallpaper")remove.push(key)}
+    remove.forEach(key=>localStorage.removeItem(key));
+    Object.entries(snapshot||{}).forEach(([key,value])=>{if(typeof value==="string")localStorage.setItem(key,value)});
+    current=profile;save();location.reload();
+  }
   save();
   const toggle=document.getElementById("power-toggle");
   if(!toggle)return;
@@ -40,9 +62,9 @@
     }else{
       title.textContent="Choose a user";description.textContent="Switch to a local WebOS profile or create another profile.";
       const select=document.createElement("select");users.forEach(profile=>{const option=document.createElement("option");option.value=profile.id;option.textContent=profile.avatar+"  "+profile.name;select.appendChild(option)});select.value=current.id;
-      const switchButton=document.createElement("button");switchButton.textContent="Continue";switchButton.addEventListener("click",()=>{current=users.find(profile=>profile.id===select.value)||users[0];save();location.reload()});
+      const switchButton=document.createElement("button");switchButton.textContent="Continue";switchButton.addEventListener("click",()=>activateProfile(users.find(profile=>profile.id===select.value)||users[0]));
       const createButton=document.createElement("button");createButton.className="secondary";createButton.textContent="＋ Add user";
-      createButton.addEventListener("click",()=>{const name=prompt("Name for the new local WebOS profile:");if(!name||!name.trim())return;const profile={id:"user-"+Date.now().toString(36),name:name.trim().slice(0,32),avatar:"◉"};users.push(profile);current=profile;save();location.reload()});
+      createButton.addEventListener("click",()=>{const name=prompt("Name for the new local WebOS profile:");if(!name||!name.trim())return;saveCurrentProfile();const profile={id:"user-"+Date.now().toString(36),name:name.trim().slice(0,32),avatar:"◉"};users.push(profile);current=profile;save();activateProfile(profile)});
       const back=document.createElement("button");back.className="secondary";back.textContent="Cancel";back.addEventListener("click",finish);card.append(select,switchButton,createButton,back);
       if(mode==="users"){} 
     }
@@ -50,6 +72,6 @@
   }
   toggle.addEventListener("click",showMenu);
   document.addEventListener("pointerdown",event=>{if(menu&&!menu.contains(event.target)&&event.target!==toggle)closeMenu()});
-  document.addEventListener("keydown",event=>{if(event.key==="Escape"){closeMenu();if(overlay?.classList.contains("webos-session-overlay"))overlay.remove() }});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape")closeMenu()});
   window.WebOSSession=Object.freeze({currentUser:()=>({...current}),lock:()=>showOverlay("locked"),sleep:()=>showOverlay("sleep"),switchUser:()=>showOverlay("users"),restart:()=>location.reload(),logout:()=>showOverlay("users")});
 })();
