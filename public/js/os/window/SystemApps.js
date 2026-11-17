@@ -521,6 +521,8 @@ function openSettings() {
     document.body.dataset.reducedMotion = String(motion.checked);
     document.body.dataset.motion = animationChoice.value;
     document.body.style.setProperty("--accent", accentChoice.value);
+    document.documentElement.style.setProperty("--accent", accentChoice.value);
+    window.WebOSAppearance?.apply();
 
     if (savedCustomWallpaper) {
         document.body.dataset.wallpaper = "custom";
@@ -538,6 +540,7 @@ function openSettings() {
     choice.addEventListener("change", () => {
         localStorage.setItem("webos-theme", choice.value);
         document.body.dataset.theme = choice.value;
+        window.WebOSAppearance?.apply();
     });
 
     motion.addEventListener("change", () => {
@@ -549,6 +552,8 @@ function openSettings() {
     accentChoice.addEventListener("input", () => {
         localStorage.setItem("webos-accent", accentChoice.value);
         document.documentElement.style.setProperty("--accent", accentChoice.value);
+        document.body.style.setProperty("--accent", accentChoice.value);
+        window.WebOSAppearance?.apply();
     });
 
     animationChoice.addEventListener("change", () => {
@@ -574,6 +579,7 @@ function openSettings() {
             document.body.style.removeProperty("background-position");
             document.body.dataset.wallpaper = wallpaperChoice.value;
         }
+        window.WebOSAppearance?.apply();
     });
 
     wallpaperFile.addEventListener("change", () => {
@@ -594,6 +600,7 @@ function openSettings() {
                 document.body.style.backgroundImage = `linear-gradient(135deg, rgba(4, 10, 20, .30), rgba(4, 10, 20, .55)), url("${reader.result}")`;
                 document.body.style.backgroundSize = "cover";
                 document.body.style.backgroundPosition = "center";
+                window.WebOSAppearance?.apply();
                 status.textContent = "Custom wallpaper saved on this device.";
             } catch (error) {
                 status.textContent = "Could not save this image. Try a smaller file.";
@@ -610,6 +617,7 @@ function openSettings() {
         document.body.style.removeProperty("background-image");
         document.body.style.removeProperty("background-size");
         document.body.style.removeProperty("background-position");
+        window.WebOSAppearance?.apply();
         status.textContent = "Custom wallpaper removed.";
     });
 
@@ -633,9 +641,11 @@ function openSettings() {
         document.body.dataset.motion = "smooth";
         document.body.dataset.reducedMotion = "false";
         document.body.style.removeProperty("--accent");
+        document.documentElement.style.removeProperty("--accent");
         document.body.style.removeProperty("background-image");
         document.body.style.removeProperty("background-size");
         document.body.style.removeProperty("background-position");
+        window.WebOSAppearance?.apply();
         status.textContent = "Appearance restored to defaults.";
     });
 

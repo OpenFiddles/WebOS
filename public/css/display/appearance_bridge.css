@@ -1,0 +1,26 @@
+/* System-wide appearance bridge: the desktop canvas and every OS surface share the same tokens. */
+body[data-theme="ocean"]{--surface:rgba(10,25,43,.82);--line:rgba(164,214,255,.2)}
+body[data-theme="mint"]{--surface:rgba(8,38,38,.84);--line:rgba(146,255,220,.22)}
+body[data-theme="sunset"]{--surface:rgba(47,23,35,.84);--line:rgba(255,190,160,.22)}
+body[data-theme="midnight"]{--surface:rgba(17,17,39,.88);--line:rgba(185,185,255,.22)}
+body[data-theme="lavender"]{--surface:rgba(35,24,54,.84);--line:rgba(224,194,255,.24)}
+/* Theme presets supply surfaces; the user's custom accent always wins. */
+body[data-theme]{--accent:var(--webos-accent,var(--accent))}
+body{--webos-accent:var(--accent)}
+body #Desktop{background-color:transparent}
+body[data-wallpaper="aurora"] #Desktop{background:radial-gradient(ellipse at 18% 22%,rgba(30,210,190,.25),transparent 35%),radial-gradient(ellipse at 78% 72%,rgba(92,98,255,.32),transparent 38%),linear-gradient(135deg,#06131f,#102e43 52%,#191c43)}
+body[data-wallpaper="midnight"] #Desktop{background:radial-gradient(circle at 50% 0%,rgba(92,92,170,.2),transparent 45%),linear-gradient(145deg,#050711,#11152a 58%,#080b18)}
+body[data-wallpaper="ember"] #Desktop{background:radial-gradient(ellipse at 15% 18%,rgba(255,164,76,.2),transparent 35%),radial-gradient(ellipse at 85% 82%,rgba(236,70,100,.24),transparent 40%),linear-gradient(135deg,#1c1013,#38202a 55%,#130d18)}
+body[data-wallpaper="ocean"] #Desktop{background:radial-gradient(ellipse at 20% 15%,rgba(54,177,255,.22),transparent 36%),radial-gradient(ellipse at 82% 78%,rgba(36,103,205,.3),transparent 40%),linear-gradient(135deg,#061522,#0b3550 55%,#101b3b)}
+body[data-wallpaper="custom"] #Desktop{background-color:#091426}
+#taskbar{background:color-mix(in srgb,var(--surface) 90%,#050b16 10%);border-color:var(--line)}
+#dock.dock-glass,.dock-glass{background:color-mix(in srgb,var(--surface) 88%,transparent);border-color:var(--line)}
+.window-shell.glass{background:var(--surface);border-color:var(--line);box-shadow:0 22px 60px rgba(0,0,0,.42),0 0 0 1px var(--accent-wash),inset 0 1px rgba(255,255,255,.12)}
+.window-titlebar{border-color:var(--line)}
+.LauncherInner,.WebOSContextMenu,.webos-notifications-panel{border-color:var(--line)}
+.LauncherInner{background:color-mix(in srgb,var(--surface) 94%,#050b16 6%)}
+.WebOSContextMenu{background:color-mix(in srgb,var(--surface) 96%,#050b16 4%)}
+.TaskButton.active{background:var(--accent-wash);border-color:var(--line)}
+.AppPanel input:focus,.AppPanel textarea:focus,.AppPanel select:focus,.LauncherSearch:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+#Desktop .DesktopShortcut:hover,#Desktop .DesktopShortcut:focus-visible{border-color:var(--line);box-shadow:0 0 0 1px var(--accent-wash)}
+body[data-liquid-glass="true"] #taskbar,body[data-liquid-glass="true"] #dock,body[data-liquid-glass="true"] .window-shell.glass,body[data-liquid-glass="true"] .LauncherInner{backdrop-filter:blur(28px) saturate(185%);-webkit-backdrop-filter:blur(28px) saturate(185%);border-color:rgba(225,245,255,.27)}
