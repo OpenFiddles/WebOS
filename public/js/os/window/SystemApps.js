@@ -308,6 +308,7 @@ function openFiles() {
             if(current!==token || !win.isConnected) return;
             const q=search.value.trim().toLowerCase();
             const rows=entries.filter(e=>name(e).toLowerCase().includes(q));
+            rows.forEach((entry,index)=>{ /* staggered entrance for explorer rows */ });
             rows.sort((a,b)=>{
                 if(a.type!==b.type) return a.type==="directory"?-1:1;
                 if(sort.value==="modified") return (b.modified||0)-(a.modified||0);
@@ -324,7 +325,7 @@ function openFiles() {
             rows.forEach(entry=>{
                 const n=name(entry), item=document.createElement("li");
                 item.className="file-node-item "+(entry.type==="directory"?"node-type-folder":"node-type-file");
-                item.dataset.path=entry.path;
+                item.dataset.path=entry.path;item.style.setProperty("--file-index",String(list.children.length));
                 const check=document.createElement("input");check.type="checkbox";check.className="files-item-check";check.checked=selected.has(entry.path);check.setAttribute("aria-label","Select "+n);
                 check.addEventListener("change",()=>{if(check.checked)selected.add(entry.path);else selected.delete(entry.path);updateSelection();});
                 const open=document.createElement("button");open.type="button";open.className="files-node-open";

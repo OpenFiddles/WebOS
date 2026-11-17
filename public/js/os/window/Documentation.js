@@ -54,7 +54,12 @@ WebOSAppRegistry.render();</code></pre><h2>Handler contract</h2><p>Handlers rece
   → host browser API
   → browser-native permission (when required)
   → available device capability</code></pre><h2>WebOS layer</h2><p>Owns app registration, windows, virtual files, notifications and app-level permission prompts.</p><h2>Host browser layer</h2><p>Enforces origin security, secure-context rules, iframe policies, user-gesture requirements and native permission prompts.</p><h2>Operating system layer</h2><p>Hardware and operating-system features are exposed only through APIs the browser supports. WebOS cannot override browser security, access arbitrary host files, or silently install software.</p>`],
-      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",'<h2>Core methods</h2><pre><code>await api.requestPermission(name, reason)
+      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",'<h2>Core methods</h2><pre><code>await api.permissions.request(name, reason)
+api.permissions.query(name)
+api.permissions.revoke(name)
+api.permissions.list()
+// Legacy convenience aliases:
+await api.requestPermission(name, reason)
 api.getPermissionState(name)
 await api.read(path)              // filesystem.read
 await api.putText(path, content)  // filesystem.write

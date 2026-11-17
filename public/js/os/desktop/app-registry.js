@@ -11,6 +11,12 @@
         class WebOSAppClient {
             constructor(appId) {
                 this.appId = appId;
+                this.permissions = Object.freeze({
+                    request: (permission, reason) => this.require(permission, reason),
+                    query: permission => window.WebOSPermissions?.query(this.appId, permission) || "unavailable",
+                    revoke: permission => window.WebOSPermissions?.revoke(this.appId, permission) || false,
+                    list: () => window.WebOSPermissions?.list(this.appId) || []
+                });
                 this.filesystem = Object.freeze({
                     list: async path => { await this.require("filesystem.read"); return this.fs().list(path); },
                     read: async path => { await this.require("filesystem.read"); return this.fs().read(path); },
