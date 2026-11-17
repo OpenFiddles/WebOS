@@ -426,6 +426,22 @@ if (savedCustomWallpaper) {
 }
 updateClock();
 setInterval(updateClock, 30000);
+function updateDesktopClock() {
+    const now = new Date();
+    const clock = document.getElementById("desktop-clock");
+    const date = document.getElementById("desktop-date");
+    if (clock) clock.textContent = now.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+    if (date) date.textContent = now.toLocaleDateString([], {weekday:"long",month:"long",day:"numeric"});
+}
+updateDesktopClock();
+setInterval(updateDesktopClock, 15000);
+document.querySelectorAll("[data-desktop-app]").forEach(button => {
+    button.addEventListener("click", () => {
+        if (window.WebOSAppRegistry && typeof window.WebOSAppRegistry.launch === "function") {
+            window.WebOSAppRegistry.launch(button.dataset.desktopApp);
+        }
+    });
+});
 
 // ---------------------------------------------------------------------------
 // DESKTOP QUALITY-OF-LIFE: context menu and global keyboard shortcuts

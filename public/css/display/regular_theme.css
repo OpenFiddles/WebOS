@@ -10,6 +10,7 @@
 @import url("./window.css");
 @import url("./markdown_note.css");
 @import url("./desktop.css");
+@import url("./desktop_refresh.css");
 
 /* 3. Files sitting one level UP in the parent 'css/' folder */
 @import url("./root.css");
