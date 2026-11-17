@@ -81,6 +81,25 @@
         }
         .system-frame[hidden] { display: none; }
         .home[hidden] { display: none; }
+        .home-return {
+            position: fixed;
+            z-index: 5;
+            left: max(14px, env(safe-area-inset-left));
+            bottom: max(14px, env(safe-area-inset-bottom));
+            min-height: 42px;
+            padding: 0 15px;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 999px;
+            background: rgba(12, 20, 34, .88);
+            color: #fff;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 650;
+            box-shadow: 0 8px 24px rgba(0,0,0,.28);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .home-return[hidden] { display: none; }
         @media (min-width: 700px) {
             .home { max-width: 520px; margin: 0 auto; }
         }
@@ -111,19 +130,27 @@
         scrolling="no"
         hidden
     ></iframe>
+    <button class="home-return" id="home-return" type="button" hidden>← Home</button>
     <script>
         const home = document.getElementById("home");
         const frame = document.getElementById("system-frame");
         const launchButton = document.getElementById("launch-os");
+        const homeReturn = document.getElementById("home-return");
         document.getElementById("date-label").textContent =
             new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date()).toUpperCase();
 
         launchButton.addEventListener("click", () => {
             frame.hidden = false;
             home.hidden = true;
+            homeReturn.hidden = false;
             if (!frame.src || frame.src === "about:blank") {
                 frame.src = "/html/DisplayManager_PopIT.html";
             }
+        });
+        homeReturn.addEventListener("click", () => {
+            frame.hidden = true;
+            home.hidden = false;
+            homeReturn.hidden = true;
         });
     </script>
 </body>
