@@ -145,3 +145,19 @@
         height: calc(100% - 12px) !important;
     }
 }
+
+
+/* Dock is a floating OS surface; windows can continue behind it. */
+body[data-dock-position="top"] #dock {
+    top: calc(var(--taskbar-height) + 10px);
+    bottom: auto;
+}
+body[data-dock-position="bottom"] #dock {
+    top: auto;
+    bottom: max(16px, env(safe-area-inset-bottom));
+}
+@media (max-width: 680px) {
+    body[data-dock-position="bottom"] #dock {
+        bottom: max(8px, env(safe-area-inset-bottom));
+    }
+}
