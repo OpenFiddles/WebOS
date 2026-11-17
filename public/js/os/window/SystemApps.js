@@ -949,7 +949,7 @@ function openWasmLab() {
 
     // 1. Controller Layout Panel Template
     const htmlTemplate = `
-        <div class="AppPanel" style="padding: 15px; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box;">
+        <div class="AppPanel CreatorStudio" style="padding: 15px; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box;">
             <h2 style="margin: 0 0 5px 0; font-size: 1.2rem;">WASM Lab</h2>
             <div style="display: flex; flex-direction: column; gap: 4px;">
                 <label style="font-size: 0.85rem; opacity: 0.8;">Select WebAssembly Binary (.wasm)</label>
@@ -1343,6 +1343,22 @@ appWin.querySelector("#alert-trigger").onclick = () => {
 };
 
 return appWin;`;
+
+    const preview = document.createElement("div");
+    preview.className = "CreatorLivePreview";
+    const previewLabel = document.createElement("span"); previewLabel.textContent = "LIVE APP PREVIEW";
+    const previewIcon = document.createElement("strong"); previewIcon.textContent = "📦";
+    const previewName = document.createElement("b"); previewName.textContent = "My Custom App";
+    const previewDesc = document.createElement("small"); previewDesc.textContent = "Your app description";
+    preview.append(previewLabel, previewIcon, previewName, previewDesc);
+    appDescInput.parentElement.appendChild(preview);
+    const refreshCreatorPreview = () => {
+        previewIcon.textContent = appIconInput.value.trim() || "📦";
+        previewName.textContent = appNameInput.value.trim() || "My Custom App";
+        previewDesc.textContent = appDescInput.value.trim() || "Your app description";
+    };
+    [appIconInput, appNameInput, appDescInput].forEach(input => input.addEventListener("input", refreshCreatorPreview));
+    refreshCreatorPreview();
 
     /* ---------- CORE HOT-COMPILATION ENGINE ---------- */
 
