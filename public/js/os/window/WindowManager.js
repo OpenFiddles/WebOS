@@ -125,41 +125,57 @@ function makeWindowDraggable(win) {
     if (!titleBar) return;
 
     titleBar.addEventListener("pointerdown", (event) => {
-        if (event.target.closest(".window-controls") || win.classList.contains("is-maximized")) return;
-        const workspace = win.parentElement;
+        if (event.button !== 0 || event.target.closest(".window-controls") ||
+            event.target.closest("button, input, select, textarea, a") ||
+            win.classList.contains("is-maximized")) return;
+
+        const workspace = document.getElementById("window-workspace") || win.parentElement;
         if (!workspace) return;
-        const bounds = workspace.getBoundingClientRect();
+
         const rect = win.getBoundingClientRect();
         const offsetX = event.clientX - rect.left;
         const offsetY = event.clientY - rect.top;
+        const pointerId = event.pointerId;
 
         event.preventDefault();
-        titleBar.setPointerCapture(event.pointerId);
+        titleBar.setPointerCapture(pointerId);
+
+        const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
 
         const move = (moveEvent) => {
-            const current = workspace.getBoundingClientRect();
-            const maxLeft = Math.max(8, current.width - Math.min(win.offsetWidth, current.width) - 8);
-            const maxTop = Math.max(8, current.height - Math.min(48, win.offsetHeight) - 8);
-            win.style.left = Math.min(maxLeft, Math.max(8, moveEvent.clientX - current.left - offsetX)) + "px";
-            win.style.top = Math.min(maxTop, Math.max(8, moveEvent.clientY - current.top - offsetY)) + "px";
+            if (!win.isConnected || win.classList.contains("is-maximized")) return;
+            const bounds = workspace.getBoundingClientRect();
+            const width = Math.min(win.offsetWidth, bounds.width);
+            const height = Math.min(win.offsetHeight, bounds.height);
+            const maxLeft = Math.max(8, bounds.width - width - 8);
+            const maxTop = Math.max(8, bounds.height - height - 8);
+
+            // Keep the complete window inside the usable desktop workspace.
+            // The workspace already excludes the taskbar and dock, so windows
+            // cannot enlarge the page or disappear underneath either system bar.
+            const left = clamp(moveEvent.clientX - bounds.left - offsetX, 8, maxLeft);
+            const top = clamp(moveEvent.clientY - bounds.top - offsetY, 8, maxTop);
+            win.style.left = left + "px";
+            win.style.top = top + "px";
         };
 
-        const up = (upEvent) => {
+        const finish = (finishEvent) => {
             titleBar.removeEventListener("pointermove", move);
-            titleBar.removeEventListener("pointerup", up);
-            if (titleBar.hasPointerCapture(event.pointerId)) titleBar.releasePointerCapture(event.pointerId);
-            if (!win.isConnected || win.classList.contains("is-maximized")) return;
+            titleBar.removeEventListener("pointerup", finish);
+            titleBar.removeEventListener("pointercancel", finish);
+            if (titleBar.hasPointerCapture(pointerId)) titleBar.releasePointerCapture(pointerId);
+            if (!finishEvent || !win.isConnected || win.classList.contains("is-maximized")) return;
 
-            const current = workspace.getBoundingClientRect();
+            const bounds = workspace.getBoundingClientRect();
             const edge = 14;
-            if (upEvent.clientY <= current.top + edge) {
+            if (finishEvent.clientY <= bounds.top + edge) {
                 setWindowMaximized(win, true);
-            } else if (upEvent.clientX <= current.left + edge) {
+            } else if (finishEvent.clientX <= bounds.left + edge) {
                 win.style.left = "8px";
                 win.style.top = "8px";
                 win.style.width = "calc(50% - 12px)";
                 win.style.height = "calc(100% - 16px)";
-            } else if (upEvent.clientX >= current.right - edge) {
+            } else if (finishEvent.clientX >= bounds.right - edge) {
                 win.style.left = "calc(50% + 4px)";
                 win.style.top = "8px";
                 win.style.width = "calc(50% - 12px)";
@@ -168,8 +184,8 @@ function makeWindowDraggable(win) {
         };
 
         titleBar.addEventListener("pointermove", move);
-        titleBar.addEventListener("pointerup", up);
-        titleBar.addEventListener("pointercancel", up, { once: true });
+        titleBar.addEventListener("pointerup", finish);
+        titleBar.addEventListener("pointercancel", finish);
     });
 }
 
