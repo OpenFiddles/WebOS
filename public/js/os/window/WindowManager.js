@@ -430,6 +430,8 @@ function updateClock() {
 }
 
 document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
+document.body.dataset.liquidGlass = localStorage.getItem("webos-liquid-glass") === "true" ? "true" : "false";
+document.body.dataset.dockPosition = localStorage.getItem("webos-dock-position") || "bottom";
 document.body.dataset.motion = localStorage.getItem("webos-motion-style") || "smooth";
 document.body.dataset.reducedMotion = localStorage.getItem("webos-reduced-motion") === "true" ? "true" : "false";
 const savedAccent = localStorage.getItem("webos-accent");
@@ -491,6 +493,22 @@ document.querySelectorAll("[data-desktop-app]").forEach(button => {
             ["Open Files", "📁", () => launchApp("files")],
             ["New Note", "📝", () => launchApp("notes")],
             ["Settings", "⚙", () => launchApp("settings")],
+            ["Animation Studio", "✦", () => launchApp("animations")],
+            ["System Monitor", "▤", () => launchApp("monitor")],
+            ["Toggle Dock Position", "⇅", () => {
+                const next = document.body.dataset.dockPosition === "top" ? "bottom" : "top";
+                document.body.dataset.dockPosition = next;
+                localStorage.setItem("webos-dock-position", next);
+            }],
+            ["Show Desktop", "▱", () => {
+                document.querySelectorAll("#window-workspace > .window-shell").forEach(win => win.classList.add("is-minimized"));
+                document.querySelectorAll(".TaskButton").forEach(button => button.classList.remove("active"));
+            }],
+            ["Refresh Desktop", "↻", () => {
+                document.body.dataset.liquidGlass = localStorage.getItem("webos-liquid-glass") === "true" ? "true" : "false";
+                document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
+                window.WebOSAppRegistry?.render();
+            }],
             ["New Desktop Folder", "＋", async () => {
                 const name = window.prompt("Name your new folder:");
                 if (!name || !name.trim()) return;
