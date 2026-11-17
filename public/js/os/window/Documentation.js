@@ -54,7 +54,7 @@ WebOSAppRegistry.render();</code></pre><h2>Handler contract</h2><p>Handlers rece
   → host browser API
   → browser-native permission (when required)
   → available device capability</code></pre><h2>WebOS layer</h2><p>Owns app registration, windows, virtual files, notifications and app-level permission prompts.</p><h2>Host browser layer</h2><p>Enforces origin security, secure-context rules, iframe policies, user-gesture requirements and native permission prompts.</p><h2>Operating system layer</h2><p>Hardware and operating-system features are exposed only through APIs the browser supports. WebOS cannot override browser security, access arbitrary host files, or silently install software.</p>`],
-      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",'<h2>Core methods</h2><pre><code>await api.permissions.request(name, reason)
+      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",`<h2>Core methods</h2><pre><code>await api.permissions.request(name, reason)
 api.permissions.query(name)
 api.permissions.revoke(name)
 api.permissions.list()
@@ -92,7 +92,7 @@ console.log(info.name, info.runtime, info.secureContext);</code></pre><p>Returns
   enableHighAccuracy: false, timeout: 10000
 });
 console.log(position.coords.latitude, position.coords.longitude);</code></pre><p>Requests WebOS approval first, then calls the host browser API. The browser may show its own native prompt. A secure context and browser support are required.</p><h2>Clipboard</h2><pre><code>const text = await api.clipboard.readText();
-await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li></ul>'],
+await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li></ul>`],
       permissions:["Permissions & security","ASK BEFORE ACCESS","Apps should request only the capabilities they need and explain why.",`<h2>Request access</h2><pre><code>await api.requestPermission(
   "geolocation",
   "Show nearby places on the map."
