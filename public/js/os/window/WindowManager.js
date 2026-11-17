@@ -37,7 +37,7 @@ function setWindowMaximized(win, maximize) {
         } catch (_) {}
         delete win.dataset.restoreGeometry;
     }
-    const anyMaximized = !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-closing)");
+    const anyMaximized = !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-minimized):not(.is-closing)");
     document.body.classList.toggle("webos-maximized-open", anyMaximized);
 }
 
@@ -104,6 +104,7 @@ function createWindow(title, content) {
         if (win.classList.contains("is-minimized")) {
             win.classList.remove("is-minimized");
         }
+        document.body.classList.toggle("webos-maximized-open", !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-minimized):not(.is-closing)"));
         win.classList.remove("is-closing");
         focusWindow(win);
     });
@@ -293,6 +294,7 @@ function wireWindowButtons(win) {
 
             window.setTimeout(() => {
                 win.remove();
+                document.body.classList.toggle("webos-maximized-open", !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-minimized):not(.is-closing)"));
                 document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.remove();
                 const remaining = Array.from(document.querySelectorAll("[id^='Window_']"))
                     .filter((item) => !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
@@ -306,6 +308,7 @@ function wireWindowButtons(win) {
         minimizeBtn.addEventListener("click", (event) => {
             event.stopPropagation();
             win.classList.add("is-minimized");
+            document.body.classList.toggle("webos-maximized-open", !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-minimized):not(.is-closing)"));
             document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
             const remaining = Array.from(document.querySelectorAll("[id^='Window_']"))
                 .filter((item) => item !== win && !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
