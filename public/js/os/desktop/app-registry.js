@@ -68,7 +68,7 @@
                 });
                 this.windows = Object.freeze({
                     create: (title, content) => {
-                        if (!(content instanceof Node)) throw new TypeError("Window content must be a DOM Node. Use api.ui.createElement() to build it safely.");
+                        if (!(content instanceof HTMLElement)) throw new TypeError("Window content must be an HTML element. Use api.ui.createElement() to build it safely.");
                         if (typeof window.createWindow !== "function") throw new Error("WebOS window manager is unavailable.");
                         return window.createWindow(String(title), content);
                     }
