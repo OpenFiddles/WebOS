@@ -1194,7 +1194,7 @@ function openBrowser(initialUrl) {
             <button type="button" class="BrowserOpenExternal" title="Open in your normal browser">↗</button>
         </form>
         <div class="BrowserFramesContainer" style="position:relative;display:flex;flex:1;min-height:0;background:#fff;">
-            <div class="BrowserHint" role="status" style="display:none;position:absolute;top:0;left:0;right:0;background:#9d3030;color:#fff;padding:10px;text-align:center;z-index:5;">The page is taking a while to respond. It may block embedding or the proxy may be unavailable.</div>
+            <div class="BrowserHint" role="status" style="display:none;position:absolute;top:0;left:0;right:0;background:#9d3030;color:#fff;padding:10px;text-align:center;z-index:5;">Compatibility mode: basic HTML, CSS, images, forms, and common fetch/XHR requests are proxied. Sites requiring sign-in cookies, DRM, WebSockets, or unsupported browser APIs may not work. Use ↗ for full browser compatibility.</div>
         </div>
     </div>`;
     

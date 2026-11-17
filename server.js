@@ -87,7 +87,7 @@ function rewriteHtml(html, baseUrl) {
   });
   attrs = attrs.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/gi, (all, open, css, close) => open + rewriteCss(css, baseUrl) + close);
   attrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/gi, (all, quote, css) => 'style=' + quote + rewriteCss(css, baseUrl) + quote);
-  const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var u=new URL(typeof v==="string"?v:(v&&v.url)||"",base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?url="+encodeURIComponent(u.href)+"&ref="+encodeURIComponent(base)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};})();</script>';
+  const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var u=new URL(typeof v==="string"?v:(v&&v.url)||"",base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?url="+encodeURIComponent(u.href)+"&ref="+encodeURIComponent(base)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);if(typeof Request!=="undefined"&&input instanceof Request){try{next=new Request(route(input.url),input)}catch(e){next=route(input.url)}}return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};})();</script>';
   return attrs.replace(/<head(\s[^>]*)?>/i, match => match + bridge);
 }
 async function fetchPublicUrl(startUrl, req) {
