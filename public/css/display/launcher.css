@@ -1,115 +1,181 @@
-/* ---------- LAUNCHER (FULLSCREEN, FIRYFIRST LIQUID GLASS) ---------- */
-
+/* ---------- RESPONSIVE APPLICATION LAUNCHER ---------- */
 .LauncherFS {
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    /* Layered backdrop blending charcoal surfaces with dark fire rings */
-    background: radial-gradient(circle at center top, var(--surface), #1a0b06 60%, #0d0402 100%);
-    backdrop-filter: blur(28px) saturate(170%);
-    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    inset: 0;
     z-index: 9500;
+    display: grid;
+    place-items: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    background:
+        radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 52%),
+        rgba(5, 10, 20, .84);
+    backdrop-filter: blur(26px) saturate(160%);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transform: translateY(20px) scale(0.98);
-    transition:
-        opacity 0.28s ease-out,
-        transform 0.32s cubic-bezier(0.23, 0.9, 0.35, 1.2);
+    transform: translateY(12px) scale(.99);
+    transition: opacity .22s ease, transform .26s cubic-bezier(.2,.8,.2,1), visibility .22s;
 }
 
 .LauncherFS.active {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
     transform: translateY(0) scale(1);
 }
 
-/* Launcher Content Containment */
-
 .LauncherInner {
-    max-width: 720px;
-    margin: 80px auto 0 auto;
-    padding: 24px 26px 30px 26px;
-    animation: launcher-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.LauncherSearch {
-    width: 100%;
-    margin-bottom: 18px;
-    background: rgba(0, 0, 0, 0.35);
+    width: min(100%, 760px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    min-width: 0;
+    margin: auto;
+    padding: clamp(16px, 3vw, 28px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border: 1px solid var(--line);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--surface) 88%, #050b16 12%);
+    box-shadow: 0 24px 80px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.08);
+    animation: launcher-in .28s cubic-bezier(.2,.8,.2,1) both;
 }
 
 .LauncherHeader {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 16px;
+}
+
+.LauncherHeader h1 {
+    margin: 0;
+    font-size: clamp(20px, 4vw, 26px);
+    line-height: 1.2;
+}
+
+.sys-shortcut-hint {
+    color: rgba(255,255,255,.62);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.search-wrapper { min-width: 0; }
+
+.LauncherSearch {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(0,0,0,.28);
+    color: #fff;
+    font: inherit;
     font-size: 14px;
-    opacity: 0.85;
-    letter-spacing: 0.2px;
 }
 
 .LauncherGrid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 22px;
+    grid-template-columns: repeat(auto-fill, minmax(min(148px, 100%), 1fr));
+    gap: clamp(9px, 1.8vw, 15px);
+    min-width: 0;
 }
 
-.AppIcon[hidden] {
-    display: none;
-}
-
-/* App System Grid Icons */
+.AppIcon[hidden] { display: none !important; }
 
 .AppIcon {
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: 112px;
+    padding: 14px 10px;
+    overflow: hidden;
     border: 1px solid var(--line);
-    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-    border-radius: 20px;
-    padding: 20px;
+    border-radius: 17px;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, #fff 4%), var(--accent-strong));
+    color: #fff;
     text-align: center;
-    font-size: 16px;
-    color: white;
-    font-weight: 600;
-    box-shadow: 0 14px 30px rgba(0,0,0,0.6);
-    cursor: pointer;
-    transition: transform 0.16s ease, box-shadow 0.16s ease;
-    will-change: transform, opacity;
-    animation: icon-in 0.35s ease both;
     font: inherit;
-}
-
-.AppIcon strong,
-.AppIcon span,
-.AppIcon small {
-    display: block;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,.22);
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    animation: icon-in .28s ease both;
 }
 
 .AppIcon strong {
-    margin-bottom: 6px;
-    font-size: 24px;
+    display: block;
+    margin: 0 0 2px;
+    font-size: 27px;
+    line-height: 1.2;
+}
+
+.AppIcon span {
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+    font-weight: 650;
 }
 
 .AppIcon small {
-    margin-top: 4px;
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     font-size: 10px;
+    line-height: 1.35;
     font-weight: 400;
-    opacity: 0.75;
+    opacity: .78;
 }
 
-/* Sequential Staggered Entry Timelines */
-.AppIcon:nth-child(2) { animation-delay: 0.04s; }
-.AppIcon:nth-child(3) { animation-delay: 0.08s; }
-.AppIcon:nth-child(4) { animation-delay: 0.12s; }
-.AppIcon:nth-child(5) { animation-delay: 0.16s; }
-.AppIcon:nth-child(6) { animation-delay: 0.20s; }
-.AppIcon:nth-child(7) { animation-delay: 0.24s; }
-.AppIcon:nth-child(8) { animation-delay: 0.28s; }
+.AppIcon:hover,
+.AppIcon:focus-visible {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,.42);
+    box-shadow: 0 13px 28px rgba(0,0,0,.34), 0 0 16px var(--accent-wash);
+}
 
-.AppIcon:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 18px 36px rgba(0,0,0,0.75), 0 0 18px var(--accent-wash);
-    border-color: rgba(255, 255, 255, 0.25);
+.AppIcon:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+    .LauncherFS { padding: 10px; }
+    .LauncherInner {
+        width: 100%;
+        max-height: calc(100vh - 20px);
+        max-height: calc(100dvh - 20px);
+        padding: 15px;
+        border-radius: 18px;
+    }
+    .LauncherGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .AppIcon { min-height: 96px; padding: 11px 7px; border-radius: 14px; }
+    .AppIcon strong { font-size: 23px; }
+    .AppIcon small { font-size: 9px; }
+}
+
+@media (max-width: 340px) {
+    .LauncherHeader { align-items: flex-start; }
+    .sys-shortcut-hint { font-size: 9px; }
+    .AppIcon { min-height: 88px; }
+}
+
+@media (max-height: 460px) {
+    .LauncherFS { place-items: start center; }
+    .LauncherInner { margin-block: auto; }
+    .AppIcon { min-height: 82px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .LauncherFS, .AppIcon { transition: none; animation: none; }
 }

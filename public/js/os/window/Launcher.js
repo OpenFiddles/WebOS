@@ -1,69 +1,65 @@
-/* ---------- LAUNCHER LOGIC ---------- */
-
+/* ---------- ACCESSIBLE APPLICATION LAUNCHER ---------- */
 const launcher = document.getElementById("Launcher");
 const launcherBtn = document.getElementById("open-launcher");
 const launcherSearch = document.getElementById("launcher-search");
+const launcherGrid = document.getElementById("launcher-grid");
 
-// Open or close launcher cleanly
-launcherBtn.onclick = () => {
-    // FIX: Remove 'hidden' so it physically displays, and add 'active' for animations
-    const isOpen = launcher.classList.toggle("hidden");
-    launcher.classList.toggle("active", !isOpen);
-    
-    if (!isOpen) {
-        launcherBtn.setAttribute("aria-expanded", "true");
-        if (launcherSearch) {
-            launcherSearch.value = ""; // Clear old searches on open
-            launcherSearch.focus();
-        }
-        // Reset app visibility filter
-        document.querySelectorAll(".AppIcon").forEach(icon => icon.hidden = false);
-    } else {
-        launcherBtn.setAttribute("aria-expanded", "false");
+function openLauncher() {
+    if (!launcher) return;
+    launcher.classList.remove("hidden");
+    launcher.classList.add("active");
+    launcherBtn?.setAttribute("aria-expanded", "true");
+    if (launcherSearch) {
+        launcherSearch.value = "";
+        launcherGrid?.querySelectorAll(".AppIcon").forEach((icon) => { icon.hidden = false; });
+        window.requestAnimationFrame(() => launcherSearch.focus());
     }
-};
-
-// Close launcher if clicking outside the inner grid panel context
-launcher.onclick = (e) => {
-    if (e.target === launcher) {
-        launcher.classList.add("hidden");
-        launcher.classList.remove("active");
-        launcherBtn.setAttribute("aria-expanded", "false");
-    }
-};
-
-// Application indexing lookups
-if (launcherSearch) {
-    launcherSearch.addEventListener("input", (event) => {
-        const query = event.target.value.trim().toLowerCase();
-        document.querySelectorAll(".AppIcon").forEach((icon) => {
-            const appName = icon.dataset.app ? icon.dataset.app.toLowerCase() : "";
-            const textName = icon.textContent.toLowerCase();
-            
-            // Hide element if it doesn't match search criteria queries
-            icon.hidden = query !== "" && !appName.includes(query) && !textName.includes(query);
-        });
-    });
 }
 
-// Global window keystroke shortcuts listener hooks
+function closeLauncher(returnFocus = false) {
+    if (!launcher) return;
+    launcher.classList.add("hidden");
+    launcher.classList.remove("active");
+    launcherBtn?.setAttribute("aria-expanded", "false");
+    if (returnFocus) launcherBtn?.focus();
+}
+
+function toggleLauncher() {
+    if (!launcher) return;
+    if (launcher.classList.contains("active")) closeLauncher();
+    else openLauncher();
+}
+
+launcherBtn?.addEventListener("click", toggleLauncher);
+
+launcher?.addEventListener("click", (event) => {
+    if (event.target === launcher) closeLauncher(true);
+});
+
+// Launch an app and dismiss the overlay after the registry handles its button.
+launcherGrid?.addEventListener("click", (event) => {
+    if (event.target.closest(".AppIcon")) closeLauncher();
+});
+
+launcherSearch?.addEventListener("input", () => {
+    const query = launcherSearch.value.trim().toLocaleLowerCase();
+    launcherGrid?.querySelectorAll(".AppIcon").forEach((icon) => {
+        const searchable = (icon.dataset.search || icon.textContent || "").toLocaleLowerCase();
+        icon.hidden = query !== "" && !searchable.includes(query);
+    });
+});
+
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !launcher.classList.contains("hidden")) {
-        launcher.classList.add("hidden");
-        launcher.classList.remove("active");
-        launcherBtn.setAttribute("aria-expanded", "false");
-        launcherBtn.focus(); // Returns user focus to the dashboard launcher button
-    }
-    
-    // Command/Ctrl + Space hotkey action sequence switcher
-    if ((event.ctrlKey || event.metaKey) && event.key === " ") {
+    if (event.key === "Escape" && launcher?.classList.contains("active")) {
         event.preventDefault();
-        launcherBtn.click();
+        closeLauncher(true);
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.code === "Space") {
+        event.preventDefault();
+        toggleLauncher();
     }
 });
 
-function closeLauncher() {
-    launcher.classList.add("hidden");
-    launcher.classList.remove("active");
-    launcherBtn.setAttribute("aria-expanded", "false");
-}
+window.openLauncher = openLauncher;
+window.closeLauncher = closeLauncher;
