@@ -2,42 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#080d16">
     <title>WebOS</title>
     <link rel="manifest" href="/site.webmanifest">
-    <link rel="icon" type="image/x-icon" href="images/icons/3.png">
+    <link rel="icon" type="image/x-icon" href="/images/icons/3.png">
     <style>
-        html,
-        body {
+        * { box-sizing: border-box; }
+        html, body {
             width: 100%;
             height: 100%;
             margin: 0;
             overflow: hidden;
             background: #000;
         }
-
-        #boot-screen {
+        #os-entry {
             display: block;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             border: 0;
+            background: #080d16;
         }
     </style>
 </head>
 <body>
-    <!--Sandboxed and load with no problems :] -->
     <iframe
-        id="boot-screen"
-        src="/html/BootScreen_popcorn.html"
-        title="WebOS boot screen"
-        allow="accelerometer; autoplay; camera; clipboard-read; clipboard-write; display-capture; encrypted-media; fullscreen; gamepad; geolocation; gyroscope; hid; identity-credentials-get; idle-detection; local-fonts; magnetometer; microphone; midi; otp-credentials; payment; picture-in-picture; publickey-credentials-get; screen-wake-lock; serial; usb; xr-spatial-tracking
-        "
+        id="os-entry"
+        title="WebOS"
         scrolling="no"
-        allowtransparency="true"
-
     ></iframe>
-    <script defer src="../_vercel/insights/script.js"></script>
-    <script defer src="../_vercel/speed-insights/script.js"></script>
+    <script>
+        (() => {
+            const frame = document.getElementById("os-entry");
+            const touchDevice = navigator.maxTouchPoints > 0 ||
+                window.matchMedia("(pointer: coarse)").matches;
+            const mobileUA = /Android|iPhone|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
+            const screenSize = Math.min(
+                window.screen?.width || window.innerWidth,
+                window.screen?.height || window.innerHeight
+            );
+            const compactTouchScreen = touchDevice && screenSize <= 900;
+            const isMobile = mobileUA || compactTouchScreen;
+
+            frame.src = isMobile
+                ? "/mobile.html"
+                : "/html/BootScreen_popcorn.html";
+            frame.title = isMobile ? "WebOS mobile experience" : "WebOS desktop boot";
+        })();
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>
