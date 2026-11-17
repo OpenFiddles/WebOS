@@ -105,53 +105,59 @@ function createWindow(title, content) {
 }
 
 function makeWindowDraggable(win) {
-    // FIX: Changed selector from .WindowTitleBar to .window-titlebar to match your HTML
     const titleBar = win.querySelector(".window-titlebar");
-    if (!titleBar) return; // Fail-safe to prevent crashes if template structure alters
+    if (!titleBar) return;
 
     titleBar.addEventListener("pointerdown", (event) => {
-        // FIX: Changed selector from .WindowButtons to .window-controls to match your HTML
         if (event.target.closest(".window-controls") || win.classList.contains("is-maximized")) return;
-        
-        const offsetX = event.clientX - win.offsetLeft;
-        const offsetY = event.clientY - win.offsetTop;
-        
+        const workspace = win.parentElement;
+        if (!workspace) return;
+        const bounds = workspace.getBoundingClientRect();
+        const rect = win.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+
+        event.preventDefault();
         titleBar.setPointerCapture(event.pointerId);
-        
+
         const move = (moveEvent) => {
-            win.style.left = Math.max(8, moveEvent.clientX - offsetX) + "px";
-            win.style.top = Math.max(48, moveEvent.clientY - offsetY) + "px";
+            const current = workspace.getBoundingClientRect();
+            const maxLeft = Math.max(8, current.width - Math.min(win.offsetWidth, current.width) - 8);
+            const maxTop = Math.max(8, current.height - Math.min(48, win.offsetHeight) - 8);
+            win.style.left = Math.min(maxLeft, Math.max(8, moveEvent.clientX - current.left - offsetX)) + "px";
+            win.style.top = Math.min(maxTop, Math.max(8, moveEvent.clientY - current.top - offsetY)) + "px";
         };
-        
+
         const up = (upEvent) => {
             titleBar.removeEventListener("pointermove", move);
             titleBar.removeEventListener("pointerup", up);
             if (titleBar.hasPointerCapture(event.pointerId)) titleBar.releasePointerCapture(event.pointerId);
-
-            // Top edge maximizes; side edges tile the window to half the workspace.
             if (!win.isConnected || win.classList.contains("is-maximized")) return;
+
+            const current = workspace.getBoundingClientRect();
             const edge = 14;
-            if (upEvent.clientY <= 50) {
+            if (upEvent.clientY <= current.top + edge) {
                 win.classList.add("is-maximized");
                 win.style.left = "";
                 win.style.top = "";
                 win.style.width = "";
                 win.style.height = "";
-            } else if (upEvent.clientX <= edge) {
+            } else if (upEvent.clientX <= current.left + edge) {
                 win.style.left = "8px";
-                win.style.top = "54px";
-                win.style.width = "calc(50vw - 12px)";
-                win.style.height = "calc(100vh - 116px)";
-            } else if (upEvent.clientX >= window.innerWidth - edge) {
-                win.style.left = "calc(50vw + 4px)";
-                win.style.top = "54px";
-                win.style.width = "calc(50vw - 12px)";
-                win.style.height = "calc(100vh - 116px)";
+                win.style.top = "8px";
+                win.style.width = "calc(50% - 12px)";
+                win.style.height = "calc(100% - 16px)";
+            } else if (upEvent.clientX >= current.right - edge) {
+                win.style.left = "calc(50% + 4px)";
+                win.style.top = "8px";
+                win.style.width = "calc(50% - 12px)";
+                win.style.height = "calc(100% - 16px)";
             }
         };
-        
+
         titleBar.addEventListener("pointermove", move);
         titleBar.addEventListener("pointerup", up);
+        titleBar.addEventListener("pointercancel", up, { once: true });
     });
 }
 
