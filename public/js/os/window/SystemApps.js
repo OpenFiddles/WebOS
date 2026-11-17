@@ -1021,7 +1021,7 @@ function openWasmLab() {
 function openBrowser(initialUrl) {
     if (typeof closeLauncher === "function") closeLauncher();
 
-    const htmlTemplate = \`
+    const htmlTemplate = `
     <div class="AppPanel BrowserApp" style="display:flex;flex-direction:column;width:100%;height:100%;font-family:system-ui,sans-serif;background:#1e1e1e;color:#fff;user-select:none;">
         <div class="BrowserTabBar" style="display:flex;background:#141414;padding:6px 6px 0;gap:4px;align-items:flex-end;overflow-x:auto;border-bottom:1px solid #2d2d2d;">
             <div class="TabContainer" style="display:flex;gap:4px;align-items:flex-end;flex:1;"></div>
@@ -1037,7 +1037,7 @@ function openBrowser(initialUrl) {
         <div class="BrowserFramesContainer" style="position:relative;display:flex;flex:1;min-height:0;background:#fff;">
             <div class="BrowserHint" role="status" style="display:none;position:absolute;top:0;left:0;right:0;background:#9d3030;color:#fff;padding:10px;text-align:center;z-index:5;">The page is taking a while to respond. It may block embedding or the proxy may be unavailable.</div>
         </div>
-    </div>\`;
+    </div>`;
     
     const win = createWindow("Browser", htmlTemplate);
     if (!win) return null;
@@ -1064,7 +1064,7 @@ function openBrowser(initialUrl) {
         let value = String(input || "").trim();
         if (!value) throw new Error("Enter a web address.");
         if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) {
-            value = value.includes(".") && !/\\s/.test(value)
+            value = value.includes(".") && !/\s/.test(value)
                 ? "https://" + value
                 : "https://www.google.com/search?q=" + encodeURIComponent(value);
         }
