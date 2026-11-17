@@ -443,7 +443,7 @@ setInterval(updateClock, 30000);
             ["New Desktop Folder", "＋", async () => {
                 const name = window.prompt("Name your new folder:");
                 if (!name || !name.trim()) return;
-                const safeName = name.trim().replace(/[\\/:*?"<>|]/g, "-");
+                const safeName = name.trim().replace(/[\/\\:*?"<>|]/g, "-");
                 try {
                     await window.WebOSFileSystem.makeDirectory("/Desktop/" + safeName);
                     launchApp("files");
