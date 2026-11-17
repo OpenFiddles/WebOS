@@ -95,11 +95,13 @@
             launcherButton.dataset.search = rawSearchToken;
             launcherButton.setAttribute("aria-label", `${definition.name}: ${definition.description}`);
             
-            launcherButton.innerHTML = `
-                <strong>${definition.icon}</strong>
-                <span>${definition.name}</span>
-                <small>${definition.description}</small>
-            `;
+            const iconNode = document.createElement("strong");
+            iconNode.textContent = definition.icon;
+            const nameNode = document.createElement("span");
+            nameNode.textContent = definition.name;
+            const descriptionNode = document.createElement("small");
+            descriptionNode.textContent = definition.description;
+            launcherButton.append(iconNode, nameNode, descriptionNode);
             
             launcherButton.addEventListener("click", () => launch(definition.id));
             grid.appendChild(launcherButton);

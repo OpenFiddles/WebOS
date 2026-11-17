@@ -63,5 +63,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 function closeLauncher() {
+    launcher.classList.add("hidden");
     launcher.classList.remove("active");
+    launcherBtn.setAttribute("aria-expanded", "false");
 }
