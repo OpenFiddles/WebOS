@@ -472,6 +472,9 @@ function openSettings() {
     // 2. Initialize application UI layout window context
     const win = createWindow("Better Settings", htmlTemplate);
     
+    const fullCssEditor = win.querySelector("#css-full-editor");
+    if (!win || !fullCssEditor) return win;
+
     // Ensure our global injection style element target path exists
     let styleElement = document.getElementById("custom-user-styles");
     if (!styleElement) {
@@ -499,7 +502,6 @@ function openSettings() {
     const cssInputs = win.querySelectorAll(".css-prop-field");
     const btnSaveCss = win.querySelector("#btn-save-css");
     const btnClearCss = win.querySelector("#btn-clear-css");
-    const fullCssEditor = win.querySelector("#css-full-editor");
     const btnApplyCss = win.querySelector("#btn-apply-css");
 
     let isSpectating = false;
