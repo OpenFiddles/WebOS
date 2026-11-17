@@ -472,6 +472,47 @@ function openSettings() {
     // 2. Initialize application UI layout window context
     const win = createWindow("Better Settings", htmlTemplate);
     if (!win) return null;
+
+    // Turn the existing settings sections into a compact, keyboard-friendly tabbed control center.
+    const settingsPanel = win.querySelector(".AppPanel");
+    const settingsSections = Array.from(settingsPanel.querySelectorAll(":scope > .settings-section"));
+    settingsPanel.querySelectorAll(":scope > hr").forEach(rule => rule.remove());
+    if (settingsSections.length) {
+        const tabBar = document.createElement("nav");
+        tabBar.className = "settings-tabs";
+        tabBar.setAttribute("role", "tablist");
+        tabBar.setAttribute("aria-label", "Settings categories");
+        const pane = document.createElement("div");
+        pane.className = "settings-tab-content";
+        const labels = ["Appearance", "Customization", "System"];
+        settingsSections.forEach((section, index) => {
+            const id = "webos-settings-tab-" + index;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "settings-tab" + (index === 0 ? " active" : "");
+            button.textContent = labels[index] || ("Settings " + (index + 1));
+            button.id = id;
+            button.setAttribute("role", "tab");
+            button.setAttribute("aria-selected", String(index === 0));
+            button.setAttribute("aria-controls", id + "-panel");
+            section.classList.add("settings-tab-panel");
+            section.id = id + "-panel";
+            section.setAttribute("role", "tabpanel");
+            section.setAttribute("aria-labelledby", id);
+            section.hidden = index !== 0;
+            button.addEventListener("click", () => {
+                settingsSections.forEach((item, itemIndex) => {
+                    item.hidden = itemIndex !== index;
+                    tabBar.children[itemIndex]?.classList.toggle("active", itemIndex === index);
+                    tabBar.children[itemIndex]?.setAttribute("aria-selected", String(itemIndex === index));
+                });
+            });
+            tabBar.appendChild(button);
+            pane.appendChild(section);
+        });
+        settingsPanel.insertBefore(pane, settingsPanel.firstChild);
+        settingsPanel.insertBefore(tabBar, pane);
+    }
     const fullCssEditor = win.querySelector("#css-full-editor");
     if (!fullCssEditor) { console.error("Settings UI is missing #css-full-editor."); return win; }
 
