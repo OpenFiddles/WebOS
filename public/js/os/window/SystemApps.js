@@ -219,47 +219,90 @@ function openNotes() {
 
 function openFiles() {
     if (typeof closeLauncher === "function") closeLauncher();
-    const html = [
-        '<div class="files-app-container"><header class="files-app-toolbar">',
-        '<div class="files-toolbar-row"><button type="button" class="files-icon-btn" id="file-back">↑ Back</button><div class="files-path-breadcrumb" id="files-current-path">/</div></div>',
+    const markup = [
+        '<div class="files-app-container files-explorer-v2">',
+        '<aside class="files-sidebar" aria-label="File locations">',
+        '<div class="files-sidebar-heading">LOCATIONS</div>',
+        '<button type="button" class="files-location active" data-location="/"> <span>⌂</span> Home</button>',
+        '<button type="button" class="files-location" data-location="/Desktop"><span>▧</span> Desktop</button>',
+        '<button type="button" class="files-location" data-location="/Documents"><span>▤</span> Documents</button>',
+        '<button type="button" class="files-location" data-location="/Downloads"><span>⇩</span> Downloads</button>',
+        '<div class="files-sidebar-divider"></div><div class="files-sidebar-heading">CREATE</div>',
+        '<button type="button" class="files-location" id="files-new-html"><span>〈/〉</span> HTML document</button>',
+        '<button type="button" class="files-location" id="files-new-css"><span>▦</span> CSS stylesheet</button>',
+        '<button type="button" class="files-location" id="files-new-js"><span>JS</span> JavaScript file</button>',
+        '</aside>',
+        '<section class="files-main-area">',
+        '<header class="files-app-toolbar">',
+        '<div class="files-toolbar-row files-breadcrumb-row"><button type="button" class="files-icon-btn" id="file-back" title="Go to parent folder">←</button><nav class="files-path-breadcrumb" id="files-current-path" aria-label="Breadcrumb"></nav><button type="button" class="files-icon-btn" id="files-refresh" title="Refresh">↻</button></div>',
         '<div class="files-toolbar-row files-toolbar-actions"><input id="files-search" type="search" placeholder="Search this folder…" aria-label="Search files">',
         '<select id="files-sort" aria-label="Sort files"><option value="name">Name</option><option value="modified">Date modified</option><option value="size">Size</option><option value="type">File type</option></select>',
-        '<button type="button" class="files-action-btn" id="new-folder">＋ Folder</button><button type="button" class="files-action-btn" id="new-file">＋ File</button><button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false">▦</button><input id="file-picker" type="file" accept=".txt,.md,.json,.js,.mjs,.ts,.html,.htm,.css,.xml,.svg,.csv,.yml,.yaml,.toml,.ini,.log,.py,.sh,.sql" multiple hidden>',
-        '</div></header><main class="files-grid-workspace"><ul class="files-node-list" id="file-list" aria-label="Folder contents"></ul></main>',
-        '<footer class="files-statusbar"><span id="file-status" aria-live="polite">IndexedDB storage · Ready</span><span id="files-count">0 items</span></footer></div>'
+        '<button type="button" class="files-action-btn" id="new-folder">＋ Folder</button><button type="button" class="files-action-btn" id="new-file">＋ File</button>',
+        '<button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false" title="Toggle grid view">▦</button>',
+        '<input id="file-picker" type="file" accept=".txt,.md,.json,.js,.mjs,.ts,.html,.htm,.css,.xml,.svg,.csv,.yml,.yaml,.toml,.ini,.log,.py,.sh,.sql" multiple hidden></div>',
+        '<div class="files-selection-bar" id="files-selection-bar" hidden><span id="files-selection-count">0 selected</span><button type="button" id="files-select-all">Select all</button><button type="button" id="files-delete-selected" class="danger">Delete selected</button><button type="button" id="files-clear-selection">Clear</button></div>',
+        '</header><main class="files-grid-workspace"><ul class="files-node-list" id="file-list" aria-label="Folder contents"></ul></main>',
+        '<footer class="files-statusbar"><span id="file-status" aria-live="polite">IndexedDB storage · Ready</span><span id="files-count">0 items</span></footer>',
+        '</section></div>'
     ].join("");
-    const win = createWindow("File Explorer", html);
+    const win = createWindow("File Explorer", markup);
     if (!win) return null;
     const list = win.querySelector("#file-list"), status = win.querySelector("#file-status");
     const count = win.querySelector("#files-count"), pathLabel = win.querySelector("#files-current-path");
     const picker = win.querySelector("#file-picker"), back = win.querySelector("#file-back");
     const search = win.querySelector("#files-search"), sort = win.querySelector("#files-sort");
-    const view = win.querySelector("#files-view");
+    const view = win.querySelector("#files-view"), selectionBar = win.querySelector("#files-selection-bar");
+    const selectionCount = win.querySelector("#files-selection-count");
     let path = "/", grid = false, token = 0;
+    const selected = new Set();
     const name = e => e.path.split("/").pop() || "/";
     const parent = p => "/" + p.split("/").filter(Boolean).slice(0,-1).join("/");
     const target = n => (path === "/" ? "" : path) + "/" + n;
-    const clean = n => n.trim().replace(/[\/\\:*?"<>|]/g,"-");
+    const clean = n => n.trim().replace(/[\/\\:*?"<>|]/g,"-").replace(/^\.+$/,"");
     const size = e => e.type === "directory" ? 0 : (e.size ?? new Blob([e.content || ""]).size);
     const prettySize = n => {
         if (!n) return "0 B";
         const units=["B","KB","MB","GB"], i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),3);
         return (n/Math.pow(1024,i)).toFixed(i ? 1 : 0)+" "+units[i];
     };
+    const extension = entry => name(entry).includes(".") ? name(entry).split(".").pop().toLowerCase() : "";
     const icon = e => {
         if (e.type==="directory") return "folder";
-        const ext=name(e).split(".").pop().toLowerCase();
+        const ext=extension(e);
         if (["png","jpg","jpeg","gif","webp","bmp"].includes(ext)) return "image";
         if (ext==="svg") return "svg";
-        if (["js","ts","html","css","json","xml","py","sh","wasm"].includes(ext)) return "code";
+        if (["js","mjs","ts","html","htm","css","json","xml","py","sh","wasm"].includes(ext)) return "code";
         if (["mp3","wav","ogg","flac"].includes(ext)) return "audio";
         if (["mp4","webm","mov"].includes(ext)) return "video";
         if (["zip","7z","tar","gz"].includes(ext)) return "archive";
         return "file";
     };
+    function updateSelection() {
+        selectionBar.hidden = selected.size === 0;
+        selectionCount.textContent = selected.size + " selected";
+        list.querySelectorAll(".file-node-item").forEach(item => item.classList.toggle("is-selected", selected.has(item.dataset.path)));
+    }
+    function renderBreadcrumb() {
+        pathLabel.replaceChildren();
+        const parts = path.split("/").filter(Boolean);
+        const root = document.createElement("button");
+        root.type = "button"; root.textContent = "Home";
+        root.addEventListener("click",()=>{path="/";selected.clear();render();});
+        pathLabel.appendChild(root);
+        let current = "";
+        parts.forEach(part => {
+            current += "/" + part;
+            const separator = document.createElement("span"); separator.className = "files-breadcrumb-separator"; separator.textContent = "›";
+            const button = document.createElement("button"); button.type = "button"; button.textContent = part;
+            const destination = current;
+            button.addEventListener("click",()=>{path=destination;selected.clear();render();});
+            pathLabel.append(separator,button);
+        });
+        win.querySelectorAll("[data-location]").forEach(button=>button.classList.toggle("active",button.dataset.location===path));
+    }
     async function render() {
         const current=++token;
-        list.replaceChildren(); pathLabel.textContent=path; back.disabled=path==="/";
+        list.replaceChildren(); renderBreadcrumb(); back.disabled=path==="/";
         try {
             const entries=await window.WebOSFileSystem.list(path);
             if(current!==token || !win.isConnected) return;
@@ -269,69 +312,109 @@ function openFiles() {
                 if(a.type!==b.type) return a.type==="directory"?-1:1;
                 if(sort.value==="modified") return (b.modified||0)-(a.modified||0);
                 if(sort.value==="size") return size(b)-size(a);
-                if(sort.value==="type") return name(a).split(".").pop().localeCompare(name(b).split(".").pop());
+                if(sort.value==="type") return extension(a).localeCompare(extension(b)) || name(a).localeCompare(name(b));
                 return name(a).localeCompare(name(b),undefined,{numeric:true,sensitivity:"base"});
             });
             count.textContent=rows.length+" of "+entries.length+" items";
             if(!rows.length) {
                 const empty=document.createElement("li"); empty.className="files-empty-state-notice";
-                empty.textContent=q?"No matching files in this folder.":"This folder is empty. Create a folder or import a file to get started.";
-                list.appendChild(empty); return;
+                empty.innerHTML='<span class="files-empty-icon">✧</span><strong>'+(q?"Nothing matched your search":"Nothing here yet")+'</strong><span>'+(q?"Try a different name or clear the search.":"Create a file, add a folder, or import a document to get started.")+'</span>';
+                list.appendChild(empty); updateSelection(); return;
             }
             rows.forEach(entry=>{
                 const n=name(entry), item=document.createElement("li");
                 item.className="file-node-item "+(entry.type==="directory"?"node-type-folder":"node-type-file");
-                const open=document.createElement("button"); open.type="button"; open.className="files-node-open";
-                const graphic=document.createElement("span"); graphic.className="node-graphic-icon";
-                const img=document.createElement("img"); img.className="files-preset-icon"; img.src="../images/icons/"+icon(entry)+".svg"; img.alt="";
+                item.dataset.path=entry.path;
+                const check=document.createElement("input");check.type="checkbox";check.className="files-item-check";check.checked=selected.has(entry.path);check.setAttribute("aria-label","Select "+n);
+                check.addEventListener("change",()=>{if(check.checked)selected.add(entry.path);else selected.delete(entry.path);updateSelection();});
+                const open=document.createElement("button");open.type="button";open.className="files-node-open";
+                const graphic=document.createElement("span");graphic.className="node-graphic-icon";
+                const img=document.createElement("img");img.className="files-preset-icon";img.src="../images/icons/"+icon(entry)+".svg";img.alt="";
                 graphic.appendChild(img);
-                const details=document.createElement("span"); details.className="node-text-details";
-                const label=document.createElement("span"); label.className="node-filename-label"; label.textContent=n;
-                const meta=document.createElement("small"); meta.className="node-filesize-sublabel";
+                const details=document.createElement("span");details.className="node-text-details";
+                const label=document.createElement("span");label.className="node-filename-label";label.textContent=n;
+                const meta=document.createElement("small");meta.className="node-filesize-sublabel";
                 meta.textContent=entry.type==="directory"?"Folder":prettySize(size(entry))+" · "+new Date(entry.modified||Date.now()).toLocaleDateString();
-                details.append(label,meta); open.append(graphic,details);
-                open.addEventListener("click",()=>{if(entry.type==="directory"){path=entry.path;search.value="";render();}else openFile(entry);});
-                const tools=document.createElement("div"); tools.className="files-node-actions";
-                const rename=document.createElement("button"); rename.type="button"; rename.textContent="Rename"; rename.title="Rename item";
+                details.append(label,meta);open.append(graphic,details);
+                open.addEventListener("click",()=>{if(entry.type==="directory"){path=entry.path;search.value="";selected.clear();render();}else openFile(entry);});
+                const tools=document.createElement("div");tools.className="files-node-actions";
+                const rename=document.createElement("button");rename.type="button";rename.textContent="Rename";rename.title="Rename item";
                 rename.addEventListener("click",async()=>{
-                    const next=window.prompt("Rename item:",n); if(!next||!next.trim()||next.trim()===n)return;
-                    try{await window.WebOSFileSystem.move(entry.path,target(clean(next)));status.textContent="Renamed "+n;render();}
+                    const next=window.prompt("Rename item:",n);if(!next||!next.trim()||clean(next)===n)return;
+                    try{await window.WebOSFileSystem.move(entry.path,target(clean(next)));selected.delete(entry.path);status.textContent="Renamed "+n;render();}
                     catch(err){window.alert("Rename failed: "+err.message);}
                 });
-                const dl=document.createElement("button"); dl.type="button"; dl.textContent="↓"; dl.title="Download file"; dl.disabled=entry.type==="directory";
+                const duplicate=document.createElement("button");duplicate.type="button";duplicate.textContent="Copy";duplicate.title="Duplicate item";
+                duplicate.addEventListener("click",async()=>{
+                    try{let base=n,ext="",dot=n.lastIndexOf(".");if(dot>0){base=n.slice(0,dot);ext=n.slice(dot);}let next=base+" copy"+ext,i=2;while(await window.WebOSFileSystem.exists(target(next)))next=base+" copy "+i+++ext;await window.WebOSFileSystem.copy(entry.path,target(next));status.textContent="Created "+next;render();}
+                    catch(err){window.alert("Copy failed: "+err.message);}
+                });
+                const dl=document.createElement("button");dl.type="button";dl.textContent="↓";dl.title="Download file";dl.disabled=entry.type==="directory";
                 dl.addEventListener("click",()=>downloadEntry(entry));
-                const del=document.createElement("button"); del.type="button"; del.className="danger"; del.textContent="×"; del.title="Delete item";
+                const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="×";del.title="Delete item";
                 del.addEventListener("click",async()=>{
                     if(!window.confirm('Permanently delete "'+n+'" from WebOS storage?'))return;
-                    await window.WebOSFileSystem.remove(entry.path);status.textContent="Deleted "+n;render();
+                    try{await window.WebOSFileSystem.remove(entry.path);selected.delete(entry.path);status.textContent="Deleted "+n;render();}
+                    catch(err){window.alert("Delete failed: "+err.message);}
                 });
-                tools.append(rename,dl,del); item.append(open,tools); list.appendChild(item);
+                tools.append(rename,duplicate,dl,del);item.append(check,open,tools);list.appendChild(item);
             });
             status.textContent=path+" · IndexedDB";
+            updateSelection();
         } catch(err){status.textContent="Could not read folder: "+err.message;console.error("WebOS Files:",err);}
     }
-    async function openFile(entry) {
-        const file=await window.WebOSFileSystem.read(entry.path); if(!file)return;
-        const panel=document.createElement("div");panel.className="file-editor-container";
-        const info=document.createElement("div");info.className="file-editor-info";info.textContent=entry.path+" · "+prettySize(size(file));
-        const editor=document.createElement("textarea");editor.className="raw-code-textarea";editor.spellcheck=false;editor.value=file.content||"";
-        const footer=document.createElement("div");footer.className="editor-action-footer";
-        const save=document.createElement("button");save.type="button";save.className="files-action-btn";save.textContent="Save";
-        const dl=document.createElement("button");dl.type="button";dl.className="files-action-btn variant-secondary";dl.textContent="Download";
-        const state=document.createElement("span");state.setAttribute("aria-live","polite");state.textContent="Stored locally in this browser.";
-        save.addEventListener("click",async()=>{await window.WebOSFileSystem.putText(entry.path,editor.value);state.textContent="Saved at "+new Date().toLocaleTimeString();render();});
-        dl.addEventListener("click",()=>downloadText(name(entry),editor.value));
-        footer.append(save,dl,state);panel.append(info,editor,footer);createWindow(name(entry),panel);
-    }
-    function downloadText(filename,content) {
-        const blob=new Blob([content],{type:"application/octet-stream"}),url=URL.createObjectURL(blob);
+    function downloadText(filename,content,type) {
+        const blob=new Blob([content],{type:type||"application/octet-stream"}),url=URL.createObjectURL(blob);
         const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
         setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
     async function downloadEntry(entry){const file=await window.WebOSFileSystem.read(entry.path);if(file)downloadText(name(entry),file.content||"");}
-    back.addEventListener("click",()=>{if(path==="/")return;path=parent(path);search.value="";render();});
+    async function openFile(entry) {
+        const file=await window.WebOSFileSystem.read(entry.path);if(!file)return;
+        const ext=extension(entry),previewable=["html","htm"].includes(ext);
+        const panel=document.createElement("div");panel.className="file-editor-container files-code-workspace";
+        const info=document.createElement("div");info.className="file-editor-info";info.textContent=entry.path+" · "+prettySize(size(file));
+        const editor=document.createElement("textarea");editor.className="raw-code-textarea";editor.spellcheck=false;editor.value=file.content||"";editor.setAttribute("aria-label","File contents");
+        const footer=document.createElement("div");footer.className="editor-action-footer";
+        const save=document.createElement("button");save.type="button";save.className="files-action-btn";save.textContent="Save";
+        const dl=document.createElement("button");dl.type="button";dl.className="files-action-btn variant-secondary";dl.textContent="Download";
+        const state=document.createElement("span");state.setAttribute("aria-live","polite");state.textContent="Stored in this browser.";
+        let previewFrame=null;
+        if(previewable){
+            const preview=document.createElement("button");preview.type="button";preview.className="files-action-btn variant-secondary";preview.textContent="Preview HTML";
+            preview.addEventListener("click",()=>{
+                if(previewFrame){previewFrame.remove();previewFrame=null;preview.textContent="Preview HTML";return;}
+                previewFrame=document.createElement("iframe");previewFrame.className="files-html-preview";previewFrame.setAttribute("sandbox","");
+                previewFrame.title="Isolated HTML preview";previewFrame.srcdoc=editor.value;
+                panel.insertBefore(previewFrame,footer);preview.textContent="Hide preview";
+            });
+            footer.appendChild(preview);
+        }
+        save.addEventListener("click",async()=>{try{await window.WebOSFileSystem.putText(entry.path,editor.value);state.textContent="Saved · "+new Date().toLocaleTimeString();render();}catch(err){state.textContent="Save failed: "+err.message;}});
+        dl.addEventListener("click",()=>downloadText(name(entry),editor.value));
+        footer.append(save,dl,state);panel.append(info,editor,footer);createWindow(name(entry),panel);
+    }
+    async function createStarter(extension) {
+        const defaults={
+            html:["<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>New WebOS page</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <main>\n    <h1>Hello, WebOS!</h1>\n    <p>Your new HTML document starts here.</p>\n  </main>\n  <script src=\"app.js\"></script>\n</body>\n</html>","HTML document"],
+            css:["/* WebOS stylesheet */\n:root {\n  color-scheme: light dark;\n}\n\nbody {\n  font-family: system-ui, sans-serif;\n}\n","CSS stylesheet"],
+            js:["// WebOS application script\n'use strict';\n\ndocument.addEventListener('DOMContentLoaded', () => {\n  console.log('Hello from WebOS!');\n});\n","JavaScript file"]
+        };
+        const [content,label]=defaults[extension],nameInput=window.prompt("Name your "+label.toLowerCase()+":",extension==="html"?"index.html":extension==="css"?"style.css":"app.js");
+        if(!nameInput||!nameInput.trim())return;
+        let filename=clean(nameInput);if(!filename)return;
+        if(!filename.toLowerCase().endsWith("."+extension))filename+="."+extension;
+        try{await window.WebOSFileSystem.putText(target(filename),content);status.textContent="Created "+filename;render();const entry=await window.WebOSFileSystem.read(target(filename));if(entry)openFile(entry);}
+        catch(err){window.alert("Could not create file: "+err.message);}
+    }
+    back.addEventListener("click",()=>{if(path==="/")return;path=parent(path);selected.clear();search.value="";render();});
+    win.querySelector("#files-refresh").addEventListener("click",render);
     search.addEventListener("input",render);sort.addEventListener("change",render);
     view.addEventListener("click",()=>{grid=!grid;list.classList.toggle("files-grid-view",grid);view.setAttribute("aria-pressed",String(grid));view.textContent=grid?"☰":"▦";});
+    win.querySelectorAll("[data-location]").forEach(button=>button.addEventListener("click",()=>{path=button.dataset.location;selected.clear();search.value="";render();}));
+    win.querySelector("#files-new-html").addEventListener("click",()=>createStarter("html"));
+    win.querySelector("#files-new-css").addEventListener("click",()=>createStarter("css"));
+    win.querySelector("#files-new-js").addEventListener("click",()=>createStarter("js"));
     win.querySelector("#new-folder").addEventListener("click",async()=>{
         const n=window.prompt("New folder name:","New Folder");if(!n||!n.trim())return;
         try{await window.WebOSFileSystem.makeDirectory(target(clean(n)));status.textContent="Created folder "+n;render();}
@@ -339,7 +422,8 @@ function openFiles() {
     });
     win.querySelector("#new-file").addEventListener("click",async()=>{
         const n=window.prompt("New file name:","untitled.txt");if(!n||!n.trim())return;
-        await window.WebOSFileSystem.putText(target(clean(n)),"");status.textContent="Created file "+n;render();
+        try{await window.WebOSFileSystem.putText(target(clean(n)),"");status.textContent="Created file "+n;render();}
+        catch(err){window.alert("Could not create file: "+err.message);}
     });
     win.querySelector("#upload-file").addEventListener("click",()=>picker.click());
     picker.addEventListener("change",async()=>{
@@ -347,11 +431,23 @@ function openFiles() {
         const textPattern=/\.(txt|md|json|js|mjs|ts|html?|css|xml|svg|csv|ya?ml|toml|ini|log|py|sh|sql)$/i;
         const accepted=files.filter(file=>file.type.startsWith("text/")||file.type==="application/json"||file.type==="image/svg+xml"||textPattern.test(file.name));
         const skipped=files.length-accepted.length;
-        for(const file of accepted) await window.WebOSFileSystem.putText(target(file.name),await file.text());
-        if(files.length) status.textContent="Imported "+accepted.length+" text file(s)"+(skipped ? " · skipped "+skipped+" unsupported binary file(s)" : "");
+        for(const file of accepted)await window.WebOSFileSystem.putText(target(clean(file.name)),await file.text());
+        if(files.length)status.textContent="Imported "+accepted.length+" text file(s)"+(skipped?" · skipped "+skipped+" unsupported binary file(s)":"");
         picker.value="";render();
     });
-    win.addEventListener("webos:window-close",()=>{++token;picker.value="";});
+    win.querySelector("#files-select-all").addEventListener("click",async()=>{
+        const entries=await window.WebOSFileSystem.list(path);entries.forEach(entry=>selected.add(entry.path));render();
+    });
+    win.querySelector("#files-clear-selection").addEventListener("click",()=>{selected.clear();render();});
+    win.querySelector("#files-delete-selected").addEventListener("click",async()=>{
+        if(!selected.size||!window.confirm("Delete "+selected.size+" selected item(s)? This cannot be undone."))return;
+        const targets=[...selected];for(const item of targets)await window.WebOSFileSystem.remove(item);
+        selected.clear();status.textContent="Deleted "+targets.length+" item(s)";render();
+    });
+    win.addEventListener("keydown",event=>{
+        if(event.key==="Backspace"&&!/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)&&path!=="/"){event.preventDefault();path=parent(path);selected.clear();render();}
+    });
+    win.addEventListener("webos:window-close",()=>{++token;picker.value="";selected.clear();});
     render();return win;
 }
 function openSettings() {

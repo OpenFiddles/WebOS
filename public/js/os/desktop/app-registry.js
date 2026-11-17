@@ -17,7 +17,9 @@
                     writeText: async (path, content) => { await this.require("filesystem.write"); return this.fs().putText(path, content); },
                     makeDirectory: async path => { await this.require("filesystem.write"); return this.fs().makeDirectory(path); },
                     remove: async path => { await this.require("filesystem.delete"); return this.fs().remove(path); },
-                    exists: async path => { await this.require("filesystem.read"); return this.fs().exists(path); }
+                    exists: async path => { await this.require("filesystem.read"); return this.fs().exists(path); },
+                    copy: async (from, to) => { await this.require("filesystem.write"); return this.fs().copy(from, to); },
+                    move: async (from, to) => { await this.require("filesystem.write"); return this.fs().move(from, to); }
                 });
                 this.geolocation = Object.freeze({
                     getCurrentPosition: async options => {
@@ -37,6 +39,48 @@
                         if (!navigator.clipboard?.writeText) throw new Error("Clipboard writing is unavailable in this browser.");
                         return navigator.clipboard.writeText(String(value));
                     }
+                });
+                this.ui = Object.freeze({
+                    createElement: (tag, options = {}, children = []) => {
+                        const name = String(tag).toLowerCase();
+                        if (!/^[a-z][a-z0-9-]*$/.test(name) || ["script","iframe","object","embed","base","meta","link"].includes(name))
+                            throw new Error("Unsupported UI element: " + name);
+                        const element = document.createElement(name);
+                        if (options.className) element.className = String(options.className);
+                        if (options.text !== undefined) element.textContent = String(options.text);
+                        if (options.title) element.title = String(options.title);
+                        if (options.id) element.id = String(options.id);
+                        if (options.attributes && typeof options.attributes === "object") {
+                            Object.entries(options.attributes).forEach(([key,value]) => {
+                                if (/^(aria-[\w-]+|data-[\w-]+|role|type|name|placeholder|value|alt|href|target|rel|disabled|checked)$/.test(key)) {
+                                    if (value === true) element.setAttribute(key, "");
+                                    else if (value !== false && value != null) element.setAttribute(key, String(value));
+                                }
+                            });
+                        }
+                        const nodes = Array.isArray(children) ? children : [children];
+                        nodes.forEach(child => {
+                            if (child == null) return;
+                            element.appendChild(child instanceof Node ? child : document.createTextNode(String(child)));
+                        });
+                        return element;
+                    }
+                });
+                this.windows = Object.freeze({
+                    create: (title, content) => {
+                        if (!(content instanceof Node)) throw new TypeError("Window content must be a DOM Node. Use api.ui.createElement() to build it safely.");
+                        if (typeof window.createWindow !== "function") throw new Error("WebOS window manager is unavailable.");
+                        return window.createWindow(String(title), content);
+                    }
+                });
+                this.system = Object.freeze({
+                    getInfo: () => Object.freeze({
+                        name: "WebOS",
+                        runtime: "browser",
+                        browser: navigator.userAgent,
+                        secureContext: window.isSecureContext === true,
+                        language: navigator.language || "en"
+                    })
                 });
             }
             fs() {

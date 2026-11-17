@@ -47,14 +47,14 @@ WebOSAppRegistry.register({
   id: "example", name: "Example", icon: "✨",
   description: "A sample app", handler: "openExample"
 });
-WebOSAppRegistry.render();</code></pre><h2>Handler contract</h2><p>Handlers receive <code>(api, argument)</code>. The first argument is a WebOSAppClient instance. Register a globally named handler before registering the app.</p><h2>Runtime security</h2><p>Custom handlers currently execute in the WebOS page JavaScript context. Permission checks are cooperative API gates, not a secure sandbox. Do not run untrusted app code.</p><h2>Source map</h2><ul><li><code>public/js/os/desktop/app-registry.js</code> — app registration and API client.</li><li><code>public/js/os/desktop/Permissions.js</code> — permission prompt and decisions.</li><li><code>public/js/os/desktop/filesystem.js</code> — virtual filesystem.</li><li><code>public/js/os/window/WindowManager.js</code> — window creation.</li><li><code>public/js/os/desktop/Notifications.js</code> — notifications.</li></ul>`],
+WebOSAppRegistry.render();</code></pre><h2>Handler contract</h2><p>Handlers receive <code>(api, argument)</code>. The first argument is a WebOSAppClient instance. Register a globally named handler before registering the app.</p><h2>Runtime security</h2><p>Registered app handlers currently execute in the WebOS page JavaScript context. URL-based windows can load iframe content, but that does not mean every registered app is iframe-isolated. Permission checks are cooperative API gates, not a secure sandbox. Do not run untrusted app code.</p><h2>Source map</h2><ul><li><code>public/js/os/desktop/app-registry.js</code> — app registration and API client.</li><li><code>public/js/os/desktop/Permissions.js</code> — permission prompt and decisions.</li><li><code>public/js/os/desktop/filesystem.js</code> — virtual filesystem.</li><li><code>public/js/os/window/WindowManager.js</code> — window creation.</li><li><code>public/js/os/desktop/Notifications.js</code> — notifications.</li></ul>`],
       architecture:["Platform architecture","THE THREE LAYERS","WebOS runs inside a host browser. The host browser remains the authority for operating-system and device permissions.",`<h2>Capability flow</h2><pre><code>WebOS app
   → WebOS API
   → WebOS permission prompt
   → host browser API
   → browser-native permission (when required)
   → available device capability</code></pre><h2>WebOS layer</h2><p>Owns app registration, windows, virtual files, notifications and app-level permission prompts.</p><h2>Host browser layer</h2><p>Enforces origin security, secure-context rules, iframe policies, user-gesture requirements and native permission prompts.</p><h2>Operating system layer</h2><p>Hardware and operating-system features are exposed only through APIs the browser supports. WebOS cannot override browser security, access arbitrary host files, or silently install software.</p>`],
-      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",`<h2>Core methods</h2><pre><code>await api.requestPermission(name, reason)
+      api:["API reference","WEBOS APP CLIENT","The app handler receives a WebOSAppClient instance as its first argument. Methods return Promises unless otherwise noted.",'<h2>Core methods</h2><pre><code>await api.requestPermission(name, reason)
 api.getPermissionState(name)
 await api.read(path)              // filesystem.read
 await api.putText(path, content)  // filesystem.write
@@ -63,11 +63,31 @@ await api.filesystem.read("/Documents/readme.txt")
 await api.filesystem.writeText("/Documents/readme.txt", "Hello")
 await api.filesystem.makeDirectory("/Documents/Demo")
 await api.filesystem.remove("/Documents/old.txt")
-await api.filesystem.exists("/Documents/readme.txt")</code></pre><p>These paths address the WebOS virtual filesystem, not the host computer's files. Read, write and delete operations request separate permissions.</p><h2>Geolocation</h2><pre><code>const position = await api.geolocation.getCurrentPosition({
+await api.filesystem.exists("/Documents/readme.txt")
+await api.filesystem.copy("/Documents/a.txt", "/Documents/b.txt")
+await api.filesystem.move("/Documents/a.txt", "/Documents/b.txt")</code></pre><p>These paths address the WebOS virtual filesystem, not the host computer's files. Read, write and delete operations request separate permissions.</p><h2>Build UI with HTML elements</h2><pre><code>const heading = api.ui.createElement("h2", {
+  className: "welcome-title",
+  text: "Hello WebOS"
+});
+const button = api.ui.createElement("button", {
+  text: "Click me",
+  attributes: { type: "button", "aria-label": "Say hello" }
+});
+button.addEventListener("click", () => {
+  heading.textContent = "It works!";
+});
+const root = api.ui.createElement("section", {
+  className: "my-app"
+}, [heading, button]);
+api.windows.create("My HTML App", root);</code></pre><p>The helper uses DOM creation and textContent instead of injecting HTML strings. It supports a limited safe attribute allowlist. Build richer interfaces with standard HTML, CSS classes and event listeners.</p><h2>Window namespace</h2><pre><code>const root = api.ui.createElement("main", {}, [
+  api.ui.createElement("p", { text: "A WebOS window" })
+]);
+api.windows.create("Example", root);</code></pre><p>Window content must be a DOM Node. Raw HTML strings are intentionally not accepted by this helper.</p><h2>System information</h2><pre><code>const info = api.system.getInfo();
+console.log(info.name, info.runtime, info.secureContext);</code></pre><p>Returns basic runtime information and the host browser user-agent string. It does not expose private device identifiers.</p><h2>Geolocation</h2><pre><code>const position = await api.geolocation.getCurrentPosition({
   enableHighAccuracy: false, timeout: 10000
 });
 console.log(position.coords.latitude, position.coords.longitude);</code></pre><p>Requests WebOS approval first, then calls the host browser API. The browser may show its own native prompt. A secure context and browser support are required.</p><h2>Clipboard</h2><pre><code>const text = await api.clipboard.readText();
-await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li></ul>`],
+await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li></ul>'],
       permissions:["Permissions & security","ASK BEFORE ACCESS","Apps should request only the capabilities they need and explain why.",`<h2>Request access</h2><pre><code>await api.requestPermission(
   "geolocation",
   "Show nearby places on the map."
