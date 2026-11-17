@@ -448,9 +448,15 @@ function openSettings() {
                     </div>
                 </div>
 
-                <div class="inspector-actions" style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
-                    <button type="button" id="btn-save-css" disabled style="padding: 0.4rem 0.8rem; cursor: pointer;">Save Styles</button>
-                    <button type="button" id="btn-clear-css" style="padding: 0.4rem 0.8rem; cursor: pointer;">Clear All Changes</button>
+                <div class="setting-field" style="display:flex;flex-direction:column;gap:6px;">
+                    <label for="css-full-editor">Custom CSS stylesheet</label>
+                    <textarea id="css-full-editor" spellcheck="false" style="width:100%;min-height:150px;resize:vertical;font:12px/1.5 ui-monospace,monospace;" placeholder="/* Add CSS rules here */"></textarea>
+                    <small style="opacity:.7;">Saved locally and injected into the desktop. @import and script-like CSS expressions are blocked.</small>
+                </div>
+                <div class="inspector-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.25rem;">
+                    <button type="button" id="btn-save-css" disabled>Save Selected Styles</button>
+                    <button type="button" id="btn-apply-css">Validate & Apply CSS</button>
+                    <button type="button" id="btn-clear-css">Clear All Changes</button>
                 </div>
             </section>
 
@@ -474,7 +480,9 @@ function openSettings() {
         styleElement.id = "custom-user-styles";
         document.head.appendChild(styleElement);
     }
-    styleElement.textContent = localStorage.getItem("webos-custom-css") || "";
+    const storedCustomCss = localStorage.getItem("webos-custom-css") || "";
+    styleElement.textContent = storedCustomCss;
+    fullCssEditor.value = storedCustomCss;
 
     // 3. Extract active DOM element bindings from compiled frame template
     const choice = win.querySelector("#theme-choice");
@@ -491,6 +499,8 @@ function openSettings() {
     const cssInputs = win.querySelectorAll(".css-prop-field");
     const btnSaveCss = win.querySelector("#btn-save-css");
     const btnClearCss = win.querySelector("#btn-clear-css");
+    const fullCssEditor = win.querySelector("#css-full-editor");
+    const btnApplyCss = win.querySelector("#btn-apply-css");
 
     let isSpectating = false;
     let selectedDomSelector = "";
@@ -706,39 +716,65 @@ function openSettings() {
 
     /* ---------- MAIN MODIFICATION WRITER ENGINE ---------- */
 
+    function validateAndApplyCss(source) {
+        const value = String(source || "");
+        if (/@import\b|expression\s*\(|javascript\s*:/i.test(value)) {
+            throw new Error("@import, expression(), and javascript: are not allowed.");
+        }
+        let probe;
+        if (typeof CSSStyleSheet === "function") {
+            probe = new CSSStyleSheet();
+            probe.replaceSync(value);
+        } else {
+            const testStyle = document.createElement("style");
+            testStyle.textContent = value;
+            document.head.appendChild(testStyle);
+            probe = testStyle.sheet;
+            if (!probe) { testStyle.remove(); throw new Error("Stylesheet parsing failed."); }
+            testStyle.remove();
+        }
+        localStorage.setItem("webos-custom-css", value);
+        styleElement.textContent = value;
+        fullCssEditor.value = value;
+        status.textContent = "CSS validated, saved locally, and injected.";
+        return probe;
+    }
+
+    btnApplyCss.onclick = () => {
+        try { validateAndApplyCss(fullCssEditor.value); }
+        catch (error) { status.textContent = "CSS not applied: " + error.message; }
+    };
+
     btnSaveCss.onclick = () => {
         if (!selectedDomSelector) return;
-
-        let currentStyleSheet = styleElement.textContent;
-
-        // Wipe old versions of this rule sequence block out of the stylesheet string text
-        const cleanRegex = new RegExp(`${selectedDomSelector.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\s*{[\\s\\S]*?}\\s*`, "gi");
-        currentStyleSheet = currentStyleSheet.replace(cleanRegex, "");
-
-        // Build string block text sequence parameters
-        let rulesBlock = [];
-        cssInputs.forEach(input => {
-            const propName = input.id.replace("css-", "");
-            if (input.value.trim() !== "") {
-                rulesBlock.push(`  ${propName}: ${input.value.trim()} !important;`);
+        try {
+            const declarations = [];
+            cssInputs.forEach(input => {
+                const property = input.id.replace("css-", "");
+                const value = input.value.trim();
+                if (value && !/[{};]/.test(value)) declarations.push("  " + property + ": " + value + " !important;");
+            });
+            // Marker-delimited blocks avoid fragile selector-regex parsing and preserve
+            // unrelated rules in the user's stylesheet.
+            const marker = "/* WebOS inspector rule: " + selectedDomSelector.replace(/\*\//g, "") + " */";
+            let source = fullCssEditor.value;
+            const markerIndex = source.indexOf(marker);
+            if (markerIndex >= 0) {
+                const nextRule = source.indexOf("/* WebOS inspector rule:", markerIndex + marker.length);
+                source = source.slice(0, markerIndex) + (nextRule >= 0 ? source.slice(nextRule) : "");
             }
-        });
-
-        if (rulesBlock.length > 0) {
-            currentStyleSheet += `${selectedDomSelector} {
-${rulesBlock.join("\n")}
-}
-`;
-        }
-
-        styleElement.textContent = currentStyleSheet;
-        localStorage.setItem("webos-custom-css", currentStyleSheet);
-        status.textContent = "Injected styles updated inside the global CSS script wrapper.";
+            const addition = declarations.length ? marker + "\n" + selectedDomSelector + " {\n" + declarations.join("\n") + "\n}\n" : "";
+            const next = source.trim() + (source.trim() && addition ? "\n\n" : "") + addition;
+            fullCssEditor.value = next;
+            validateAndApplyCss(next);
+            status.textContent = "Selected element styles saved and injected.";
+        } catch (error) { status.textContent = "Styles not saved: " + error.message; }
     };
 
     btnClearCss.onclick = () => {
         if (confirm("Reset all custom injected CSS modifications?")) {
             styleElement.textContent = "";
+            fullCssEditor.value = "";
             localStorage.removeItem("webos-custom-css");
             insSelectorInput.value = "";
             cssInputs.forEach(input => input.value = "");

@@ -23,6 +23,22 @@ function focusWindow(win) {
     });
 }
 
+function setWindowMaximized(win, maximize) {
+    if (!win) return;
+    if (maximize && !win.classList.contains("is-maximized")) {
+        win.dataset.restoreGeometry = JSON.stringify({left:win.style.left,top:win.style.top,width:win.style.width,height:win.style.height});
+        win.classList.add("is-maximized");
+        win.style.left = win.style.top = win.style.width = win.style.height = "";
+    } else if (!maximize && win.classList.contains("is-maximized")) {
+        win.classList.remove("is-maximized");
+        try {
+            const saved = JSON.parse(win.dataset.restoreGeometry || "{}");
+            ["left","top","width","height"].forEach(key => { win.style[key] = saved[key] || ""; });
+        } catch (_) {}
+        delete win.dataset.restoreGeometry;
+    }
+}
+
 function createWindow(title, content) {
     const template = document.getElementById("WindowTemplate");
     if (!template) {
@@ -137,11 +153,7 @@ function makeWindowDraggable(win) {
             const current = workspace.getBoundingClientRect();
             const edge = 14;
             if (upEvent.clientY <= current.top + edge) {
-                win.classList.add("is-maximized");
-                win.style.left = "";
-                win.style.top = "";
-                win.style.width = "";
-                win.style.height = "";
+                setWindowMaximized(win, true);
             } else if (upEvent.clientX <= current.left + edge) {
                 win.style.left = "8px";
                 win.style.top = "8px";
@@ -287,7 +299,7 @@ function wireWindowButtons(win) {
     if (maximizeBtn) {
         maximizeBtn.addEventListener("click", (event) => {
             event.stopPropagation();
-            win.classList.toggle("is-maximized");
+            setWindowMaximized(win, !win.classList.contains("is-maximized"));
             focusWindow(win);
         });
     }

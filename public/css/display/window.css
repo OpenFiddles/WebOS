@@ -20,7 +20,10 @@
     /* Fluid Hardware-Accelerated Animations */
     will-change: transform, opacity;
     animation: window-in var(--window-animation, .35s) cubic-bezier(0.22, 1, 0.36, 1) both;
-    transition: transform .24s cubic-bezier(.2, .8, .2, 1), opacity .24s ease;
+    transition: transform .24s cubic-bezier(.2, .8, .2, 1), opacity .24s ease,
+                top .32s cubic-bezier(.2,.8,.2,1), left .32s cubic-bezier(.2,.8,.2,1),
+                width .32s cubic-bezier(.2,.8,.2,1), height .32s cubic-bezier(.2,.8,.2,1),
+                border-radius .32s ease;
 }
 
 /* Glassmorphic Shell Aesthetic Engine */
@@ -149,11 +152,14 @@
 
 /* --- Window State Modifiers Engine --- */
 .window-shell.is-minimized {
-    transform: scale(0.93) translateY(20px);
+    animation: none !important;
+    visibility: hidden;
+    transform: translateY(28px) scale(.88);
     opacity: 0;
     pointer-events: none;
-    transition: transform .24s cubic-bezier(.2, .8, .2, 1), opacity .24s ease;
+    transition: transform .24s cubic-bezier(.2,.8,.2,1), opacity .2s ease, visibility 0s linear .25s;
 }
+.window-shell:not(.is-minimized) { visibility: visible; }
 
 .window-shell.is-closing {
     animation: window-out .18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
@@ -162,12 +168,12 @@
 
 /* Maximized Window Execution Parameters */
 .window-shell.is-maximized {
-    top: 54px !important;
-    left: 12px !important;
-    width: calc(100vw - 24px) !important;
-    height: calc(100vh - 116px) !important;
-    border-radius: 12px !important; 
-    box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
+    animation: none !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,.5) !important;
 }
 
 .window-shell.is-maximized .resize-handle {
@@ -500,3 +506,5 @@
     width: 20px;
     text-align: center;
 }
+
+@media (prefers-reduced-motion: reduce) { .window-shell, .window-shell.is-minimized, .window-shell.is-maximized { transition-duration:.01ms !important; } }
