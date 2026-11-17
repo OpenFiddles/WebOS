@@ -1,19 +1,34 @@
 # WebOS
-> A literal OS in a browser, powered by pure html, css, js, and WASM!
+
+> A browser-based desktop environment built with HTML, CSS, JavaScript, and browser APIs.
 
 ## About WebOS
-The Linux terminal runs an Alpine Linux x86 userspace in the browser with CheerpX. This is currently a work in progress.
 
-### CheerpX deployment requirement
+WebOS provides a desktop-style workspace with draggable, resizable application windows, a launcher, dock, virtual file system, notes, browser, calculator, calendar, system monitor, WASM lab, and appearance settings.
 
-CheerpX requires `SharedArrayBuffer`, so the emulator route must be served with these headers:
+The **FlairOS Emulator** app embeds the hosted FlairOS environment from [OpenFiddles/FlairOS](https://openfiddles.github.io/FlairOS/). It loads on demand inside a resizable WebOS window, so the emulator does not slow down the initial boot process.
 
-```text
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: require-corp
+## Run locally
+
+Requires Node.js 24 or newer.
+
+```sh
+npm install
+npm run dev
 ```
 
-The included `vercel.json` applies them to the whole site because the top-level browsing context must also be isolated. Use HTTPS in production; localhost development also requires both headers. GitHub Pages cannot set custom response headers, so deploy this project through Vercel, Netlify, or a reverse proxy that supports these headers.
+Then open http://localhost:3000.
 
-## Credited and By?
-This is an idea created by [XiLy](https://GitHub.com/xi-self13) who owns [OpenFiddles](https://GitHub.com/OpenFiddles).
+## Deployment
+
+The project is configured for Vercel. The deployment adds the cross-origin isolation headers used by browser features that need them.
+
+## Appearance
+
+Open **Better Settings** to choose a desktop theme, accent color, wallpaper preset or custom image, animation profile, and reduced-motion mode. Appearance preferences are stored locally in the current browser.
+
+## Project notes
+
+- The FlairOS page is hosted separately and requires an internet connection.
+- The Alpine emulator assets are retained in the repository for future experiments but are not downloaded during normal WebOS startup.
+- WebOS is licensed under GPL-3.0-or-later.

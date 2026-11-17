@@ -322,6 +322,8 @@ function openSettings() {
                         <option value="ocean">Ocean</option>
                         <option value="mint">Mint</option>
                         <option value="sunset">Sunset</option>
+                        <option value="midnight">Midnight</option>
+                        <option value="lavender">Lavender</option>
                     </select>
                 </div>
                 
@@ -330,6 +332,34 @@ function openSettings() {
                         <input id="motion-choice" type="checkbox"> Reduce motion
                     </label>
                 </div>
+
+                <div class="setting-field">
+                    <label for="accent-choice">Accent color</label>
+                    <input id="accent-choice" type="color" value="#53b5ff">
+                </div>
+
+                <div class="setting-field">
+                    <label for="wallpaper-choice">Desktop wallpaper</label>
+                    <select id="wallpaper-choice">
+                        <option value="aurora">Aurora</option>
+                        <option value="midnight">Midnight</option>
+                        <option value="ember">Ember</option>
+                        <option value="ocean">Ocean glow</option>
+                        <option value="custom">Custom image</option>
+                    </select>
+                    <input id="wallpaper-file" type="file" accept="image/*">
+                    <button type="button" id="wallpaper-clear">Remove custom wallpaper</button>
+                </div>
+
+                <div class="setting-field">
+                    <label for="animation-choice">Animation style</label>
+                    <select id="animation-choice">
+                        <option value="smooth">Smooth</option>
+                        <option value="snappy">Snappy</option>
+                        <option value="cinematic">Cinematic</option>
+                    </select>
+                </div>
+                <button type="button" id="reset-appearance">Restore appearance defaults</button>
             </section>
 
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 0.5rem 0;" />
@@ -396,10 +426,15 @@ function openSettings() {
         styleElement.id = "custom-user-styles";
         document.head.appendChild(styleElement);
     }
+    styleElement.textContent = localStorage.getItem("webos-custom-css") || "";
 
     // 3. Extract active DOM element bindings from compiled frame template
     const choice = win.querySelector("#theme-choice");
     const motion = win.querySelector("#motion-choice");
+    const accentChoice = win.querySelector("#accent-choice");
+    const wallpaperChoice = win.querySelector("#wallpaper-choice");
+    const wallpaperFile = win.querySelector("#wallpaper-file");
+    const animationChoice = win.querySelector("#animation-choice");
     const status = win.querySelector("#settings-status");
     
     const btnSpectate = win.querySelector("#btn-spectate");
@@ -416,6 +451,26 @@ function openSettings() {
     const selectedTheme = localStorage.getItem("webos-theme") || "ocean";
     choice.value = selectedTheme;
     motion.checked = localStorage.getItem("webos-reduced-motion") === "true";
+    accentChoice.value = localStorage.getItem("webos-accent") || "#53b5ff";
+    animationChoice.value = localStorage.getItem("webos-motion-style") || "smooth";
+    const savedWallpaper = localStorage.getItem("webos-wallpaper") || "aurora";
+    const savedCustomWallpaper = localStorage.getItem("webos-custom-wallpaper");
+    wallpaperChoice.value = savedCustomWallpaper ? "custom" : savedWallpaper;
+    document.body.dataset.reducedMotion = String(motion.checked);
+    document.body.dataset.motion = animationChoice.value;
+    document.body.style.setProperty("--accent", accentChoice.value);
+
+    if (savedCustomWallpaper) {
+        document.body.dataset.wallpaper = "custom";
+        document.body.style.backgroundImage = `linear-gradient(135deg, rgba(4, 10, 20, .30), rgba(4, 10, 20, .55)), url("${savedCustomWallpaper}")`;
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundPosition = "center";
+    } else {
+        document.body.dataset.wallpaper = savedWallpaper;
+        document.body.style.removeProperty("background-image");
+        document.body.style.removeProperty("background-size");
+        document.body.style.removeProperty("background-position");
+    }
 
     // 5. System Configuration Event Handlers
     choice.addEventListener("change", () => {
@@ -425,7 +480,93 @@ function openSettings() {
 
     motion.addEventListener("change", () => {
         localStorage.setItem("webos-reduced-motion", motion.checked);
-        document.documentElement.style.setProperty("--motion-scale", motion.checked ? "0" : "1");
+        document.body.dataset.reducedMotion = String(motion.checked);
+        status.textContent = motion.checked ? "Reduced motion enabled." : "Full motion enabled.";
+    });
+
+    accentChoice.addEventListener("input", () => {
+        localStorage.setItem("webos-accent", accentChoice.value);
+        document.documentElement.style.setProperty("--accent", accentChoice.value);
+    });
+
+    animationChoice.addEventListener("change", () => {
+        localStorage.setItem("webos-motion-style", animationChoice.value);
+        document.body.dataset.motion = animationChoice.value;
+    });
+
+    wallpaperChoice.addEventListener("change", () => {
+        if (wallpaperChoice.value === "custom" && !localStorage.getItem("webos-custom-wallpaper")) {
+            status.textContent = "Choose an image file to set a custom wallpaper.";
+            return;
+        }
+        localStorage.setItem("webos-wallpaper", wallpaperChoice.value);
+        if (wallpaperChoice.value !== "custom") {
+            localStorage.removeItem("webos-custom-wallpaper");
+            document.body.style.removeProperty("background-image");
+            document.body.style.removeProperty("background-size");
+            document.body.style.removeProperty("background-position");
+            document.body.dataset.wallpaper = wallpaperChoice.value;
+        }
+    });
+
+    wallpaperFile.addEventListener("change", () => {
+        const file = wallpaperFile.files && wallpaperFile.files[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/") || file.size > 2500000) {
+            status.textContent = "Choose an image under 2.5 MB.";
+            wallpaperFile.value = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                localStorage.setItem("webos-custom-wallpaper", String(reader.result));
+                localStorage.setItem("webos-wallpaper", "custom");
+                wallpaperChoice.value = "custom";
+                document.body.dataset.wallpaper = "custom";
+                document.body.style.backgroundImage = `linear-gradient(135deg, rgba(4, 10, 20, .30), rgba(4, 10, 20, .55)), url("${reader.result}")`;
+                document.body.style.backgroundSize = "cover";
+                document.body.style.backgroundPosition = "center";
+                status.textContent = "Custom wallpaper saved on this device.";
+            } catch (error) {
+                status.textContent = "Could not save this image. Try a smaller file.";
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+
+    win.querySelector("#wallpaper-clear").addEventListener("click", () => {
+        localStorage.removeItem("webos-custom-wallpaper");
+        localStorage.setItem("webos-wallpaper", "aurora");
+        wallpaperChoice.value = "aurora";
+        document.body.dataset.wallpaper = "aurora";
+        document.body.style.removeProperty("background-image");
+        document.body.style.removeProperty("background-size");
+        document.body.style.removeProperty("background-position");
+        status.textContent = "Custom wallpaper removed.";
+    });
+
+    win.querySelector("#reset-appearance").addEventListener("click", () => {
+        localStorage.removeItem("webos-theme");
+        localStorage.removeItem("webos-accent");
+        localStorage.removeItem("webos-wallpaper");
+        localStorage.removeItem("webos-custom-wallpaper");
+        localStorage.removeItem("webos-motion-style");
+        localStorage.removeItem("webos-reduced-motion");
+        choice.value = "ocean";
+        accentChoice.value = "#53b5ff";
+        wallpaperChoice.value = "aurora";
+        animationChoice.value = "smooth";
+        motion.checked = false;
+        document.body.dataset.theme = "ocean";
+        document.body.dataset.wallpaper = "aurora";
+        document.body.dataset.motion = "smooth";
+        document.body.dataset.reducedMotion = "false";
+        document.body.style.removeProperty("--accent");
+        document.body.style.removeProperty("background-image");
+        document.body.style.removeProperty("background-size");
+        document.body.style.removeProperty("background-position");
+        status.textContent = "Appearance restored to defaults.";
     });
 
     win.querySelector("#clear-storage").onclick = async () => {
@@ -558,7 +699,7 @@ ${rulesBlock.join("\n")}
         }
     };
 
-    win.addEventListener("onclose", () => {
+    win.addEventListener("webos:window-close", () => {
         if (isSpectating) stopSpectatingMode();
     });
 

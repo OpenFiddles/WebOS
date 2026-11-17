@@ -86,6 +86,7 @@ function createWindow(title, content) {
         if (win.classList.contains("is-minimized")) {
             win.classList.remove("is-minimized");
         }
+        win.classList.remove("is-closing");
         focusWindow(win);
     });
 
@@ -221,46 +222,44 @@ function makeWindowResizable(win) {
 }
 
 function wireWindowButtons(win) {
-    // FIX: Changed selectors to lowercase (.close, .minimize, .maximize) to match your HTML template
     const closeBtn = win.querySelector(".close");
     const minimizeBtn = win.querySelector(".minimize");
     const maximizeBtn = win.querySelector(".maximize");
 
     if (closeBtn) {
-        closeBtn.addEventListener("pointerdown", (e) => {
-            e.stopPropagation(); 
-            win.remove();
-            document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.remove();
-            
-            const remainder = Array.from(document.querySelectorAll("[id^='Window_']"))
-                .filter(w => !w.classList.contains("is-minimized"))
-                .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
-                
-            if (remainder.length > 0) {
-                focusWindow(remainder[0]);
-            }
+        closeBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (win.classList.contains("is-closing")) return;
+            win.dispatchEvent(new CustomEvent("webos:window-close"));
+            win.classList.add("is-closing");
+            document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
+
+            window.setTimeout(() => {
+                win.remove();
+                document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.remove();
+                const remaining = Array.from(document.querySelectorAll("[id^='Window_']"))
+                    .filter((item) => !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
+                    .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
+                if (remaining.length) focusWindow(remaining[0]);
+            }, 190);
         });
     }
 
     if (minimizeBtn) {
-        minimizeBtn.addEventListener("pointerdown", (e) => {
-            e.stopPropagation();
+        minimizeBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
             win.classList.add("is-minimized");
             document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
-            
-            const remainder = Array.from(document.querySelectorAll("[id^='Window_']"))
-                .filter(w => w !== win && !w.classList.contains("is-minimized"))
+            const remaining = Array.from(document.querySelectorAll("[id^='Window_']"))
+                .filter((item) => item !== win && !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
                 .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
-                
-            if (remainder.length > 0) {
-                focusWindow(remainder[0]);
-            }
+            if (remaining.length) focusWindow(remaining[0]);
         });
     }
 
     if (maximizeBtn) {
-        maximizeBtn.addEventListener("pointerdown", (e) => {
-            e.stopPropagation();
+        maximizeBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
             win.classList.toggle("is-maximized");
             focusWindow(win);
         });
@@ -284,19 +283,75 @@ window.addEventListener("message", (event) => {
 });
 
 function openEmulator() {
-    closeLauncher();
-    const content = '<iframe class="EmulatorFrame" src="/html/apps/emulator_alpine/index.html" title="Alpine Linux emulator" allow="fullscreen"></iframe>';
-    const win = createWindow("Alpine Linux", content);
+    if (typeof closeLauncher === "function") closeLauncher();
 
+    const shell = document.createElement("section");
+    shell.className = "FlairOS-shell";
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "EmulatorToolbar";
+
+    const status = document.createElement("span");
+    status.className = "EmulatorStatus";
+    status.textContent = "FlairOS · hosted emulator";
+
+    const makeButton = (label, title) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "EmulatorToolbarButton";
+        button.textContent = label;
+        button.title = title;
+        return button;
+    };
+
+    const reloadButton = makeButton("↻", "Reload FlairOS");
+    const openButton = makeButton("↗", "Open FlairOS in a new tab");
+    const fullscreenButton = makeButton("⛶", "Enter fullscreen");
+    toolbar.append(status, reloadButton, openButton, fullscreenButton);
+
+    const frame = document.createElement("iframe");
+    frame.className = "EmulatorFrame";
+    frame.src = "https://openfiddles.github.io/FlairOS/";
+    frame.title = "FlairOS emulator";
+    frame.loading = "eager";
+    frame.referrerPolicy = "strict-origin-when-cross-origin";
+    frame.allowFullscreen = true;
+    frame.setAttribute("allow", "fullscreen; clipboard-read; clipboard-write");
+    frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-downloads");
+
+    shell.appendChild(toolbar);
+    shell.appendChild(frame);
+
+    const win = createWindow("FlairOS Emulator", shell);
+    if (!win) return;
     win.classList.add("EmulatorWindow");
-    win.style.width = Math.min(window.innerWidth - 40, 820) + "px";
-    win.style.height = Math.min(window.innerHeight - 110, 560) + "px";
-    win.style.left = Math.max(20, (window.innerWidth - parseInt(win.style.width, 10)) / 2) + "px";
-    win.style.top = "68px";
+    win.style.width = Math.min(window.innerWidth - 32, 1040) + "px";
+    win.style.height = Math.min(window.innerHeight - 100, 720) + "px";
+    win.style.left = Math.max(16, (window.innerWidth - parseInt(win.style.width, 10)) / 2) + "px";
+    win.style.top = "58px";
+
+    reloadButton.addEventListener("click", () => {
+        frame.src = frame.src;
+        status.textContent = "Reloading FlairOS…";
+    });
+    openButton.addEventListener("click", () => {
+        window.open(frame.src, "_blank", "noopener,noreferrer");
+    });
+    fullscreenButton.addEventListener("click", async () => {
+        try {
+            if (document.fullscreenElement) await document.exitFullscreen();
+            else await win.requestFullscreen();
+        } catch (error) {
+            status.textContent = "Fullscreen is unavailable in this browser.";
+        }
+    });
+    frame.addEventListener("load", () => {
+        status.textContent = "FlairOS loaded · hosted on GitHub Pages";
+    });
 }
 
 [
-    ["alpine", "Alpine Linux", "A", "Run the Alpine CheerpX guest", "openEmulator", true],
+    ["alpine", "FlairOS Emulator", "F", "Launch your hosted FlairOS environment", "openEmulator", true],
     ["browser", "Browser", "B", "Browse the web", "openBrowser", true],
     ["files", "Files", "F", "Manage local files", "openFiles", true],
     ["notes", "Notes", "N", "Write and save notes", "openNotes", false],
@@ -305,7 +360,8 @@ function openEmulator() {
     ["calendar", "Calendar", "D", "Save dated events", "openCalendar", false],
     ["monitor", "System Monitor", "M", "Inspect desktop state", "openSystemMonitor", false],
     ["calculator", "Calculator", "C", "Open the calculator", "openCalculator", false],
-    ["about", "About", "i", "About WebPopcorn OS", "openAbout", false]
+    ["about", "About", "i", "About WebOS", "openAbout", false],
+    ["appcreator", "App Creator", "🧩", "Build and install custom WebOS apps", "openAppCreator", false]
 ].forEach(([id, name, icon, description, handler, dock]) => {
     WebOSAppRegistry.register({ id, name, icon, description, handler, dock });
 });
@@ -317,6 +373,18 @@ function updateClock() {
 }
 
 document.body.dataset.theme = localStorage.getItem("webos-theme") || "ocean";
+document.body.dataset.motion = localStorage.getItem("webos-motion-style") || "smooth";
+document.body.dataset.reducedMotion = localStorage.getItem("webos-reduced-motion") === "true" ? "true" : "false";
+const savedAccent = localStorage.getItem("webos-accent");
+if (savedAccent) document.body.style.setProperty("--accent", savedAccent);
+const savedWallpaper = localStorage.getItem("webos-wallpaper") || "aurora";
+const savedCustomWallpaper = localStorage.getItem("webos-custom-wallpaper");
+document.body.dataset.wallpaper = savedCustomWallpaper ? "custom" : savedWallpaper;
+if (savedCustomWallpaper) {
+    document.body.style.backgroundImage = `linear-gradient(135deg, rgba(4, 10, 20, .30), rgba(4, 10, 20, .55)), url("${savedCustomWallpaper}")`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+}
 updateClock();
 setInterval(updateClock, 30000);
 
