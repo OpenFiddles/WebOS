@@ -65,7 +65,7 @@ await api.filesystem.makeDirectory("/Documents/Demo")
 await api.filesystem.remove("/Documents/old.txt")
 await api.filesystem.exists("/Documents/readme.txt")
 await api.filesystem.copy("/Documents/a.txt", "/Documents/b.txt")
-await api.filesystem.move("/Documents/a.txt", "/Documents/b.txt")</code></pre><p>These paths address the WebOS virtual filesystem, not the host computer's files. Read, write and delete operations request separate permissions.</p><h2>Build UI with HTML elements</h2><pre><code>const heading = api.ui.createElement("h2", {
+await api.filesystem.move("/Documents/a.txt", "/Documents/b.txt")</code></pre><p>These paths address the WebOS virtual filesystem, not the host computer&#39;s files. Read, write and delete operations request separate permissions.</p><h2>Build UI with HTML elements</h2><pre><code>const heading = api.ui.createElement("h2", {
   className: "welcome-title",
   text: "Hello WebOS"
 });
