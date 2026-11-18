@@ -1244,7 +1244,7 @@ function openWasmLab() {
             " for(const item of descriptions){if(item.kind!=='function')throw new Error('Unsupported imported '+item.kind+': '+item.module+'.'+item.name+'. Only function imports are currently supported.');if(!imports[item.module])imports[item.module]={};",
             " const known=item.module==='wasi_snapshot_preview1'?wasi[item.name]:null;",
             " const env=item.module==='env'&&item.name==='abort'?(()=>{throw new Error('Module called env.abort');}):item.module==='env'&&['print','printErr','puts','putchar'].includes(item.name)?(value=>log(value,item.name==='printErr'?'error':'log')):item.module==='env'&&item.name==='emscripten_notify_memory_growth'?(()=>{}):null;",
-            " imports[item.module][item.name]=known||env||(()=>0);}",
+            " if(!known&&!env)throw new Error('Unsupported function import: '+item.module+'.'+item.name+'. Add a compatible host runtime for this module.');imports[item.module][item.name]=known||env;}",
             " const result=await WebAssembly.instantiate(module,imports);instanceRef=result;const fn=result.exports[data.exportName];if(typeof fn!=='function')throw new Error('Selected export is not a function.');",
             " log('Module instantiated. Calling export…','system');const value=fn(...data.args);log('Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)),'system');self.postMessage({type:'done'});",
             " }catch(error){self.postMessage({type:'failure',message:error&&error.message?error.message:String(error)});}};"
