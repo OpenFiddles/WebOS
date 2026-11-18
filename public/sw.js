@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "0.8";
+const VERSION = "0.9";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -7,6 +7,17 @@ const CORE_ASSETS = [
   "/html/mobile/mobileLauncher.html", "/site.webmanifest",
   "/html/BootScreen_popcorn.html", "/html/DisplayManager_PopIT.html",
   "/js/os/desktop/app-registry.js", "/js/os/desktop/filesystem.js",
+  "/js/os/desktop/Permissions.js", "/js/os/desktop/Notifications.js", "/js/os/desktop/Appearance.js",
+  "/js/os/window/Launcher.js", "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js",
+  "/js/os/window/Documentation.js", "/js/os/window/AnimationStudio.js", "/js/os/mobile/mobile-runtime.js",
+  "/css/display/regular_theme.css", "/css/display/appearance_bridge.css", "/css/display/settings_session.css",
+  "/css/display/notifications.css", "/css/display/developer_platform.css", "/css/display/files_explorer.css",
+  "/css/display/experience_motion.css", "/css/display/mobile_shell.css",
+  "/css/boot/boot.css", "/css/display/glass_base.css", "/css/display/tasbar_dock.css",
+  "/css/display/launcher.css", "/css/display/window.css", "/css/display/markdown_note.css",
+  "/css/display/desktop.css", "/css/display/desktop_refresh.css", "/css/display/root.css",
+  "/css/display/utility.css", "/css/display/motion_system.css", "/css/display/liquid_glass.css",
+  "/css/display/animation_studio.css",
   "/html/Launcher_Popo.html", "/html/apps/emulator_alpine/index.html",
   "/css/universal_css_native_stuff.css", "/js/app.js"
 ];
