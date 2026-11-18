@@ -87,5 +87,26 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
   <div class="toast" id="toast" role="status"></div>
 </main>
 
+
+  <template id="WindowTemplate">
+    <div class="window-shell glass" role="dialog" aria-modal="true">
+      <div class="resize-handle top" data-direction="n"></div><div class="resize-handle right" data-direction="e"></div><div class="resize-handle bottom" data-direction="s"></div><div class="resize-handle left" data-direction="w"></div><div class="resize-handle corner-se" data-direction="se"></div>
+      <header class="window-titlebar"><div class="window-title-content"><img class="window-icon" src="" alt="" aria-hidden="true"><span class="window-title-text">Application</span></div><nav class="window-controls" aria-label="Application controls"><button class="win-btn minimize" type="button" aria-label="Minimize">−</button><button class="win-btn maximize" type="button" aria-label="Maximize">□</button><button class="win-btn close" type="button" aria-label="Close app">×</button></nav></header>
+      <main class="window-body"></main>
+    </div>
+  </template>
+  <main id="window-workspace" aria-label="Mobile application workspace"></main>
+  <nav id="taskbar-apps" aria-hidden="true"></nav>
+  <script src="../../js/os/window/Launcher.js"></script>
+  <script src="../../js/os/desktop/filesystem.js"></script>
+  <script src="../../js/os/desktop/Permissions.js"></script>
+  <script src="../../js/os/desktop/app-registry.js"></script>
+  <script src="../../js/os/window/WindowManager.js"></script>
+  <script src="../../js/os/desktop/Notifications.js"></script>
+  <script src="../../js/os/desktop/Appearance.js"></script>
+  <script src="../../js/os/window/SystemApps.js"></script>
+  <script src="../../js/os/window/Documentation.js"></script>
+  <script src="../../js/os/window/AnimationStudio.js"></script>
+  <script src="../../js/os/mobile/mobile-runtime.js"></script>
 </body>
 </html>
