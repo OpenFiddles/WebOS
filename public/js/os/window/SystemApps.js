@@ -1117,163 +1117,85 @@ function openSystemMonitor() {
 
 function openWasmLab() {
     if (typeof closeLauncher === "function") closeLauncher();
-    const htmlTemplate = `
-        <div class="AppPanel wasm-lab" style="padding:16px;display:flex;flex-direction:column;gap:12px;height:100%;box-sizing:border-box;font-family:system-ui,sans-serif;overflow:auto;">
-            <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                <div><h2 style="margin:0;font-size:1.25rem;">WASM Lab</h2><div style="font-size:.82rem;opacity:.7;">WebAssembly module inspector &amp; runner</div></div>
-                <span id="wasm-status" style="font-size:.78rem;padding:5px 9px;border-radius:20px;background:rgba(100,160,255,.14);">No module loaded</span>
-            </header>
-            <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;">
-                <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;">Open a .wasm binary<input id="wasm-file" type="file" accept=".wasm,application/wasm"></label>
-                <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;">Function export<select id="wasm-export" disabled style="padding:8px;border-radius:8px;"><option value="">Load a module first</option></select></label>
-            </section>
-            <section style="display:flex;flex-direction:column;gap:6px;">
-                <label for="wasm-args" style="font-size:.85rem;">Function arguments (JSON array)</label>
-                <input id="wasm-args" type="text" value="[]" spellcheck="false" style="padding:9px;border-radius:8px;font-family:monospace;">
-                <small style="opacity:.65;">Example: [12, 30]. Enter i64 values as strings ending in n, e.g. ["42n"].</small>
-            </section>
-            <section style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button id="wasm-run" type="button" disabled style="padding:9px 14px;border:0;border-radius:9px;background:#287bd5;color:white;font-weight:650;">▶ Run in Worker</button>
-                <button id="wasm-stop" type="button" disabled style="padding:9px 14px;border:1px solid currentColor;border-radius:9px;background:transparent;">■ Stop</button>
-                <button id="wasm-clear" type="button" style="padding:9px 14px;border:1px solid currentColor;border-radius:9px;background:transparent;">Clear output</button>
-            </section>
-            <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;min-height:110px;">
-                <div style="min-width:0;"><h3 style="font-size:.9rem;margin:0 0 6px;">Module exports</h3><pre id="wasm-exports" style="margin:0;padding:10px;border-radius:9px;background:rgba(127,127,127,.12);font:12px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow:auto;max-height:180px;">No module loaded.</pre></div>
-                <div style="min-width:0;"><h3 style="font-size:.9rem;margin:0 0 6px;">Required imports</h3><pre id="wasm-imports" style="margin:0;padding:10px;border-radius:9px;background:rgba(127,127,127,.12);font:12px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow:auto;max-height:180px;">No module loaded.</pre></div>
-            </section>
-            <div style="display:flex;flex-direction:column;flex:1;min-height:140px;"><h3 style="font-size:.9rem;margin:0 0 6px;">Runtime console</h3><pre id="wasm-output" role="log" aria-live="polite" style="margin:0;padding:12px;flex:1;min-height:120px;overflow:auto;background:#10151d;color:#d6e5f5;font:12px/1.55 ui-monospace,monospace;border-radius:10px;white-space:pre-wrap;word-break:break-word;">Choose a local .wasm file to inspect it.</pre></div>
-            <small style="opacity:.65;">Runs in a disposable Web Worker so slow code can be stopped without freezing the desktop. This improves responsiveness; it is not a complete security sandbox. Modules with non-function imports or full WASI requirements need a compatible runtime.</small>
-        </div>
-    `;
-    const win = createWindow("WASM Lab", htmlTemplate);
-    const $ = selector => win.querySelector(selector);
-    const filePicker = $("#wasm-file"), exportsMenu = $("#wasm-export"), runButton = $("#wasm-run");
-    const stopButton = $("#wasm-stop"), clearButton = $("#wasm-clear"), argsInput = $("#wasm-args");
-    const output = $("#wasm-output"), exportsView = $("#wasm-exports"), importsView = $("#wasm-imports"), status = $("#wasm-status");
-    let moduleBytes = null, moduleName = "", activeWorker = null, runTimer = null, runStartedAt = 0;
-
-    const write = (message, type) => {
-        const prefix = type === "error" ? "[error] " : type === "system" ? "[system] " : "[stdout] ";
-        output.textContent += prefix + String(message) + "\n";
-        output.scrollTop = output.scrollHeight;
+    const html = [
+      '<div class="AppPanel wasm-lab" style="height:100%;box-sizing:border-box;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;font-family:system-ui,sans-serif;">',
+      '<header style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;"><div><h2 style="margin:0;font-size:1.25rem;">WASM Lab</h2><div style="font-size:.82rem;opacity:.7;">WebAssembly workbench · inspect · execute · persist</div></div><span id="wasm-status">No module loaded</span></header>',
+      '<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;"><label>Import .wasm binary<input id="wasm-file" type="file" accept=".wasm,application/wasm"></label><label>Saved modules<select id="wasm-library"><option value="">Loading library…</option></select><button id="wasm-load-saved" type="button">Load selected module</button></label></section>',
+      '<section style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><button id="wasm-save" type="button" disabled>Save to /Documents/WASM</button><button id="wasm-download" type="button" disabled>Download binary</button><span id="wasm-module-meta">No module selected</span></section>',
+      '<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;"><label>Function export / entry point<select id="wasm-export" disabled><option value="">Load a module first</option></select></label><label>Arguments (one per line)<textarea id="wasm-args" rows="2" placeholder="argument 1&#10;argument 2"></textarea></label></section>',
+      '<section style="display:flex;gap:8px;flex-wrap:wrap;"><button id="wasm-run" type="button" disabled>▶ Run</button><button id="wasm-stop" type="button" disabled>■ Stop</button><button id="wasm-clear" type="button">Clear console</button><button id="wasm-refresh" type="button">Refresh library</button></section>',
+      '<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;"><div><h3>Module exports</h3><pre id="wasm-exports">No module loaded.</pre></div><div><h3>Required imports</h3><pre id="wasm-imports">No module loaded.</pre></div></section>',
+      '<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;"><div><h3>Linear memory inspector</h3><pre id="wasm-memory">Memory snapshot appears after a run.</pre></div><div><h3>Runtime console</h3><pre id="wasm-output" role="log" aria-live="polite">Choose a local .wasm file or saved module.</pre></div></section>',
+      '<small>WASI Preview 1 support is a practical subset: arguments, environment, stdin/stdout/stderr, clocks, random numbers and basic descriptor calls. Filesystem path syscalls, sockets, threads and WASI Preview 2 are not implemented. Runs in a disposable Worker with a 10-second limit; this is not a complete security sandbox.</small></div>'
+    ].join("");
+    const win=createWindow("WASM Lab",html);
+    if(!win)return null;
+    const $=s=>win.querySelector(s);
+    const filePicker=$("#wasm-file"),library=$("#wasm-library"),loadSaved=$("#wasm-load-saved"),saveButton=$("#wasm-save"),downloadButton=$("#wasm-download");
+    const exportsMenu=$("#wasm-export"),runButton=$("#wasm-run"),stopButton=$("#wasm-stop"),clearButton=$("#wasm-clear"),refreshButton=$("#wasm-refresh");
+    const argsInput=$("#wasm-args"),output=$("#wasm-output"),exportsView=$("#wasm-exports"),importsView=$("#wasm-imports"),memoryView=$("#wasm-memory");
+    const status=$("#wasm-status"),meta=$("#wasm-module-meta");
+    let moduleBytes=null,moduleName="",activeWorker=null,runTimer=null,runStartedAt=0;
+    const write=(message,type="log")=>{output.textContent+=(type==="error"?"[stderr] ":type==="system"?"[system] ":"[stdout] ")+String(message)+"\n";output.scrollTop=output.scrollHeight;};
+    const stopExecution=reason=>{if(runTimer)clearTimeout(runTimer);runTimer=null;if(activeWorker){activeWorker.terminate();activeWorker=null;stopButton.disabled=true;runButton.disabled=!moduleBytes||!exportsMenu.value;if(reason)write(reason,"system");}};
+    const setModule=async(bytes,name,path)=>{
+        stopExecution("Previous execution stopped.");moduleBytes=bytes.slice(0);moduleName=name;
+        const compiled=await WebAssembly.compile(moduleBytes),ex=WebAssembly.Module.exports(compiled),im=WebAssembly.Module.imports(compiled);
+        exportsView.textContent=ex.length?ex.map(x=>x.name+" · "+x.kind).join("\n"):"No exports.";
+        importsView.textContent=im.length?im.map(x=>x.module+"."+x.name+" · "+x.kind).join("\n"):"No imports required.";
+        exportsMenu.replaceChildren();const functions=ex.filter(x=>x.kind==="function");
+        functions.forEach(x=>{const o=document.createElement("option");o.value=x.name;o.textContent=x.name+"()";exportsMenu.append(o);});
+        const preferred=functions.find(x=>x.name==="_start")||functions.find(x=>x.name==="main")||functions[0];
+        exportsMenu.disabled=!preferred; if(preferred)exportsMenu.value=preferred.name;
+        runButton.disabled=!preferred;saveButton.disabled=false;downloadButton.disabled=false;
+        status.textContent="Compiled · "+functions.length+" function(s)";
+        meta.textContent=name+" · "+moduleBytes.byteLength.toLocaleString()+" bytes"+(path?" · "+path:"");
+        memoryView.textContent=ex.some(x=>x.kind==="memory")?"Memory export found. Run to capture a snapshot.":"No exported linear memory.";
+        write("Compiled "+name+" ("+moduleBytes.byteLength.toLocaleString()+" bytes).","system");
+        write(ex.length+" export(s), "+im.length+" import(s).","system");
     };
-    const stopExecution = reason => {
-        if (runTimer) clearTimeout(runTimer);
-        runTimer = null;
-        if (activeWorker) {
-            activeWorker.terminate();
-            activeWorker = null;
-            stopButton.disabled = true;
-            runButton.disabled = !moduleBytes || !exportsMenu.value;
-            if (reason) write(reason, "system");
-        }
+    const refreshLibrary=async()=>{
+        library.replaceChildren();const first=document.createElement("option");first.value="";first.textContent="Choose a saved module";library.append(first);
+        try{const entries=await window.WebOSFileSystem.list("/Documents/WASM");entries.filter(x=>x.type==="file"&&(/\.wasm$/i.test(x.path)||x.mimeType==="application/wasm")).forEach(x=>{const o=document.createElement("option");o.value=x.path;o.textContent=x.path.split("/").pop()+" · "+(x.size||0).toLocaleString()+" bytes";library.append(o);});}
+        catch(error){write("Library unavailable: "+error.message,"error");}
     };
-
-    filePicker.addEventListener("change", async () => {
-        const file = filePicker.files && filePicker.files[0];
-        if (!file) return;
-        stopExecution("Previous run stopped because a new module was loaded.");
-        moduleBytes = null;
-        moduleName = file.name;
-        exportsMenu.disabled = true;
-        runButton.disabled = true;
-        status.textContent = "Inspecting module…";
-        exportsView.textContent = "Reading module metadata…";
-        importsView.textContent = "Reading module metadata…";
-        output.textContent = "Reading " + file.name + "…\n";
-        try {
-            const bytes = await file.arrayBuffer();
-            const compiled = await WebAssembly.compile(bytes);
-            const exported = WebAssembly.Module.exports(compiled);
-            const imported = WebAssembly.Module.imports(compiled);
-            moduleBytes = bytes;
-            exportsView.textContent = exported.length ? exported.map(item => item.name + " · " + item.kind).join("\n") : "This module has no exports.";
-            importsView.textContent = imported.length ? imported.map(item => item.module + "." + item.name + " · " + item.kind).join("\n") : "No imports required.";
-            const functions = exported.filter(item => item.kind === "function");
-            exportsMenu.replaceChildren();
-            if (!functions.length) {
-                const option = document.createElement("option");
-                option.value = "";
-                option.textContent = "No function exports";
-                exportsMenu.append(option);
-                status.textContent = "Compiled · no functions";
-                write("Compilation succeeded, but this module has no callable function exports.", "system");
-                return;
-            }
-            functions.forEach(item => {
-                const option = document.createElement("option");
-                option.value = item.name;
-                option.textContent = item.name + "()";
-                exportsMenu.append(option);
-            });
-            exportsMenu.disabled = false;
-            runButton.disabled = false;
-            status.textContent = "Compiled · " + functions.length + " function(s)";
-            write("Compiled " + file.name + " (" + bytes.byteLength.toLocaleString() + " bytes).", "system");
-            write(exported.length + " export(s), " + imported.length + " import(s) discovered.");
-        } catch (error) {
-            moduleBytes = null;
-            status.textContent = "Invalid module";
-            exportsView.textContent = "Compilation failed.";
-            importsView.textContent = "Unavailable.";
-            write(error && error.message ? error.message : error, "error");
-        }
-    });
-
-    exportsMenu.addEventListener("change", () => { runButton.disabled = !moduleBytes || !exportsMenu.value || !!activeWorker; });
-    runButton.addEventListener("click", () => {
-        if (!moduleBytes || !exportsMenu.value || activeWorker) return;
-        let args;
-        try {
-            args = JSON.parse(argsInput.value || "[]");
-            if (!Array.isArray(args)) throw new Error("Arguments must be a JSON array.");
-            args = args.map(value => typeof value === "string" && /^-?\d+n$/.test(value) ? BigInt(value.slice(0, -1)) : value);
-        } catch (error) { write("Invalid arguments: " + error.message, "error"); return; }
-
-        output.textContent = "";
-        write("Starting " + moduleName + " → " + exportsMenu.value + "()", "system");
-        runStartedAt = performance.now();
-        const workerSource = [
-            "self.onmessage = async function(event) {",
-            " const data = event.data; const log = (message,type) => self.postMessage({type:type || 'log',message:String(message)});",
-            " try { const module = await WebAssembly.compile(data.bytes); const descriptions = WebAssembly.Module.imports(module); const imports = {}; let instanceRef = null;",
-            " const wasi = {proc_exit: code => {throw new Error('WASI proc_exit(' + code + ')');},",
-            " fd_write: (fd,iovs,count,written) => {const memory=instanceRef && instanceRef.exports.memory;if(!memory)throw new Error('WASI fd_write requires exported memory named memory.');const view=new DataView(memory.buffer);let total=0,text='';for(let i=0;i<count;i++){const ptr=view.getUint32(iovs+i*8,true),len=view.getUint32(iovs+i*8+4,true);text+=new TextDecoder().decode(new Uint8Array(memory.buffer,ptr,len));total+=len;}if(written)view.setUint32(written,total,true);log(text,fd===2?'error':'log');return 0;},",
-            " fd_read:()=>8,fd_close:()=>0,fd_seek:()=>70,environ_sizes_get:(a,b)=>{const m=instanceRef&&instanceRef.exports.memory;if(m){const v=new DataView(m.buffer);v.setUint32(a,0,true);v.setUint32(b,0,true);}return 0;},",
-            " args_sizes_get:(a,b)=>{const m=instanceRef&&instanceRef.exports.memory;if(m){const v=new DataView(m.buffer);v.setUint32(a,0,true);v.setUint32(b,0,true);}return 0;}};",
-            " for(const item of descriptions){if(item.kind!=='function')throw new Error('Unsupported imported '+item.kind+': '+item.module+'.'+item.name+'. Only function imports are currently supported.');if(!imports[item.module])imports[item.module]={};",
-            " const known=item.module==='wasi_snapshot_preview1'?wasi[item.name]:null;",
-            " const env=item.module==='env'&&item.name==='abort'?(()=>{throw new Error('Module called env.abort');}):item.module==='env'&&['print','printErr','puts','putchar'].includes(item.name)?(value=>log(value,item.name==='printErr'?'error':'log')):item.module==='env'&&item.name==='emscripten_notify_memory_growth'?(()=>{}):null;",
-            " if(!known&&!env)throw new Error('Unsupported function import: '+item.module+'.'+item.name+'. Add a compatible host runtime for this module.');imports[item.module][item.name]=known||env;}",
-            " const result=await WebAssembly.instantiate(module,imports);instanceRef=result;const fn=result.exports[data.exportName];if(typeof fn!=='function')throw new Error('Selected export is not a function.');",
-            " log('Module instantiated. Calling export…','system');const value=fn(...data.args);log('Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)),'system');self.postMessage({type:'done'});",
-            " }catch(error){self.postMessage({type:'failure',message:error&&error.message?error.message:String(error)});}};"
+    filePicker.addEventListener("change",async()=>{const f=filePicker.files?.[0];if(!f)return;output.textContent="Reading "+f.name+"…\n";try{await setModule(await f.arrayBuffer(),f.name);}catch(e){moduleBytes=null;status.textContent="Invalid module";write(e.message,"error");}});
+    loadSaved.addEventListener("click",async()=>{if(!library.value)return;try{const bytes=await window.WebOSFileSystem.readBinary(library.value);if(!bytes)throw new Error("Saved binary could not be read.");await setModule(bytes,library.value.split("/").pop(),library.value);}catch(e){write(e.message,"error");}});
+    saveButton.addEventListener("click",async()=>{if(!moduleBytes)return;try{const safeName=moduleName.replace(/[\\/:*?"<>|]/g,"_");await window.WebOSFileSystem.putBinary("/Documents/WASM/"+safeName,moduleBytes,"application/wasm");write("Saved to /Documents/WASM/"+safeName,"system");await refreshLibrary();}catch(e){write("Save failed: "+e.message,"error");}});
+    downloadButton.addEventListener("click",()=>{if(!moduleBytes)return;const url=URL.createObjectURL(new Blob([moduleBytes],{type:"application/wasm"}));const a=document.createElement("a");a.href=url;a.download=moduleName||"module.wasm";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+    exportsMenu.addEventListener("change",()=>{runButton.disabled=!moduleBytes||!exportsMenu.value||!!activeWorker;});
+    runButton.addEventListener("click",()=>{
+        if(!moduleBytes||!exportsMenu.value||activeWorker)return;
+        const args=argsInput.value.split(/\r?\n/).filter(x=>x.length>0);
+        output.textContent="";memoryView.textContent="Waiting for execution…";write("Starting "+moduleName+" → "+exportsMenu.value+"()","system");runStartedAt=performance.now();
+        const workerSource=[
+          "self.onmessage=async event=>{const d=event.data;let instance=null,memory=null;const enc=new TextEncoder(),dec=new TextDecoder();const send=(type,message)=>self.postMessage({type,message:String(message)});",
+          "try{const mod=await WebAssembly.compile(d.bytes),descs=WebAssembly.Module.imports(mod),imports={};let stdin=new Uint8Array(),stdinAt=0;const E={SUCCESS:0,BADF:8,INVAL:28,NOTSUP:58};",
+          "const mem=()=>memory||(instance&&instance.exports.memory);const dv=()=>{const m=mem();if(!m)throw Error('WASI call requires accessible exported memory.');return new DataView(m.buffer);};",
+          "const wasi={proc_exit:c=>{throw Error('Program exited with status '+c);},sched_yield:()=>0,fd_close:()=>0,fd_sync:()=>0,fd_datasync:()=>0,fd_advise:()=>0,",
+          "fd_write:(fd,iovs,n,written)=>{const v=dv(),m=mem();let total=0,s='';for(let i=0;i<n;i++){const p=v.getUint32(iovs+i*8,true),l=v.getUint32(iovs+i*8+4,true);s+=dec.decode(new Uint8Array(m.buffer,p,l));total+=l;}if(written)v.setUint32(written,total,true);send(fd===2?'error':'log',s);return 0;},",
+          "fd_read:(fd,iovs,n,out)=>{if(fd!==0)return E.BADF;const v=dv(),m=mem();let total=0;for(let i=0;i<n&&stdinAt<stdin.length;i++){const p=v.getUint32(iovs+i*8,true),l=v.getUint32(iovs+i*8+4,true),k=Math.min(l,stdin.length-stdinAt);new Uint8Array(m.buffer,p,k).set(stdin.subarray(stdinAt,stdinAt+k));stdinAt+=k;total+=k;}if(out)v.setUint32(out,total,true);return 0;},",
+          "fd_seek:()=>E.NOTSUP,fd_tell:()=>E.NOTSUP,fd_fdstat_get:(fd,p)=>{const v=dv(),m=mem();new Uint8Array(m.buffer,p,24).fill(0);v.setUint16(p,fd===0?2:4,true);return 0;},fd_fdstat_set_flags:()=>0,fd_fdstat_set_rights:()=>0,",
+          "args_sizes_get:(argc,buf)=>{const v=dv();v.setUint32(argc,d.args.length,true);v.setUint32(buf,d.args.reduce((n,x)=>n+enc.encode(x).length+1,0),true);return 0;},",
+          "args_get:(argv,buf)=>{const v=dv(),m=mem();let p=buf;d.args.forEach((x,i)=>{v.setUint32(argv+i*4,p,true);const b=enc.encode(x+'\\0');new Uint8Array(m.buffer,p,b.length).set(b);p+=b.length;});return 0;},",
+          "environ_sizes_get:(c,s)=>{dv().setUint32(c,0,true);dv().setUint32(s,0,true);return 0;},environ_get:()=>0,",
+          "clock_time_get:(id,precision,out)=>{dv().setBigUint64(out,BigInt(Date.now())*1000000n,true);return 0;},clock_res_get:(id,out)=>{dv().setBigUint64(out,1000000n,true);return 0;},",
+          "random_get:(p,n)=>{const b=new Uint8Array(n);crypto.getRandomValues(b);new Uint8Array(mem().buffer,p,n).set(b);return 0;},",
+          "fd_prestat_get:()=>E.BADF,fd_prestat_dir_name:()=>E.BADF,path_open:()=>E.NOTSUP,path_create_directory:()=>E.NOTSUP,path_unlink_file:()=>E.NOTSUP,path_remove_directory:()=>E.NOTSUP,path_rename:()=>E.NOTSUP,path_filestat_get:()=>E.NOTSUP,path_filestat_set_times:()=>E.NOTSUP,path_link:()=>E.NOTSUP,path_symlink:()=>E.NOTSUP,path_readlink:()=>E.NOTSUP,poll_oneoff:()=>E.NOTSUP};",
+          "for(const x of descs){if(x.kind!=='function')throw Error('Unsupported imported '+x.kind+': '+x.module+'.'+x.name);if(!imports[x.module])imports[x.module]={};const f=(x.module==='wasi_snapshot_preview1'||x.module==='wasi_unstable')?wasi[x.name]:x.module==='env'&&x.name==='abort'?(()=>{throw Error('env.abort called');}):x.module==='env'&&x.name==='emscripten_notify_memory_growth'?(()=>{}):null;if(!f)throw Error('Unsupported import '+x.module+'.'+x.name+'. No silent stub installed.');imports[x.module][x.name]=f;}",
+          "const r=await WebAssembly.instantiate(mod,imports);instance=r;memory=r.exports.memory||memory;const fn=r.exports[d.exportName];if(typeof fn!=='function')throw Error('Export is not callable.');send('system','Module instantiated; calling '+d.exportName+'().');const value=fn();send('system','Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)));",
+          "if(memory){const b=new Uint8Array(memory.buffer),lim=Math.min(b.length,256),rows=[];for(let i=0;i<lim;i+=16){const c=b.subarray(i,Math.min(i+16,lim)),h=Array.from(c,x=>x.toString(16).padStart(2,'0')).join(' '),a=Array.from(c,x=>x>=32&&x<127?String.fromCharCode(x):'.').join('');rows.push(i.toString(16).padStart(8,'0')+'  '+h.padEnd(47)+'  '+a);}self.postMessage({type:'memory',message:'Memory size: '+b.length+' bytes ('+(b.length/65536)+' pages)\\n'+rows.join('\\n')});}send('done','Execution finished.');",
+          "}catch(e){send('failure',e&&e.message?e.message:String(e));}};"
         ].join("\n");
-
-        try {
-            const blob = new Blob([workerSource], {type:"text/javascript"});
-            const workerUrl = URL.createObjectURL(blob);
-            const worker = new Worker(workerUrl);
-            URL.revokeObjectURL(workerUrl);
-            activeWorker = worker;
-            runButton.disabled = true;
-            stopButton.disabled = false;
-            worker.onmessage = event => {
-                const data = event.data || {};
-                if (data.type === "log") write(data.message);
-                else if (data.type === "error") write(data.message, "error");
-                else if (data.type === "system") write(data.message, "system");
-                else if (data.type === "failure") { write(data.message, "error"); stopExecution("Run ended with an error."); }
-                else if (data.type === "done") { write("Completed in " + (performance.now() - runStartedAt).toFixed(2) + " ms.", "system"); stopExecution(); }
-            };
-            worker.onerror = event => { write(event.message || "Worker execution failed.", "error"); stopExecution("Worker stopped."); };
-            runTimer = setTimeout(() => stopExecution("Execution time limit reached (10 seconds)."), 10000);
-            worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args});
-        } catch (error) { write(error && error.message ? error.message : error, "error"); stopExecution(); }
+        try{const blob=new Blob([workerSource],{type:"text/javascript"}),url=URL.createObjectURL(blob),worker=new Worker(url);activeWorker=worker;runButton.disabled=true;stopButton.disabled=false;
+          worker.onmessage=e=>{const d=e.data||{};if(d.type==="log")write(d.message);else if(d.type==="error")write(d.message,"error");else if(d.type==="system")write(d.message,"system");else if(d.type==="memory")memoryView.textContent=d.message;else if(d.type==="failure"){write(d.message,"error");stopExecution("Execution failed.");}else if(d.type==="done"){write("Completed in "+(performance.now()-runStartedAt).toFixed(2)+" ms.","system");stopExecution();}};
+          worker.onerror=e=>{write(e.message||"Worker error.","error");stopExecution("Worker stopped.");};runTimer=setTimeout(()=>stopExecution("Execution time limit reached (10 seconds)."),10000);worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args});URL.revokeObjectURL(url);
+        }catch(e){write(e.message,"error");stopExecution();}
     });
-    stopButton.addEventListener("click", () => stopExecution("Execution stopped by user."));
-    clearButton.addEventListener("click", () => { output.textContent = ""; });
-    return win;
+    stopButton.addEventListener("click",()=>stopExecution("Execution stopped by user."));
+    clearButton.addEventListener("click",()=>{output.textContent="";});
+    refreshButton.addEventListener("click",refreshLibrary);
+    refreshLibrary();return win;
 }
 
 function openBrowser(initialUrl) {

@@ -250,7 +250,7 @@
             if (!item) throw new Error(`Source path not found: ${src}`);
             
             if (item.type === "file") {
-                return await putText(dest, item.content);
+                return item.binary ? await putBinary(dest, item.content, item.mimeType) : await putText(dest, item.content);
             } else {
                 const database = await openDatabase();
                 const allEntries = await new Promise((resolve) => {
@@ -332,7 +332,42 @@
             });
         }
     
-        // Freeze and bind the object export cleanly
+    
+    async function putBinary(path, data, mimeType = "application/wasm") {
+        await ensureSeeded();
+        const normalized = normalize(path), parts = normalized.split("/").filter(Boolean), database = await openDatabase();
+        let parent = "";
+        for (let i = 0; i < parts.length - 1; i++) {
+            parent += "/" + parts[i];
+            await new Promise((resolve, reject) => {
+                const tx = database.transaction(storeName, "readwrite");
+                tx.objectStore(storeName).put({ path: parent, type: "directory", size: 0, modified: Date.now() });
+                tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+            });
+        }
+        let buffer;
+        if (data instanceof Blob) buffer = await data.arrayBuffer();
+        else if (data instanceof ArrayBuffer) buffer = data.slice(0);
+        else if (ArrayBuffer.isView(data)) buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+        else throw new TypeError("Binary data must be a Blob, ArrayBuffer, or typed array.");
+        const record = { path: normalized, type: "file", binary: true, mimeType: String(mimeType || "application/octet-stream"), content: buffer, size: buffer.byteLength, modified: Date.now() };
+        return new Promise((resolve, reject) => {
+            const tx = database.transaction(storeName, "readwrite");
+            tx.objectStore(storeName).put(record);
+            tx.oncomplete = () => resolve({ path: record.path, type: record.type, binary: true, mimeType: record.mimeType, size: record.size, modified: record.modified });
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+    async function readBinary(path) {
+        const record = await read(path);
+        if (!record || record.type !== "file") return null;
+        if (record.content instanceof ArrayBuffer) return record.content.slice(0);
+        if (ArrayBuffer.isView(record.content)) return record.content.buffer.slice(record.content.byteOffset, record.content.byteOffset + record.content.byteLength);
+        if (typeof record.content === "string") return new TextEncoder().encode(record.content).buffer;
+        return null;
+    }
+
+    // Freeze and bind the object export cleanly
         window.WebOSFileSystem = Object.freeze({
             openDatabase,
             normalize,
@@ -340,6 +375,8 @@
             list,
             read,
             putText,
+            putBinary,
+            readBinary,
             remove,
             exists,
             makeDirectory,
