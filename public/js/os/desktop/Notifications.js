@@ -1,37 +1,19 @@
 (() => {
-  const items=[];let panel=null,unread=0;
-  const count=document.getElementById("notification-count");
-  const toggle=document.getElementById("notification-toggle");
-  function updateCount(){if(!count)return;count.textContent=String(unread);count.hidden=!unread;toggle?.setAttribute("aria-label",unread?unread+" unread notifications":"Notifications");}
-  function close(){if(panel){panel.remove();panel=null;}toggle?.setAttribute("aria-expanded","false");}
-  function render(){
-    if(!panel)return;
-    panel.replaceChildren();
-    const head=document.createElement("header");head.className="webos-notifications-head";
-    const title=document.createElement("strong");title.textContent="Notifications";
-    const clear=document.createElement("button");clear.type="button";clear.textContent="Clear all";clear.addEventListener("click",()=>{items.length=0;unread=0;updateCount();render();});
-    head.append(title,clear);panel.appendChild(head);
-    if(!items.length){const empty=document.createElement("p");empty.className="webos-notifications-empty";empty.textContent="You're all caught up.";panel.appendChild(empty);return;}
-    items.forEach(item=>{const row=document.createElement("article");row.className="webos-notification";
-      const icon=document.createElement("span");icon.textContent=item.icon;const body=document.createElement("div");
-      const heading=document.createElement("strong");heading.textContent=item.title;const message=document.createElement("p");message.textContent=item.message;
-      const time=document.createElement("small");time.textContent=item.time;body.append(heading,message,time);row.append(icon,body);panel.appendChild(row);
-    });
+  const items=[];let panel=null,unread=0,toastHost=null;const count=document.getElementById("notification-count"),toggle=document.getElementById("notification-toggle");
+  const safe=(value,fallback)=>String(value??fallback);
+  function updateCount(){if(count){count.textContent=String(unread);count.hidden=!unread;toggle?.setAttribute("aria-label",unread?unread+" unread notifications":"Notifications");}}
+  function close(){panel?.remove();panel=null;toggle?.setAttribute("aria-expanded","false");}
+  function remove(id){const i=items.findIndex(x=>x.id===id);if(i>=0)items.splice(i,1);render();}
+  function render(){if(!panel)return;panel.replaceChildren();const head=document.createElement("header");head.className="webos-notifications-head";const title=document.createElement("strong");title.textContent="Notification Center";const actions=document.createElement("div");const read=document.createElement("button");read.textContent="Mark read";read.onclick=()=>{unread=0;updateCount();};const clear=document.createElement("button");clear.textContent="Clear all";clear.onclick=()=>{items.length=0;unread=0;updateCount();render();};actions.append(read,clear);head.append(title,actions);panel.append(head);
+    if(!items.length){const empty=document.createElement("p");empty.className="webos-notifications-empty";empty.textContent="You're all caught up.";panel.append(empty);return;}
+    for(const item of items){const row=document.createElement("article");row.className="webos-notification";row.dataset.level=item.level;const icon=document.createElement("span");icon.className="webos-notification-icon";icon.textContent=item.icon;const body=document.createElement("div");body.className="webos-notification-body";const meta=document.createElement("small");meta.className="webos-notification-meta";meta.textContent=item.source+" · "+item.time;const heading=document.createElement("strong");heading.textContent=item.title;const message=document.createElement("p");message.textContent=item.message;body.append(meta,heading,message);if(item.actionLabel&&typeof item.onAction==="function"){const action=document.createElement("button");action.className="webos-notification-action";action.textContent=item.actionLabel;action.onclick=()=>{try{item.onAction();}finally{remove(item.id);}};body.append(action);}const dismiss=document.createElement("button");dismiss.className="webos-notification-dismiss";dismiss.textContent="×";dismiss.setAttribute("aria-label","Dismiss notification");dismiss.onclick=()=>remove(item.id);row.append(icon,body,dismiss);panel.append(row);}
   }
-  function open(){
-    if(panel){close();return;}
-    panel=document.createElement("aside");panel.className="webos-notifications-panel";panel.setAttribute("aria-label","Notification center");
-    document.body.appendChild(panel);unread=0;updateCount();render();toggle?.setAttribute("aria-expanded","true");
-  }
-  function notify(title,message,options={}){
-    const item={title:String(title||"WebOS"),message:String(message||""),icon:String(options.icon||"●"),time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})};
-    items.unshift(item);if(items.length>40)items.length=40;unread++;updateCount();render();
-    window.dispatchEvent(new CustomEvent("webos:notification",{detail:item}));
-    return item;
-  }
-  toggle?.addEventListener("click",open);
-  document.addEventListener("pointerdown",event=>{if(panel&&!panel.contains(event.target)&&!toggle?.contains(event.target))close();});
-  document.addEventListener("keydown",event=>{if(event.key==="Escape")close();});
-  window.WebOSNotifications=Object.freeze({notify,open,close,all:()=>items.slice()});
-  window.addEventListener("error",event=>{if(event.message)notify("Application error",event.message,{icon:"⚠"});});
+  function open(){if(panel){close();return;}panel=document.createElement("aside");panel.className="webos-notifications-panel";panel.setAttribute("aria-label","Notification center");document.body.append(panel);unread=0;updateCount();render();toggle?.setAttribute("aria-expanded","true");}
+  function toast(item){if(!toastHost){toastHost=document.createElement("div");toastHost.className="webos-toast-host";toastHost.setAttribute("aria-live","polite");document.body.append(toastHost);}const card=document.createElement("article");card.className="webos-toast";card.dataset.level=item.level;const icon=document.createElement("span");icon.textContent=item.icon;const body=document.createElement("div");const title=document.createElement("strong");title.textContent=item.title;const message=document.createElement("p");message.textContent=item.message;body.append(title,message);const dismiss=document.createElement("button");dismiss.textContent="×";dismiss.setAttribute("aria-label","Dismiss");dismiss.onclick=()=>card.remove();card.append(icon,body,dismiss);if(item.actionLabel&&item.onAction){card.tabIndex=0;card.addEventListener("click",e=>{if(e.target===dismiss)return;item.onAction();card.remove();});}toastHost.append(card);if(item.level!=="critical")setTimeout(()=>card.remove(),item.duration||5200);}
+  function notify(title,message,options={}){const item={id:crypto.randomUUID?.()||String(Date.now())+Math.random(),title:safe(title,"WebOS"),message:safe(message,""),icon:safe(options.icon,"●"),source:safe(options.source,"WebOS"),level:["info","success","warning","critical"].includes(options.level)?options.level:"info",time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),actionLabel:options.actionLabel||"",onAction:typeof options.onAction==="function"?options.onAction:null,duration:options.duration};items.unshift(item);if(items.length>60)items.length=60;unread++;updateCount();render();if(options.toast!==false)toast(item);window.dispatchEvent(new CustomEvent("webos:notification",{detail:{...item,onAction:undefined}}));return item;}
+  async function requestDesktopPermission(){if(!("Notification"in window))return"unsupported";return Notification.requestPermission();}
+  function desktopNotify(title,message){if(!("Notification"in window)||Notification.permission!=="granted")return false;new Notification(safe(title,"WebOS"),{body:safe(message,""),icon:""});return true;}
+  toggle?.addEventListener("click",open);document.addEventListener("pointerdown",e=>{if(panel&&!panel.contains(e.target)&&!toggle?.contains(e.target))close();});document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+  window.WebOSNotifications=Object.freeze({notify,open,close,all:()=>items.map(({onAction,...x})=>x),clear:()=>{items.length=0;unread=0;updateCount();render();},requestDesktopPermission,desktopNotify});
+  window.addEventListener("error",e=>{if(e.message)notify("Application error",e.message,{icon:"⚠️",level:"critical",source:"Runtime"});});window.addEventListener("unhandledrejection",e=>notify("Unhandled promise",e.reason?.message||String(e.reason),{icon:"⚠️",level:"warning",source:"Runtime"}));
 })();

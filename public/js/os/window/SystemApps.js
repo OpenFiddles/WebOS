@@ -1064,57 +1064,35 @@ function openCalendar() {
 
 function openSystemMonitor() {
     closeLauncher();
-
-    // 1. Clean HTML wrapper structure
-    const htmlTemplate = `
-        <div class="AppPanel">
-            <h2>System Monitor</h2>
-            <ul class="AppList" id="system-stats"></ul>
-        </div>
-    `;
-
-    const win = createWindow("System Monitor", htmlTemplate);
-    const statsContainer = win.querySelector("#system-stats");
-
-    // 2. Real-time metrics collector
-    const updateStats = () => {
-        // Fallback for memory reporting across different browsers
-        const memoryUsage = window.performance?.memory 
-            ? `${Math.round(window.performance.memory.usedJSHeapSize / 1048576)} MB` 
-            : "Unsupported by browser";
-
-        const openWindowsCount = document.querySelectorAll(".WindowDesign:not(#WindowTemplate):not(.is-minimized)").length;
-
-        const metrics = [
-            { label: "Active Windows", value: openWindowsCount },
-            { label: "Storage Engine", value: "IndexedDB Filesystem" },
-            { label: "Memory Allocation", value: memoryUsage }
-        ];
-
-        // 3. Efficient UI rendering
-        statsContainer.innerHTML = metrics
-            .map(item => `<li><span>${item.label}</span><small>${item.value}</small></li>`)
-            .join("");
-    };
-
-    // Initial render
-    updateStats();
-
-    // 4. Live tracking loop (updates metrics every 1 second)
-    const intervalId = setInterval(updateStats, 1000);
-
-    // 5. Memory leak prevention: clear the interval when the window is destroyed
-    // Assuming your custom window component emits an onclose or close listener hook:
-    if (typeof win.addEventListener === "function") {
-        win.addEventListener("close", () => clearInterval(intervalId));
-    } else {
-        // Fallback custom property hook if addEventListener isn't standard on your win object
-        win.onCloseHook = () => clearInterval(intervalId);
+    const html = `<section class="system-monitor">
+      <header class="sm-header"><div><h2>System Monitor</h2><p>Live host and WebOS runtime telemetry</p></div><span class="sm-live"><i></i> LIVE</span></header>
+      <nav class="sm-tabs"><button class="active" data-tab="overview">Overview</button><button data-tab="device">Device</button><button data-tab="network">Network</button><button data-tab="runtime">WebOS</button></nav>
+      <div class="sm-content" data-view="overview"><div class="sm-cards" id="sm-cards"></div><section class="sm-section"><h3>Host device</h3><div id="sm-host" class="sm-grid"></div></section><section class="sm-section"><h3>WebOS runtime</h3><div id="sm-runtime" class="sm-grid"></div></section></div>
+      <div class="sm-content" data-view="device" hidden><section class="sm-section"><h3>Battery & hardware</h3><div id="sm-device" class="sm-grid"></div></section><section class="sm-section"><h3>Browser & display</h3><div id="sm-browser" class="sm-grid"></div></section></div>
+      <div class="sm-content" data-view="network" hidden><section class="sm-section"><h3>Connectivity</h3><div id="sm-network" class="sm-grid"></div><p class="sm-note">Wi-Fi name and signal strength are not exposed to ordinary browser applications. Connection details shown here are limited to browser-provided estimates.</p></section><section class="sm-section"><h3>Storage quota</h3><div id="sm-storage" class="sm-grid"></div></section></div>
+      <div class="sm-content" data-view="runtime" hidden><section class="sm-section"><h3>WebOS processes</h3><div id="sm-processes" class="sm-processes"></div></section><section class="sm-section"><h3>Runtime details</h3><div id="sm-runtime-detail" class="sm-grid"></div></section></div>
+      <footer class="sm-footer"><span id="sm-updated">Collecting metrics…</span><button id="sm-refresh">Refresh</button></footer>
+    </section>`;
+    const win=createWindow("System Monitor",html);if(!win)return null;
+    const $=id=>win.querySelector("#"+id),formatBytes=n=>n==null?"Unavailable":n>=1073741824?(n/1073741824).toFixed(2)+" GB":n>=1048576?(n/1048576).toFixed(1)+" MB":Math.round(n/1024)+" KB";
+    const cell=(label,value)=>{const node=document.createElement("div");node.className="sm-cell";const k=document.createElement("small");k.textContent=label;const v=document.createElement("strong");v.textContent=value==null?"Unavailable":String(value);node.append(k,v);return node;};
+    const fill=(id,items)=>{$(id).replaceChildren(...items.map(x=>cell(x[0],x[1])));};
+    win.querySelectorAll(".sm-tabs button").forEach(button=>button.addEventListener("click",()=>{win.querySelectorAll(".sm-tabs button").forEach(x=>x.classList.toggle("active",x===button));win.querySelectorAll(".sm-content").forEach(x=>x.hidden=x.dataset.view!==button.dataset.tab);}));
+    async function update(){const info=await window.WebOSDeviceInfo?.getInfo?.()||{},storage=await window.WebOSDeviceInfo?.getStorage?.(),memory=info.memory,windows=[...document.querySelectorAll(".window-shell")].filter(x=>x.isConnected),apps=window.WebOSAppRegistry?.all?.()||[],wasmApps=await window.WebOSWASM?.listApps?.()||[];
+      const battery=info.battery?.supported?(info.battery.level==null?"Permission/API unavailable":info.battery.level+"%"+(info.battery.charging?" · Charging":"")):"Not exposed";
+      $("sm-cards").replaceChildren(cell("Open windows",windows.length),cell("Installed apps",apps.length),cell("WASM apps",wasmApps.length),cell("Battery",battery));
+      fill("sm-host",[["Platform",info.platform],["Logical CPU cores",info.hardware?.logicalCores],["Device memory",info.hardware?.deviceMemoryGB?info.hardware.deviceMemoryGB+" GB":"Unavailable"],["Online",info.online?"Connected":"Offline"],["Secure context",info.secureContext?"Yes":"No"],["Visible state",info.visibility]]);
+      fill("sm-runtime",[["JS heap used",memory?formatBytes(memory.usedBytes):"Browser hides this"],["JS heap total",memory?formatBytes(memory.totalBytes):"Browser hides this"],["Heap limit",memory?formatBytes(memory.limitBytes):"Browser hides this"],["IndexedDB", "Available"],["WebAssembly",typeof WebAssembly==="object"?"Supported":"Unavailable"],["User agent",info.browser]]);
+      fill("sm-device",[["Battery",battery],["Charging",info.battery?.charging==null?"Unavailable":info.battery.charging?"Yes":"No"],["Charging time",info.battery?.chargingTime==null?"Unavailable":Math.round(info.battery.chargingTime/60)+" min"],["Touch points",info.hardware?.touchPoints],["Display",info.hardware?.screenWidth?info.hardware.screenWidth+" × "+info.hardware.screenHeight:"Unavailable"],["Pixel ratio",info.hardware?.pixelRatio]]);
+      fill("sm-browser",[["Browser",info.browser],["Platform",info.platform],["Language",info.language],["Cores",info.hardware?.logicalCores],["Device memory",info.hardware?.deviceMemoryGB?info.hardware.deviceMemoryGB+" GB":"Unavailable"]]);
+      fill("sm-network",[["Connection",info.online?"Online":"Offline"],["Network type",info.network?.type],["Effective type",info.network?.effectiveType],["Estimated downlink",info.network?.downlinkMbps==null?"Unavailable":info.network.downlinkMbps+" Mbps"],["Estimated RTT",info.network?.rttMs==null?"Unavailable":info.network.rttMs+" ms"],["Data saver",info.network?.saveData==null?"Unavailable":info.network.saveData?"On":"Off"],["Wi-Fi name","Not exposed by browser"],["Signal strength","Not exposed by browser"]]);
+      fill("sm-storage",[["Used",formatBytes(storage?.usageBytes)],["Quota",formatBytes(storage?.quotaBytes)],["Usage",storage?.usagePercent==null?"Unavailable":storage.usagePercent+"%"]]);
+      const processBox=$("sm-processes");processBox.replaceChildren();windows.forEach((node,index)=>{const row=document.createElement("div");row.className="sm-process";const title=node.querySelector(".window-title-text")?.textContent||"WebOS window";const detail=document.createElement("span");detail.textContent=title;const state=document.createElement("small");state.textContent=node.classList.contains("is-minimized")?"Minimized":"Active";row.append(detail,state);processBox.append(row);});if(!windows.length)processBox.textContent="No active windows.";
+      fill("sm-runtime-detail",[["Registered apps",apps.length],["WASM installed",wasmApps.length],["WASM modules", (await window.WebOSWASM?.listModules?.()||[]).length],["Open windows",windows.length],["Page uptime",Math.round(performance.now()/1000)+" seconds"],["Storage engine","IndexedDB"]]);
+      $("sm-updated").textContent="Updated "+new Date().toLocaleTimeString();
     }
-
-    return win;
+    let busy=false;const refresh=async()=>{if(busy)return;busy=true;try{await update();}catch(error){window.WebOSNotifications?.notify?.("System Monitor",error.message,{level:"warning"});}finally{busy=false;}};$("sm-refresh").onclick=refresh;refresh();const timer=setInterval(refresh,2500);win.addEventListener("webos:window-close",()=>clearInterval(timer),{once:true});return win;
 }
-
 function openWasmLab() {
     if (typeof closeLauncher === "function") closeLauncher();
     const html = [
