@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "0.9";
+const VERSION = "1.0";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -7,18 +7,23 @@ const CORE_ASSETS = [
   "/html/mobile/mobileLauncher.html", "/site.webmanifest",
   "/html/BootScreen_popcorn.html", "/html/DisplayManager_PopIT.html",
   "/js/os/desktop/app-registry.js", "/js/os/desktop/filesystem.js",
-  "/js/os/desktop/Permissions.js", "/js/os/desktop/Notifications.js", "/js/os/desktop/Appearance.js",
-  "/js/os/window/Launcher.js", "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js",
-  "/js/os/window/Documentation.js", "/js/os/window/AnimationStudio.js", "/js/os/mobile/mobile-runtime.js",
-  "/css/display/regular_theme.css", "/css/display/appearance_bridge.css", "/css/display/settings_session.css",
-  "/css/display/notifications.css", "/css/display/developer_platform.css", "/css/display/files_explorer.css",
+  "/js/os/desktop/Permissions.js", "/js/os/desktop/DeviceInfo.js",
+  "/js/os/desktop/WASMRuntime.js", "/js/os/desktop/Notifications.js",
+  "/js/os/desktop/Appearance.js", "/js/os/window/Launcher.js",
+  "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js",
+  "/js/os/window/Documentation.js", "/js/os/window/AnimationStudio.js",
+  "/js/os/mobile/mobile-runtime.js",
+  "/css/display/regular_theme.css", "/css/display/wasm_runtime.css",
+  "/css/display/appearance_bridge.css", "/css/display/settings_session.css",
+  "/css/display/notifications.css", "/css/display/system_monitor.css",
+  "/css/display/developer_platform.css", "/css/display/files_explorer.css",
   "/css/display/experience_motion.css", "/css/display/mobile_shell.css",
   "/css/boot/boot.css", "/css/display/glass_base.css", "/css/display/tasbar_dock.css",
   "/css/display/launcher.css", "/css/display/window.css", "/css/display/markdown_note.css",
   "/css/display/desktop.css", "/css/display/desktop_refresh.css", "/css/display/root.css",
   "/css/display/utility.css", "/css/display/motion_system.css", "/css/display/liquid_glass.css",
   "/css/display/animation_studio.css",
-  "/html/Launcher_Popo.html", "/html/apps/emulator_alpine/index.html",
+  "/html/Launcher_Popo.html", "/html/apps/emulator_debian/index.html",
   "/css/universal_css_native_stuff.css", "/js/app.js"
 ];
 
@@ -83,14 +88,9 @@ self.addEventListener("fetch", event => {
   }
 
   if (requestUrl.origin !== self.location.origin || requestUrl.pathname.startsWith("/api/")) return;
-  if (request.method !== "GET" || requestUrl.pathname.endsWith(".iso")) return;
+  if (request.method !== "GET" || requestUrl.pathname.endsWith(".iso") || requestUrl.pathname.endsWith(".img")) return;
 
-  if (requestUrl.pathname === "/html/apps/emulator_alpine/alpine.ext2" && request.headers.has("range")) {
-    event.respondWith(serveRange(request));
-    return;
-  }
-
-  // Always refresh navigation entry points so an old cached desktop shell cannot mask mobile routing.
+  // Always refresh navigation entry points so the desktop shell cannot mask newer app code.
   if (request.mode === "navigate" && (requestUrl.pathname === "/" || requestUrl.pathname === "/index.html")) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
@@ -110,36 +110,7 @@ self.addEventListener("fetch", event => {
     const cached = await cache.match(request);
     if (cached) return cached;
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    if (response.ok) await cache.put(request, response.clone());
     return response;
   })());
 });
-
-async function serveRange(request) {
-  const cache = await caches.open(CACHE_NAME);
-  let response = await cache.match("/html/apps/emulator_alpine/alpine.ext2");
-  if (!response) {
-    response = await fetch("/html/apps/emulator_alpine/alpine.ext2");
-    if (!response.ok) return response;
-    await cache.put("/html/apps/emulator_alpine/alpine.ext2", response.clone());
-  }
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  const range = request.headers.get("range").match(/bytes=(\d+)-(\d*)/);
-  if (!range) return new Response(bytes, { status: 200, headers: response.headers });
-  const start = Number(range[1]);
-  const requestedEnd = range[2] ? Number(range[2]) : bytes.length - 1;
-  const end = Math.min(requestedEnd, bytes.length - 1);
-  if (start >= bytes.length || start > end) {
-    return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${bytes.length}` } });
-  }
-  return new Response(bytes.slice(start, end + 1), {
-    status: 206,
-    headers: {
-      "Accept-Ranges": "bytes",
-      "Content-Length": String(end - start + 1),
-      "Content-Range": `bytes ${start}-${end}/${bytes.length}`,
-      "Content-Type": "application/octet-stream",
-      "ETag": "webos-alpine-ext2"
-    }
-  });
-}
