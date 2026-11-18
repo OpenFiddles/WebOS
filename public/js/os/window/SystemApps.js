@@ -1167,6 +1167,16 @@ function openWasmLab() {
     runButton.addEventListener("click",()=>{
         if(!moduleBytes||!exportsMenu.value||activeWorker)return;
         const args=argsInput.value.split(/\r?\n/).filter(x=>x.length>0);
+        let env;
+        try {
+            env=JSON.parse(envInput.value||"{}");
+            if(!env||typeof env!=="object"||Array.isArray(env)) throw new Error("Environment must be a JSON object.");
+            if(Object.values(env).some(value=>value!==null&&typeof value==="object")) throw new Error("Environment values must be strings or primitive values.");
+        } catch(error) {
+            write("Invalid environment JSON: "+error.message,"error");
+            return;
+        }
+        const stdin=stdinInput.value;
         output.textContent="";memoryView.textContent="Waiting for execution…";write("Starting "+moduleName+" → "+exportsMenu.value+"()","system");runStartedAt=performance.now();
         const workerSource=[
           "self.onmessage=async event=>{const d=event.data;let instance=null,memory=null;const enc=new TextEncoder(),dec=new TextDecoder();const callArgs=d.args.map(x=>/^-?\\d+n$/.test(x)?BigInt(x.slice(0,-1)):(()=>{try{return JSON.parse(x);}catch{return x;}})());const send=(type,message)=>self.postMessage({type,message:String(message)});",
@@ -1189,7 +1199,7 @@ function openWasmLab() {
         ].join("\n");
         try{const blob=new Blob([workerSource],{type:"text/javascript"}),url=URL.createObjectURL(blob),worker=new Worker(url);activeWorker=worker;activeWorkerUrl=url;runButton.disabled=true;stopButton.disabled=false;
           worker.onmessage=e=>{URL.revokeObjectURL(url);activeWorkerUrl=null;const d=e.data||{};if(d.type==="log")write(d.message);else if(d.type==="error")write(d.message,"error");else if(d.type==="system")write(d.message,"system");else if(d.type==="memory")memoryView.textContent=d.message;else if(d.type==="failure"){write(d.message,"error");stopExecution("Execution failed.");}else if(d.type==="done"){write("Completed in "+(performance.now()-runStartedAt).toFixed(2)+" ms.","system");stopExecution();}};
-          worker.onerror=e=>{URL.revokeObjectURL(url);activeWorkerUrl=null;write(e.message||"Worker error.","error");stopExecution("Worker stopped.");};runTimer=setTimeout(()=>stopExecution("Execution time limit reached (10 seconds)."),10000);worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args});
+          worker.onerror=e=>{URL.revokeObjectURL(url);activeWorkerUrl=null;write(e.message||"Worker error.","error");stopExecution("Worker stopped.");};runTimer=setTimeout(()=>stopExecution("Execution time limit reached (10 seconds)."),10000);worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args,stdin,env});
         }catch(e){write(e.message,"error");stopExecution();}
     });
     stopButton.addEventListener("click",()=>stopExecution("Execution stopped by user."));
