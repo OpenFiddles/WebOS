@@ -1,10 +1,12 @@
 const NAME = "WebOS"; 
-const VERSION = "0.6"; // Matches versioning strings accurately
+const VERSION = "0.7"; // Matches versioning strings accurately
 const CACHE_NAME = `${NAME}-v${VERSION}`; 
 
 const CORE_ASSETS = [ 
     '/', 
     '/index.html', 
+    '/mobile.html', 
+    '/html/mobileHome.html', 
     '/site.webmanifest', 
     '/html/BootScreen_popcorn.html', 
     '/html/DisplayManager_PopIT.html', 
