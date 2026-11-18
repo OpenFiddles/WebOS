@@ -1601,6 +1601,60 @@ function openAppCreator() {
     const win = createWindow("App Creator Studio", html);
     if (!win) return null;
     const $ = id => win.querySelector("#" + id);
+    // Reorganize the existing editor controls into explicit, always-visible workspaces.
+    const studio = win.querySelector(".xip-studio");
+    const header = studio.querySelector(".xip-header");
+    const fields = studio.querySelector(".xip-fields");
+    const runtimeChoice = studio.querySelector(".xip-runtime-choice");
+    const jsPanel = $("xip-js-panel");
+    const wasmPanel = $("xip-wasm-builder");
+    const watPanel = studio.querySelector(".xip-wat-tool");
+    const packageActions = $("xip-import-file").closest(".xip-actions");
+    const projectStatus = $("xip-status");
+    const tabStyle = document.createElement("style");
+    tabStyle.textContent = ".xip-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border-color,rgba(128,128,128,.25));position:sticky;top:0;background:var(--window-bg,rgba(30,30,30,.96));z-index:3}.xip-tab{border:1px solid var(--border-color,rgba(128,128,128,.3));background:transparent;color:inherit;border-radius:9px;padding:8px 13px;cursor:pointer;font-weight:600}.xip-tab[aria-selected=true]{background:var(--accent-color,#2878d0);color:white;border-color:transparent}.xip-tab-panel{display:none;min-height:0;overflow:auto;padding:12px 2px;flex:1}.xip-tab-panel.active{display:block}.xip-studio{display:flex;flex-direction:column;min-height:100%;height:100%;overflow:hidden}.xip-wasm-builder>summary{display:none}.xip-wasm-builder{display:block!important;border:0!important;padding:0!important;margin:0!important}.xip-wat-tool{display:block!important}.xip-tab-panel textarea{max-width:100%;box-sizing:border-box}";
+    studio.prepend(tabStyle);
+    const tabBar = document.createElement("nav");
+    tabBar.className = "xip-tabs";
+    tabBar.setAttribute("aria-label","App Creator workspaces");
+    const workspace = document.createElement("div");
+    workspace.style.cssText = "display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden";
+    const panels = {};
+    const addPanel = (id,label,icon) => {
+      const button=document.createElement("button");
+      button.type="button";button.className="xip-tab";button.dataset.tab=id;
+      button.textContent=icon+" "+label;button.setAttribute("aria-controls","xip-tab-"+id);button.setAttribute("aria-selected","false");
+      const panel=document.createElement("section");panel.className="xip-tab-panel";panel.id="xip-tab-"+id;panel.dataset.panel=id;panel.setAttribute("role","tabpanel");
+      tabBar.appendChild(button);workspace.appendChild(panel);panels[id]=panel;
+      button.addEventListener("click",()=>activateWorkspace(id));
+      return panel;
+    };
+    const activateWorkspace = id => {
+      Object.entries(panels).forEach(([key,panel])=>{
+        const active=key===id;panel.classList.toggle("active",active);
+        const button=tabBar.querySelector('[data-tab="'+key+'"]');
+        button?.setAttribute("aria-selected",String(active));button?.setAttribute("tabindex",active?"0":"-1");
+      });
+    };
+    const generalTab=addPanel("project","Project","⚙");
+    const jsTab=addPanel("javascript","JavaScript","JS");
+    const wasmTab=addPanel("wasm","WASM","◈");
+    const watTab=addPanel("wat","WAT","⌘");
+    const packageTab=addPanel("package","Package","▣");
+    generalTab.append(fields,runtimeChoice);
+    jsTab.append(jsPanel);
+    const wasmIntro=wasmPanel.querySelector("p");
+    if(wasmIntro)wasmTab.append(wasmIntro);
+    const watActions=watPanel.querySelector(".xip-actions");
+    watTab.append(watPanel);
+    wasmTab.append(wasmPanel);
+    packageTab.append(packageActions,projectStatus);
+    studio.insertBefore(tabBar,header.nextSibling);
+    studio.insertBefore(workspace,tabBar.nextSibling);
+    wasmPanel.open=true;
+    activateWorkspace("project");
+    // Keep the existing runtime selector and validation logic; tabs remain directly accessible.
+
     const code = $("xip-code"), highlight = $("xip-highlight"), status = $("xip-status");
     const starter = `// Your handler receives the WebOS app API and launch argument.
 const panel = document.createElement("section");
