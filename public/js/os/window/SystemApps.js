@@ -1169,7 +1169,7 @@ function openWasmLab() {
         const args=argsInput.value.split(/\r?\n/).filter(x=>x.length>0);
         output.textContent="";memoryView.textContent="Waiting for execution…";write("Starting "+moduleName+" → "+exportsMenu.value+"()","system");runStartedAt=performance.now();
         const workerSource=[
-          "self.onmessage=async event=>{const d=event.data;let instance=null,memory=null;const enc=new TextEncoder(),dec=new TextDecoder();const send=(type,message)=>self.postMessage({type,message:String(message)});",
+          "self.onmessage=async event=>{const d=event.data;let instance=null,memory=null;const enc=new TextEncoder(),dec=new TextDecoder();const callArgs=d.args.map(x=>/^-?\\d+n$/.test(x)?BigInt(x.slice(0,-1)):(()=>{try{return JSON.parse(x);}catch{return x;}})());const send=(type,message)=>self.postMessage({type,message:String(message)});",
           "try{const mod=await WebAssembly.compile(d.bytes),descs=WebAssembly.Module.imports(mod),imports={};let stdin=new Uint8Array(),stdinAt=0;const E={SUCCESS:0,BADF:8,INVAL:28,NOTSUP:58};",
           "const mem=()=>memory||(instance&&instance.exports.memory);const dv=()=>{const m=mem();if(!m)throw Error('WASI call requires accessible exported memory.');return new DataView(m.buffer);};",
           "const wasi={proc_exit:c=>{throw Error('Program exited with status '+c);},sched_yield:()=>0,fd_close:()=>0,fd_sync:()=>0,fd_datasync:()=>0,fd_advise:()=>0,",
@@ -1183,18 +1183,19 @@ function openWasmLab() {
           "random_get:(p,n)=>{const b=new Uint8Array(n);crypto.getRandomValues(b);new Uint8Array(mem().buffer,p,n).set(b);return 0;},",
           "fd_prestat_get:()=>E.BADF,fd_prestat_dir_name:()=>E.BADF,path_open:()=>E.NOTSUP,path_create_directory:()=>E.NOTSUP,path_unlink_file:()=>E.NOTSUP,path_remove_directory:()=>E.NOTSUP,path_rename:()=>E.NOTSUP,path_filestat_get:()=>E.NOTSUP,path_filestat_set_times:()=>E.NOTSUP,path_link:()=>E.NOTSUP,path_symlink:()=>E.NOTSUP,path_readlink:()=>E.NOTSUP,poll_oneoff:()=>E.NOTSUP};",
           "for(const x of descs){if(x.kind!=='function')throw Error('Unsupported imported '+x.kind+': '+x.module+'.'+x.name);if(!imports[x.module])imports[x.module]={};const f=(x.module==='wasi_snapshot_preview1'||x.module==='wasi_unstable')?wasi[x.name]:x.module==='env'&&x.name==='abort'?(()=>{throw Error('env.abort called');}):x.module==='env'&&x.name==='emscripten_notify_memory_growth'?(()=>{}):null;if(!f)throw Error('Unsupported import '+x.module+'.'+x.name+'. No silent stub installed.');imports[x.module][x.name]=f;}",
-          "const r=await WebAssembly.instantiate(mod,imports);instance=r;memory=r.exports.memory||memory;const fn=r.exports[d.exportName];if(typeof fn!=='function')throw Error('Export is not callable.');send('system','Module instantiated; calling '+d.exportName+'().');const value=fn();send('system','Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)));",
+          "const r=await WebAssembly.instantiate(mod,imports);instance=r;memory=r.exports.memory||memory;const fn=r.exports[d.exportName];if(typeof fn!=='function')throw Error('Export is not callable.');send('system','Module instantiated; calling '+d.exportName+'().');const value=fn(...callArgs);send('system','Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)));",
           "if(memory){const b=new Uint8Array(memory.buffer),lim=Math.min(b.length,256),rows=[];for(let i=0;i<lim;i+=16){const c=b.subarray(i,Math.min(i+16,lim)),h=Array.from(c,x=>x.toString(16).padStart(2,'0')).join(' '),a=Array.from(c,x=>x>=32&&x<127?String.fromCharCode(x):'.').join('');rows.push(i.toString(16).padStart(8,'0')+'  '+h.padEnd(47)+'  '+a);}self.postMessage({type:'memory',message:'Memory size: '+b.length+' bytes ('+(b.length/65536)+' pages)\\n'+rows.join('\\n')});}send('done','Execution finished.');",
           "}catch(e){send('failure',e&&e.message?e.message:String(e));}};"
         ].join("\n");
         try{const blob=new Blob([workerSource],{type:"text/javascript"}),url=URL.createObjectURL(blob),worker=new Worker(url);activeWorker=worker;runButton.disabled=true;stopButton.disabled=false;
-          worker.onmessage=e=>{const d=e.data||{};if(d.type==="log")write(d.message);else if(d.type==="error")write(d.message,"error");else if(d.type==="system")write(d.message,"system");else if(d.type==="memory")memoryView.textContent=d.message;else if(d.type==="failure"){write(d.message,"error");stopExecution("Execution failed.");}else if(d.type==="done"){write("Completed in "+(performance.now()-runStartedAt).toFixed(2)+" ms.","system");stopExecution();}};
-          worker.onerror=e=>{write(e.message||"Worker error.","error");stopExecution("Worker stopped.");};runTimer=setTimeout(()=>stopExecution("Execution time limit reached (10 seconds)."),10000);worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args});URL.revokeObjectURL(url);
+          worker.onmessage=e=>{URL.revokeObjectURL(url);const d=e.data||{};if(d.type==="log")write(d.message);else if(d.type==="error")write(d.message,"error");else if(d.type==="system")write(d.message,"system");else if(d.type==="memory")memoryView.textContent=d.message;else if(d.type==="failure"){write(d.message,"error");stopExecution("Execution failed.");}else if(d.type==="done"){write("Completed in "+(performance.now()-runStartedAt).toFixed(2)+" ms.","system");stopExecution();}};
+          worker.onerror=e=>{URL.revokeObjectURL(url);write(e.message||"Worker error.","error");stopExecution("Worker stopped.");};runTimer=setTimeout(()=>stopExecution("Execution time limit reached (10 seconds)."),10000);worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args});
         }catch(e){write(e.message,"error");stopExecution();}
     });
     stopButton.addEventListener("click",()=>stopExecution("Execution stopped by user."));
     clearButton.addEventListener("click",()=>{output.textContent="";});
     refreshButton.addEventListener("click",refreshLibrary);
+    win.addEventListener("webos:window-close",()=>stopExecution("WASM Lab closed; worker terminated."));
     refreshLibrary();return win;
 }
 
