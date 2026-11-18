@@ -198,4 +198,5 @@
 
 
     window.WebOSAppRegistry = Object.freeze({ register, all, launch, render });
+    if (window.WebOSWASM?.restoreApps) window.WebOSWASM.restoreApps().catch(error => console.warn("WASM app restore:", error));
 })();
