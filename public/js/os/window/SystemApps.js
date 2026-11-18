@@ -1164,7 +1164,7 @@ function openWasmLab() {
     saveButton.addEventListener("click",async()=>{if(!moduleBytes)return;try{const safeName=moduleName.replace(/[\\/:*?"<>|]/g,"_");await window.WebOSFileSystem.putBinary("/Documents/WASM/"+safeName,moduleBytes,"application/wasm");write("Saved to /Documents/WASM/"+safeName,"system");await refreshLibrary();}catch(e){write("Save failed: "+e.message,"error");}});
     downloadButton.addEventListener("click",()=>{if(!moduleBytes)return;const url=URL.createObjectURL(new Blob([moduleBytes],{type:"application/wasm"}));const a=document.createElement("a");a.href=url;a.download=moduleName||"module.wasm";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
     exportsMenu.addEventListener("change",()=>{runButton.disabled=!moduleBytes||!exportsMenu.value||!!activeWorker;});
-    runButton.addEventListener("click",()=>{
+    runButton.addEventListener("click",async()=>{
         if(!moduleBytes||!exportsMenu.value||activeWorker)return;
         const args=argsInput.value.split(/\r?\n/).filter(x=>x.length>0);
         let env;
