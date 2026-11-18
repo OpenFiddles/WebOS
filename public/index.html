@@ -9,46 +9,21 @@
     <link rel="icon" type="image/x-icon" href="/images/icons/3.png">
     <style>
         * { box-sizing: border-box; }
-        html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-            background: #000;
-        }
-        #os-entry {
-            display: block;
-            width: 100%;
-            height: 100%;
-            height: 100dvh;
-            border: 0;
-            background: #080d16;
-        }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+        #os-entry { display: block; width: 100%; height: 100%; height: 100dvh; border: 0; background: #080d16; }
     </style>
 </head>
 <body>
-    <iframe
-        id="os-entry"
-        title="WebOS"
-        scrolling="no"
-    ></iframe>
+    <iframe id="os-entry" title="WebOS" scrolling="no" allow="fullscreen"></iframe>
     <script>
         (() => {
             const frame = document.getElementById("os-entry");
-            const touchDevice = navigator.maxTouchPoints > 0 ||
-                window.matchMedia("(pointer: coarse)").matches;
-            const mobileUA = /Android|iPhone|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
-            const screenSize = Math.min(
-                window.screen?.width || window.innerWidth,
-                window.screen?.height || window.innerHeight
-            );
-            const compactTouchScreen = touchDevice && screenSize <= 820;
-            const isMobile = mobileUA || compactTouchScreen;
-
-            frame.src = isMobile
-                ? "/mobile.html"
-                : "/html/BootScreen_popcorn.html";
-            frame.title = isMobile ? "WebOS mobile experience" : "WebOS desktop boot";
+            const mobileUA = /Android|iPhone|iPad|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
+            const compactTouch = (navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches) &&
+                Math.min(window.innerWidth, window.screen?.width || window.innerWidth) <= 820;
+            const isMobile = mobileUA || compactTouch;
+            frame.src = isMobile ? "/html/mobile/mobileLauncher.html" : "/html/BootScreen_popcorn.html";
+            frame.title = isMobile ? "WebOS Mobile Launcher" : "WebOS desktop";
         })();
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
