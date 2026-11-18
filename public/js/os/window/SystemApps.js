@@ -1117,161 +1117,164 @@ function openSystemMonitor() {
 
 function openWasmLab() {
     if (typeof closeLauncher === "function") closeLauncher();
-
-    // 1. Controller Layout Panel Template
-    const htmlTemplate = `
-        <div class="AppPanel CreatorStudio" style="padding: 15px; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box;">
-            <h2 style="margin: 0 0 5px 0; font-size: 1.2rem;">WASM Lab</h2>
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 0.85rem; opacity: 0.8;">Select WebAssembly Binary (.wasm)</label>
-                <input id="wasm-file" type="file" accept=".wasm,application/wasm" style="width: 100%;">
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-                <label style="font-size: 0.85rem; opacity: 0.8;">Exported Entrypoints</label>
-                <select id="wasm-export" disabled style="padding: 6px; width: 100%; border-radius: 4px; border: 1px solid #ccc; background: #fff; color: #000;">
-                    <option value="">Load a module first</option>
-                </select>
-            </div>
-            
-            <button type="button" id="wasm-run" disabled style="padding: 10px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; border: none; background: #007acc; color: #fff;">
-                🚀 Spawn Sandbox Window
-            </button>
-            <pre id="wasm-output" class="AppOutput" style="margin: 0; padding: 10px; flex-grow: 1; overflow: auto; background: #1e1e1e; color: #d4d4d4; font-family: monospace; border-radius: 4px; font-size: 0.9rem; min-height: 80px; white-space: pre-wrap; word-break: break-all;">Awaiting local binary allocation.</pre>
+    const htmlTemplate = \`
+        <div class="AppPanel wasm-lab" style="padding:16px;display:flex;flex-direction:column;gap:12px;height:100%;box-sizing:border-box;font-family:system-ui,sans-serif;overflow:auto;">
+            <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <div><h2 style="margin:0;font-size:1.25rem;">WASM Lab</h2><div style="font-size:.82rem;opacity:.7;">WebAssembly module inspector &amp; runner</div></div>
+                <span id="wasm-status" style="font-size:.78rem;padding:5px 9px;border-radius:20px;background:rgba(100,160,255,.14);">No module loaded</span>
+            </header>
+            <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;">
+                <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;">Open a .wasm binary<input id="wasm-file" type="file" accept=".wasm,application/wasm"></label>
+                <label style="display:flex;flex-direction:column;gap:6px;font-size:.85rem;">Function export<select id="wasm-export" disabled style="padding:8px;border-radius:8px;"><option value="">Load a module first</option></select></label>
+            </section>
+            <section style="display:flex;flex-direction:column;gap:6px;">
+                <label for="wasm-args" style="font-size:.85rem;">Function arguments (JSON array)</label>
+                <input id="wasm-args" type="text" value="[]" spellcheck="false" style="padding:9px;border-radius:8px;font-family:monospace;">
+                <small style="opacity:.65;">Example: [12, 30]. Enter i64 values as strings ending in n, e.g. ["42n"].</small>
+            </section>
+            <section style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button id="wasm-run" type="button" disabled style="padding:9px 14px;border:0;border-radius:9px;background:#287bd5;color:white;font-weight:650;">▶ Run in Worker</button>
+                <button id="wasm-stop" type="button" disabled style="padding:9px 14px;border:1px solid currentColor;border-radius:9px;background:transparent;">■ Stop</button>
+                <button id="wasm-clear" type="button" style="padding:9px 14px;border:1px solid currentColor;border-radius:9px;background:transparent;">Clear output</button>
+            </section>
+            <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;min-height:110px;">
+                <div style="min-width:0;"><h3 style="font-size:.9rem;margin:0 0 6px;">Module exports</h3><pre id="wasm-exports" style="margin:0;padding:10px;border-radius:9px;background:rgba(127,127,127,.12);font:12px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow:auto;max-height:180px;">No module loaded.</pre></div>
+                <div style="min-width:0;"><h3 style="font-size:.9rem;margin:0 0 6px;">Required imports</h3><pre id="wasm-imports" style="margin:0;padding:10px;border-radius:9px;background:rgba(127,127,127,.12);font:12px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow:auto;max-height:180px;">No module loaded.</pre></div>
+            </section>
+            <div style="display:flex;flex-direction:column;flex:1;min-height:140px;"><h3 style="font-size:.9rem;margin:0 0 6px;">Runtime console</h3><pre id="wasm-output" role="log" aria-live="polite" style="margin:0;padding:12px;flex:1;min-height:120px;overflow:auto;background:#10151d;color:#d6e5f5;font:12px/1.55 ui-monospace,monospace;border-radius:10px;white-space:pre-wrap;word-break:break-word;">Choose a local .wasm file to inspect it.</pre></div>
+            <small style="opacity:.65;">Runs in a disposable Web Worker so slow code can be stopped without freezing the desktop. This improves responsiveness; it is not a complete security sandbox. Modules with non-function imports or full WASI requirements need a compatible runtime.</small>
         </div>
-    `;
-
+    \`;
     const win = createWindow("WASM Lab", htmlTemplate);
-    
-    const filePicker = win.querySelector("#wasm-file");
-    const exportsMenu = win.querySelector("#wasm-export");
-    const runButton = win.querySelector("#wasm-run");
-    const outputArea = win.querySelector("#wasm-output");
-    
-    let compiledModuleBytes = null; // Store buffer so we can spin up infinite isolated instances
-    let currentFileName = "";
+    const $ = selector => win.querySelector(selector);
+    const filePicker = $("#wasm-file"), exportsMenu = $("#wasm-export"), runButton = $("#wasm-run");
+    const stopButton = $("#wasm-stop"), clearButton = $("#wasm-clear"), argsInput = $("#wasm-args");
+    const output = $("#wasm-output"), exportsView = $("#wasm-exports"), importsView = $("#wasm-imports"), status = $("#wasm-status");
+    let moduleBytes = null, moduleName = "", activeWorker = null, runTimer = null, runStartedAt = 0;
 
-    // 2. Binary Buffer Reader Engine
-    filePicker.onchange = async () => {
-        const file = filePicker.files[0];
+    const write = (message, type) => {
+        const prefix = type === "error" ? "[error] " : type === "system" ? "[system] " : "[stdout] ";
+        output.textContent += prefix + String(message) + "\n";
+        output.scrollTop = output.scrollHeight;
+    };
+    const stopExecution = reason => {
+        if (runTimer) clearTimeout(runTimer);
+        runTimer = null;
+        if (activeWorker) {
+            activeWorker.terminate();
+            activeWorker = null;
+            stopButton.disabled = true;
+            runButton.disabled = !moduleBytes || !exportsMenu.value;
+            if (reason) write(reason, "system");
+        }
+    };
+
+    filePicker.addEventListener("change", async () => {
+        const file = filePicker.files && filePicker.files[0];
         if (!file) return;
-
-        outputArea.textContent = "Parsing and mapping symbols...";
+        stopExecution("Previous run stopped because a new module was loaded.");
+        moduleBytes = null;
+        moduleName = file.name;
         exportsMenu.disabled = true;
         runButton.disabled = true;
-        compiledModuleBytes = null;
-        currentFileName = file.name;
-
+        status.textContent = "Inspecting module…";
+        exportsView.textContent = "Reading module metadata…";
+        importsView.textContent = "Reading module metadata…";
+        output.textContent = "Reading " + file.name + "…\n";
         try {
-            // Read into shared raw array buffer
-            compiledModuleBytes = await file.arrayBuffer();
-
-            // Perform a safe lightweight dry-run compilation step to index exported names
-            const mockImport = { env: { abort: () => {}, print: () => {}, printErr: () => {} } };
-            const dryRun = await WebAssembly.instantiate(compiledModuleBytes, mockImport);
-            
-            const exportNames = Object.keys(dryRun.instance.exports).filter(name => {
-                return typeof dryRun.instance.exports[name] === "function";
-            });
-            
-            if (exportNames.length === 0) {
-                outputArea.textContent = `Error: "${file.name}" compiles successfully but leaks no callable functional entrypoints.`;
+            const bytes = await file.arrayBuffer();
+            const compiled = await WebAssembly.compile(bytes);
+            const exported = WebAssembly.Module.exports(compiled);
+            const imported = WebAssembly.Module.imports(compiled);
+            moduleBytes = bytes;
+            exportsView.textContent = exported.length ? exported.map(item => item.name + " · " + item.kind).join("\n") : "This module has no exports.";
+            importsView.textContent = imported.length ? imported.map(item => item.module + "." + item.name + " · " + item.kind).join("\n") : "No imports required.";
+            const functions = exported.filter(item => item.kind === "function");
+            exportsMenu.replaceChildren();
+            if (!functions.length) {
+                const option = document.createElement("option");
+                option.value = "";
+                option.textContent = "No function exports";
+                exportsMenu.append(option);
+                status.textContent = "Compiled · no functions";
+                write("Compilation succeeded, but this module has no callable function exports.", "system");
                 return;
             }
-
-            // Populate selector with functional modules
-            exportsMenu.innerHTML = exportNames
-                .map(name => `<option value="${name}">${name}()</option>`)
-                .join("");
-
+            functions.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.name;
+                option.textContent = item.name + "()";
+                exportsMenu.append(option);
+            });
             exportsMenu.disabled = false;
             runButton.disabled = false;
-            outputArea.textContent = `Successfully indexed ${file.name}.\nChoose an entrypoint and launch an isolated execution window container.`;
-
+            status.textContent = "Compiled · " + functions.length + " function(s)";
+            write("Compiled " + file.name + " (" + bytes.byteLength.toLocaleString() + " bytes).", "system");
+            write(exported.length + " export(s), " + imported.length + " import(s) discovered.");
         } catch (error) {
-            exportsMenu.innerHTML = '<option value="">Compilation Failure</option>';
-            outputArea.textContent = `Static Validation Error:\n${error.message}`;
+            moduleBytes = null;
+            status.textContent = "Invalid module";
+            exportsView.textContent = "Compilation failed.";
+            importsView.textContent = "Unavailable.";
+            write(error && error.message ? error.message : error, "error");
         }
-    };
+    });
 
-    // 3. Isolated Dynamic Sandbox Window Spawner Loop
-    runButton.onclick = async () => {
-        if (!compiledModuleBytes) return;
+    exportsMenu.addEventListener("change", () => { runButton.disabled = !moduleBytes || !exportsMenu.value || !!activeWorker; });
+    runButton.addEventListener("click", () => {
+        if (!moduleBytes || !exportsMenu.value || activeWorker) return;
+        let args;
+        try {
+            args = JSON.parse(argsInput.value || "[]");
+            if (!Array.isArray(args)) throw new Error("Arguments must be a JSON array.");
+            args = args.map(value => typeof value === "string" && /^-?\\d+n$/.test(value) ? BigInt(value.slice(0, -1)) : value);
+        } catch (error) { write("Invalid arguments: " + error.message, "error"); return; }
 
-        const selectedFunc = exportsMenu.value;
+        output.textContent = "";
+        write("Starting " + moduleName + " → " + exportsMenu.value + "()", "system");
+        runStartedAt = performance.now();
+        const workerSource = [
+            "self.onmessage = async function(event) {",
+            " const data = event.data; const log = (message,type) => self.postMessage({type:type || 'log',message:String(message)});",
+            " try { const module = await WebAssembly.compile(data.bytes); const descriptions = WebAssembly.Module.imports(module); const imports = {}; let instanceRef = null;",
+            " const wasi = {proc_exit: code => {throw new Error('WASI proc_exit(' + code + ')');},",
+            " fd_write: (fd,iovs,count,written) => {const memory=instanceRef && instanceRef.exports.memory;if(!memory)throw new Error('WASI fd_write requires exported memory named memory.');const view=new DataView(memory.buffer);let total=0,text='';for(let i=0;i<count;i++){const ptr=view.getUint32(iovs+i*8,true),len=view.getUint32(iovs+i*8+4,true);text+=new TextDecoder().decode(new Uint8Array(memory.buffer,ptr,len));total+=len;}if(written)view.setUint32(written,total,true);log(text,fd===2?'error':'log');return 0;},",
+            " fd_read:()=>8,fd_close:()=>0,fd_seek:()=>70,environ_sizes_get:(a,b)=>{const m=instanceRef&&instanceRef.exports.memory;if(m){const v=new DataView(m.buffer);v.setUint32(a,0,true);v.setUint32(b,0,true);}return 0;},",
+            " args_sizes_get:(a,b)=>{const m=instanceRef&&instanceRef.exports.memory;if(m){const v=new DataView(m.buffer);v.setUint32(a,0,true);v.setUint32(b,0,true);}return 0;}};",
+            " for(const item of descriptions){if(item.kind!=='function')throw new Error('Unsupported imported '+item.kind+': '+item.module+'.'+item.name+'. Only function imports are currently supported.');if(!imports[item.module])imports[item.module]={};",
+            " const known=item.module==='wasi_snapshot_preview1'?wasi[item.name]:null;",
+            " const env=item.module==='env'&&item.name==='abort'?(()=>{throw new Error('Module called env.abort');}):item.module==='env'&&['print','printErr','puts','putchar'].includes(item.name)?(value=>log(value,item.name==='printErr'?'error':'log')):item.module==='env'&&item.name==='emscripten_notify_memory_growth'?(()=>{}):null;",
+            " imports[item.module][item.name]=known||env||(()=>0);}",
+            " const result=await WebAssembly.instantiate(module,imports);instanceRef=result;const fn=result.exports[data.exportName];if(typeof fn!=='function')throw new Error('Selected export is not a function.');",
+            " log('Module instantiated. Calling export…','system');const value=fn(...data.args);log('Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)),'system');self.postMessage({type:'done'});",
+            " }catch(error){self.postMessage({type:'failure',message:error&&error.message?error.message:String(error)});}};"
+        ].join("\\n");
 
-        // Visual layout wrapper shell template for the secondary execution window
-        const sandboxTemplate = `
-            <div class="AppPanel" style="padding: 15px; font-family: sans-serif; display: flex; flex-direction: column; gap: 10px; height: 100%; box-sizing: border-box;">
-                <div style="font-size: 0.85rem; opacity: 0.7;">
-                    Instance: <strong style="color: #007acc;">${currentFileName}</strong> → <code>${selectedFunc}()</code>
-                </div>
-                <pre class="sandbox-console" style="margin: 0; padding: 12px; flex-grow: 1; overflow: auto; background: #0c0c0c; color: #39ff14; font-family: monospace; border-radius: 4px; font-size: 0.85rem; white-space: pre-wrap; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);"></pre>
-                <div style="text-align: right;">
-                    <button type="button" class="sandbox-re-run" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 3px; border: 1px solid #555; background: #222; color: #fff; cursor: pointer;">Re-run Routine</button>
-                </div>
-            </div>
-        `;
-
-        // Spawn a brand new window container inside your Desktop OS framework
-        const sandboxWin = createWindow(`Sandbox [${selectedFunc}]`, sandboxTemplate);
-        const consoleArea = sandboxWin.querySelector(".sandbox-console");
-        const reRunBtn = sandboxWin.querySelector(".sandbox-re-run");
-
-        // Isolated terminal logger bound strictly to this specific window context instance
-        const logToSandbox = (msg, type = "out") => {
-            const prefix = type === "err" ? "[WASM Error]" : "[WASM Out]";
-            consoleArea.textContent += `${prefix} ${msg}\n`;
-            consoleArea.scrollTop = consoleArea.scrollHeight;
-        };
-
-        // Execution engine routine loop wrapper context closures
-        async function executeWasmInstance() {
-            consoleArea.textContent = `[System] Initializing runtime context micro-vm...\n`;
-            
-            try {
-                // Setup standalone context import tables tracking to this specific console layer
-                const runtimeImports = {
-                    env: {
-                        abort: (msg) => logToSandbox(`Aborted: ${msg}`, "err"),
-                        print: (msg) => logToSandbox(msg, "out"),
-                        printErr: (msg) => logToSandbox(msg, "err")
-                    }
-                };
-
-                // Instantiate fresh isolated WebAssembly memory segments inside this viewport
-                const moduleInstance = await WebAssembly.instantiate(compiledModuleBytes, runtimeImports);
-                const targetRoutine = moduleInstance.instance.exports[selectedFunc];
-
-                logToSandbox(`Calling entrypoint stack...`);
-                const startTime = performance.now();
-                
-                // Execute execution loop instructions natively
-                const executionResult = targetRoutine();
-                
-                const totalDuration = (performance.now() - startTime).toFixed(3);
-
-                consoleArea.textContent += `\n[System] Complete execution lifecycle cleanly in ${totalDuration}ms.`;
-                consoleArea.textContent += `\n[System] Return Matrix: ${executionResult !== undefined ? String(executionResult) : "void (0)"}\n`;
-
-            } catch (runtimeError) {
-                consoleArea.textContent += `\n❌ Pipeline Runtime Exception:\n${runtimeError.message}\n`;
-            }
-            consoleArea.scrollTop = consoleArea.scrollHeight;
-        }
-
-        // Connect hot reload rerun action hook processing sequence directly
-        reRunBtn.onclick = () => {
-            executeWasmInstance();
-        };
-
-        // Fire off baseline context initialization loops natively
-        executeWasmInstance();
-    };
-
+        try {
+            const blob = new Blob([workerSource], {type:"text/javascript"});
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl);
+            URL.revokeObjectURL(workerUrl);
+            activeWorker = worker;
+            runButton.disabled = true;
+            stopButton.disabled = false;
+            worker.onmessage = event => {
+                const data = event.data || {};
+                if (data.type === "log") write(data.message);
+                else if (data.type === "error") write(data.message, "error");
+                else if (data.type === "system") write(data.message, "system");
+                else if (data.type === "failure") { write(data.message, "error"); stopExecution("Run ended with an error."); }
+                else if (data.type === "done") { write("Completed in " + (performance.now() - runStartedAt).toFixed(2) + " ms.", "system"); stopExecution(); }
+            };
+            worker.onerror = event => { write(event.message || "Worker execution failed.", "error"); stopExecution("Worker stopped."); };
+            runTimer = setTimeout(() => stopExecution("Execution time limit reached (10 seconds)."), 10000);
+            worker.postMessage({bytes:moduleBytes.slice(0),exportName:exportsMenu.value,args});
+        } catch (error) { write(error && error.message ? error.message : error, "error"); stopExecution(); }
+    });
+    stopButton.addEventListener("click", () => stopExecution("Execution stopped by user."));
+    clearButton.addEventListener("click", () => { output.textContent = ""; });
     return win;
 }
-
 
 function openBrowser(initialUrl) {
     if (typeof closeLauncher === "function") closeLauncher();
