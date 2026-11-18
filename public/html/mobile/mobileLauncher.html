@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090f1d">
+<title>WebOS Mobile Launcher</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#090f1d;color:#f4f7ff;font-synthesis:none}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{background:radial-gradient(ellipse at 12% 8%,rgba(63,112,190,.34),transparent 42%),radial-gradient(ellipse at 90% 88%,rgba(111,70,167,.27),transparent 38%),linear-gradient(155deg,#0b1425,#090f1d 58%,#111025);user-select:none;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit}button{color:inherit;cursor:pointer}
+.shell{height:100%;height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);position:relative;overflow:hidden}
+.status{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 5px;color:#dce7fa;font-size:13px;font-weight:650;letter-spacing:.02em;flex-shrink:0}
+.status-right{display:flex;gap:9px;align-items:center}.status button{border:0;background:transparent;padding:5px;font-size:15px}
+.home-content{width:100%;max-width:560px;margin:auto;display:flex;flex-direction:column;gap:22px;padding:16px 0 18px}
+.greeting{display:flex;align-items:flex-end;justify-content:space-between}.eyebrow{font-size:11px;letter-spacing:.19em;color:#9aacc9;font-weight:750}.greeting h1{font-size:clamp(32px,8vw,44px);letter-spacing:-.055em;line-height:1.05;margin:8px 0 0}.date{color:#9aacc9;font-size:12px;text-align:right}
+.search{height:52px;border:1px solid rgba(196,215,255,.15);background:rgba(255,255,255,.075);border-radius:17px;display:flex;align-items:center;gap:11px;padding:0 16px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+.search span{font-size:18px;color:#a9b9d2}.search input{background:none;border:0;outline:0;color:#fff;width:100%;font-size:14px;user-select:text}.search input::placeholder{color:#8494af}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-head strong{font-size:14px}.section-head button{border:0;background:none;color:#a9b9d2;font-size:12px;padding:5px}
+.apps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:19px 10px}
+.app{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:0}
+.app-icon{width:58px;height:58px;border:1px solid rgba(255,255,255,.15);border-radius:19px;display:grid;place-items:center;font-size:27px;background:linear-gradient(145deg,rgba(104,151,230,.26),rgba(126,91,183,.2));box-shadow:0 9px 24px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.13)}
+.app:nth-child(2n) .app-icon{background:linear-gradient(145deg,rgba(59,157,178,.25),rgba(68,101,175,.2))}
+.app span:last-child{font-size:11px;color:#e3eafa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dock-wrap{width:100%;max-width:560px;margin:0 auto 12px;flex-shrink:0}
+.dock{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px;border:1px solid rgba(255,255,255,.13);border-radius:25px;background:rgba(255,255,255,.09);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.dock .app-icon{width:52px;height:52px;border-radius:17px}
+.gesture{width:116px;height:4px;border-radius:9px;background:rgba(255,255,255,.68);margin:0 auto 7px;flex-shrink:0}
+.overlay{position:absolute;inset:0;z-index:5;background:rgba(5,9,17,.72);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);padding:max(22px,env(safe-area-inset-top)) 20px max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;transform:translateY(102%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.overlay.open{transform:translateY(0)}.overlay-head{display:flex;align-items:center;justify-content:space-between;margin:8px 0 20px}.overlay-head h2{font-size:25px;margin:0;letter-spacing:-.04em}.round{width:38px;height:38px;border:1px solid rgba(255,255,255,.15);border-radius:50%;background:rgba(255,255,255,.08);font-size:18px}
+.drawer-search{height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);padding:0 14px;color:white;outline:0;margin-bottom:20px;user-select:text}
+.drawer-grid{overflow:auto;padding-bottom:20px}
+.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.quick{min-height:70px;text-align:left;border:1px solid rgba(255,255,255,.13);border-radius:17px;background:rgba(255,255,255,.08);padding:13px;font-size:13px;font-weight:650}
+.quick.active{background:linear-gradient(120deg,rgba(74,125,207,.55),rgba(108,79,164,.5));border-color:rgba(173,199,255,.38)}
+.quick small{display:block;color:#b5c2d8;font-weight:450;margin-top:5px}
+.app-screen{position:absolute;inset:0;z-index:8;background:#0b1220;display:none;flex-direction:column;padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom)}
+.app-screen.open{display:flex}.app-bar{height:58px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}.app-bar h2{font-size:17px;flex:1}.app-body{flex:1;min-height:0;overflow:auto;padding:20px 2px}.app-card{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);padding:16px;border-radius:17px;margin-bottom:12px}.muted{color:#a7b6cd;font-size:13px;line-height:1.55}.browser-form{display:flex;gap:8px}.browser-form input{flex:1;min-width:0;background:#18243a;border:1px solid #33435d;border-radius:12px;padding:12px;color:#fff;user-select:text}.browser-form button,.primary{border:0;border-radius:12px;background:linear-gradient(110deg,#477bd0,#6954ad);padding:0 16px;font-weight:700}.browser-frame{width:100%;height:65vh;border:1px solid rgba(255,255,255,.12);border-radius:13px;margin-top:14px;background:white}
+.toast{position:absolute;z-index:12;left:50%;bottom:calc(env(safe-area-inset-bottom) + 28px);transform:translate(-50%,20px);opacity:0;transition:.2s;background:#202c42;border:1px solid #465777;padding:10px 15px;border-radius:999px;font-size:12px;pointer-events:none;white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}
+.empty{grid-column:1/-1;text-align:center;color:#a9b9d2;padding:35px 0;font-size:13px}
+@media(min-width:700px){.home-content,.dock-wrap{max-width:500px}.shell{padding-left:28px;padding-right:28px}}
+@media(max-height:650px){.home-content{gap:14px}.app{gap:5px}.app-icon{width:49px;height:49px;border-radius:16px}.apps{gap:12px 8px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="shell" id="shell">
+  <header class="status">
+    <span id="clock">9:41</span>
+    <div class="status-right"><button id="quick-open" aria-label="Open quick settings">◉</button><span>▮▮</span><span>⌁</span><span>▰</span></div>
+  </header>
+  <section class="home-content">
+    <div class="greeting"><div><div class="eyebrow">OPENFIDDLES · WEBOS</div><h1 id="greeting">Good day.</h1></div><div class="date" id="date"></div></div>
+    <label class="search"><span>⌕</span><input id="home-search" type="search" placeholder="Search apps" autocomplete="off"><span>⌘</span></label>
+    <section><div class="section-head"><strong>Favourites</strong><button id="all-apps">All apps ↗</button></div><div class="apps" id="favourites"></div></section>
+  </section>
+  <footer class="dock-wrap"><nav class="dock" id="dock" aria-label="Favourite apps"></nav></footer>
+  <div class="gesture" id="gesture" aria-label="Open app drawer"></div>
+  <section class="overlay" id="drawer" aria-label="App drawer">
+    <div class="overlay-head"><h2>All apps</h2><button class="round" data-close="drawer" aria-label="Close">×</button></div>
+    <input class="drawer-search" id="drawer-search" type="search" placeholder="Find an app">
+    <div class="apps drawer-grid" id="all-app-grid"></div>
+  </section>
+  <section class="overlay" id="quick-panel" aria-label="Quick settings">
+    <div class="overlay-head"><h2>Quick settings</h2><button class="round" data-close="quick-panel" aria-label="Close">×</button></div>
+    <div class="quick-grid">
+      <button class="quick active" data-toggle="Wi-Fi">◉ Wi-Fi<small>Connected</small></button>
+      <button class="quick active" data-toggle="Bluetooth">ᛒ Bluetooth<small>On</small></button>
+      <button class="quick" data-toggle="Do not disturb">☾ Do not disturb<small>Off</small></button>
+      <button class="quick" data-toggle="Battery saver">ϟ Battery saver<small>Off</small></button>
+    </div>
+    <div class="app-card" style="margin-top:16px"><strong>WebOS Mobile</strong><p class="muted">Your mobile environment. Quick toggles here are interface controls and do not change Android system settings.</p></div>
+  </section>
+  <section class="app-screen" id="app-screen">
+    <header class="app-bar"><button class="round" id="app-back" aria-label="Back">←</button><h2 id="app-title">App</h2><button class="round" id="app-home" aria-label="Home">⌂</button></header>
+    <div class="app-body" id="app-body"></div>
+  </section>
+  <div class="toast" id="toast" role="status"></div>
+</main>
+<script>
+const apps=[
+ {id:"files",name:"Files",icon:"📁",desc:"Browse your WebOS files and folders."},
+ {id:"browser",name:"Browser",icon:"🌐",desc:"Browse the web from WebOS Mobile."},
+ {id:"notes",name:"Notes",icon:"📝",desc:"Capture thoughts and quick notes."},
+ {id:"settings",name:"Settings",icon:"⚙️",desc:"Configure your mobile environment."},
+ {id:"gallery",name:"Gallery",icon:"🌄",desc:"Your images, all in one place."},
+ {id:"calculator",name:"Calculator",icon:"🧮",desc:"A simple calculator for quick maths."},
+ {id:"terminal",name:"Terminal",icon:"⌨️",desc:"A mobile command interface."},
+ {id:"store",name:"App Hub",icon:"▦",desc:"Discover apps for WebOS."}
+];
+const $=id=>document.getElementById(id);
+const favourites=["browser","files","notes","settings"];
+const appButton=app=>{const b=document.createElement("button");b.className="app";b.type="button";b.innerHTML='<span class="app-icon" aria-hidden="true">'+app.icon+'</span><span>'+app.name+'</span>';b.addEventListener("click",()=>openApp(app.id));return b};
+function renderApps(query=""){
+ const matches=apps.filter(a=>a.name.toLowerCase().includes(query.toLowerCase()));
+ $("favourites").replaceChildren(...matches.filter(a=>favourites.includes(a.id)).map(appButton));
+ $("dock").replaceChildren(...favourites.map(id=>appButton(apps.find(a=>a.id===id))));
+ $("all-app-grid").replaceChildren(...(matches.length?matches.map(appButton):[Object.assign(document.createElement("div"),{className:"empty",textContent:"No apps found"})]));
+}
+function updateTime(){
+ const now=new Date();$("clock").textContent=new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(now);
+ $("date").textContent=new Intl.DateTimeFormat(undefined,{weekday:"short",month:"short",day:"numeric"}).format(now);
+ const h=now.getHours();$("greeting").textContent=h<12?"Good morning.":h<18?"Good afternoon.":"Good evening.";
+}
+function showOverlay(id){$(id).classList.add("open")}
+function hideOverlay(id){$(id).classList.remove("open")}
+function toast(message){$("toast").textContent=message;$("toast").classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>$("toast").classList.remove("show"),1900)}
+function openApp(id){
+ hideOverlay("drawer");hideOverlay("quick-panel");
+ const app=apps.find(a=>a.id===id);if(!app)return;
+ $("app-title").textContent=app.name;$("app-body").replaceChildren();
+ const body=$("app-body");
+ const card=document.createElement("div");card.className="app-card";card.innerHTML="<strong>"+app.icon+" "+app.name+"</strong><p class='muted'>"+app.desc+"</p>";body.append(card);
+ if(id==="browser"){
+  const form=document.createElement("form");form.className="browser-form";form.innerHTML='<input type="url" id="mobile-url" placeholder="https://example.com" value="https://example.com"><button>Go</button>';body.append(form);
+  const frame=document.createElement("iframe");frame.className="browser-frame";frame.title="Web browser";frame.loading="lazy";body.append(frame);
+  form.addEventListener("submit",e=>{e.preventDefault();let url=$("mobile-url").value.trim();if(!/^https?:\/\//i.test(url))url="https://"+url;frame.src=url;});
+ }else if(id==="notes"){
+  const area=document.createElement("textarea");area.placeholder="Write a note…";area.style.cssText="width:100%;min-height:45vh;background:#111d30;color:#fff;border:1px solid #33435d;border-radius:14px;padding:14px;font:inherit;resize:vertical;user-select:text";
+  try{area.value=localStorage.getItem("webos-mobile-notes")||""}catch(e){}
+  area.addEventListener("input",()=>{try{localStorage.setItem("webos-mobile-notes",area.value)}catch(e){}});body.append(area);
+ }else if(id==="calculator"){
+  const output=document.createElement("input");output.readOnly=true;output.value="0";output.style.cssText="width:100%;padding:16px;background:#111d30;color:white;border:1px solid #33435d;border-radius:14px;font-size:26px;text-align:right";
+  const grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px";
+  ["7","8","9","÷","4","5","6","×","1","2","3","−","C","0",".","+","="].forEach(key=>{const b=document.createElement("button");b.className="quick";b.textContent=key;b.addEventListener("click",()=>{if(key==="C")output.value="0";else if(key==="="){try{const expr=output.value.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");if(!/^[0-9+*/.() -]+$/.test(expr))throw Error();output.value=String(Function('"use strict";return ('+expr+')')())}catch(e){output.value="Error"}}else output.value=output.value==="0"?key:output.value+key});grid.append(b)});body.append(output,grid);
+ }else if(id==="settings"){
+  ["Mobile launcher","Appearance","Notifications","About WebOS"].forEach((label,i)=>{const row=document.createElement("div");row.className="app-card";row.innerHTML="<strong>"+label+"</strong><p class='muted'>"+["Independent mobile home screen and app drawer.","Dark blue and violet system theme.","Notification controls for this environment.","OpenFiddles · WebOS Mobile"][i]+"</p>";body.append(row)});
+ }else{
+  const p=document.createElement("p");p.className="muted";p.textContent=id==="files"?"The dedicated mobile Files app is being built as part of the mobile environment.":id==="gallery"?"Your mobile Gallery surface is ready for its media integration.":id==="terminal"?"The mobile Terminal app will connect to a safe command interface in a later update.":"The WebOS App Hub will list installable mobile apps here.";body.append(p);
+ }
+ $("app-screen").classList.add("open");
+}
+$("all-apps").addEventListener("click",()=>{renderApps($("drawer-search").value);showOverlay("drawer");$("drawer-search").focus()});
+$("gesture").addEventListener("click",()=>showOverlay("drawer"));
+$("quick-open").addEventListener("click",()=>showOverlay("quick-panel"));
+$("home-search").addEventListener("input",e=>{renderApps(e.target.value);if(e.target.value)showOverlay("drawer");});
+$("drawer-search").addEventListener("input",e=>renderApps(e.target.value));
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>hideOverlay(b.dataset.close)));
+document.querySelectorAll("[data-toggle]").forEach(b=>b.addEventListener("click",()=>{b.classList.toggle("active");const small=b.querySelector("small");small.textContent=b.classList.contains("active")?"On":"Off"}));
+$("app-back").addEventListener("click",()=>$("app-screen").classList.remove("open"));
+$("app-home").addEventListener("click",()=>$("app-screen").classList.remove("open"));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){hideOverlay("drawer");hideOverlay("quick-panel");$("app-screen").classList.remove("open")}});
+let touchStart=0;document.addEventListener("touchstart",e=>{touchStart=e.changedTouches[0].clientY},{passive:true});document.addEventListener("touchend",e=>{const delta=touchStart-e.changedTouches[0].clientY;if(delta>65&&touchStart>window.innerHeight-100)showOverlay("drawer")},{passive:true});
+renderApps();updateTime();setInterval(updateTime,30000);
+</script>
+</body>
+</html>
