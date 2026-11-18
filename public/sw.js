@@ -113,7 +113,7 @@ async function serveRange(request) {
     await cache.put("/html/apps/emulator_alpine/alpine.ext2", response.clone());
   }
   const bytes = new Uint8Array(await response.arrayBuffer());
-  const range = request.headers.get("range").match(/bytes=(\\d+)-(\\d*)/);
+  const range = request.headers.get("range").match(/bytes=(\d+)-(\d*)/);
   if (!range) return new Response(bytes, { status: 200, headers: response.headers });
   const start = Number(range[1]);
   const requestedEnd = range[2] ? Number(range[2]) : bytes.length - 1;
