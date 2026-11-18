@@ -269,7 +269,8 @@
                     const subPathRemainder = child.path.slice(src.length);
                     const targetedNewPath = dest + subPathRemainder;
                     if (child.type === "file") {
-                        await putText(targetedNewPath, child.content);
+                        if (child.binary) await putBinary(targetedNewPath, child.content, child.mimeType);
+                        else await putText(targetedNewPath, child.content);
                     } else {
                         await makeDirectory(targetedNewPath);
                     }
