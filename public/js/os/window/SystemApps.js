@@ -1613,10 +1613,10 @@ function openAppCreator() {
         <label class="xip-dock-check"><input id="xip-dock" type="checkbox" checked> Pin to dock</label>
         <label class="xip-description">Description<textarea id="xip-description" rows="2" placeholder="What does your app do?"></textarea></label>
       </div>
-      <div class="xip-editor-head"><strong>JavaScript handler</strong><span>async function(api, argument)</span><button id="xip-template" type="button">Reset template</button></div>
+      <label class="xip-runtime-choice">Runtime type<select id="xip-runtime-type"><option value="js">JavaScript</option><option value="wasm">WebAssembly</option><option value="both">Both · JavaScript + WASM</option></select></label><div id="xip-js-panel"><div class="xip-editor-head"><strong>JavaScript handler</strong><span>async function(api, argument)</span><button id="xip-template" type="button">Reset template</button></div>
       <div class="xip-code-wrap"><pre id="xip-highlight" aria-hidden="true"></pre><textarea id="xip-code" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="JavaScript source"></textarea></div>
-      <details class="xip-style"><summary>Optional app stylesheet</summary><textarea id="xip-css" spellcheck="false" placeholder=".my-app { padding: 1rem; }"></textarea></details>
-      <details class="xip-style xip-wasm-builder" open><summary>WebAssembly application project</summary><p>Attach a compiled .wasm binary, source and required modules. The project is packaged and stored in IndexedDB. Compile C/C++/Rust with an external toolchain such as wasi-sdk for now.</p><label>Compiled binary<input id="xip-wasm-file" type="file" accept=".wasm,application/wasm"></label><label>Entry export<input id="xip-wasm-entry" value="_start"></label><label>Required module IDs<input id="xip-wasm-modules" value="webos,wasi_snapshot_preview1"></label><label>Source project<textarea id="xip-wasm-source" rows="8" spellcheck="false"></textarea></label><details><summary>Custom import module</summary><label>Module ID<input id="xip-new-module-id" placeholder="com.example.math"></label><label>Name<input id="xip-new-module-name"></label><label>Factory source<textarea id="xip-new-module-source" rows="4" spellcheck="false" placeholder="return { double: (value) => value * 2 };"></textarea></label><button id="xip-save-module" type="button">Save custom module</button></details><div class="xip-actions"><label class="xip-import">Import .wapp<input id="xip-wasm-import" type="file" accept=".wapp,.json"></label><button id="xip-wasm-install" type="button">Install & test WASM app</button><button id="xip-wasm-export" type="button">Export .wapp</button></div></details>
+      <details class="xip-style"><summary>Optional app stylesheet</summary><textarea id="xip-css" spellcheck="false" placeholder=".my-app { padding: 1rem; }"></textarea></details></div>
+      <details id="xip-wasm-builder" class="xip-style xip-wasm-builder"><summary>WebAssembly application project</summary><p>Attach a compiled .wasm binary, source and required modules. The project is packaged and stored in IndexedDB. Compile C/C++/Rust with an external toolchain such as wasi-sdk for now.</p><label>Compiled binary<input id="xip-wasm-file" type="file" accept=".wasm,application/wasm"></label><label>Entry export<input id="xip-wasm-entry" value="_start"></label><label>Required module IDs<input id="xip-wasm-modules" value="webos,wasi_snapshot_preview1"></label><label>Source project<textarea id="xip-wasm-source" rows="8" spellcheck="false"></textarea></label><details><summary>Custom import module</summary><label>Module ID<input id="xip-new-module-id" placeholder="com.example.math"></label><label>Name<input id="xip-new-module-name"></label><label>Factory source<textarea id="xip-new-module-source" rows="4" spellcheck="false" placeholder="return { double: (value) => value * 2 };"></textarea></label><button id="xip-save-module" type="button">Save custom module</button></details><div class="xip-actions"><label class="xip-import">Import .wapp<input id="xip-wasm-import" type="file" accept=".wapp,.json"></label><button id="xip-wasm-install" type="button">Install & test WASM app</button><button id="xip-wasm-export" type="button">Export .wapp</button></div></details>
       <div class="xip-actions"><label class="xip-import">Import .xip<input id="xip-import-file" type="file" accept=".xip,application/x-webos-xip,application/json"></label><button id="xip-export" type="button">Export .xip</button><button id="xip-install" type="button" class="primary">Install app</button></div>
       <p id="xip-status" role="status" aria-live="polite">Ready. Export creates a portable WebOS app package.</p>
     </section>`;
@@ -1667,46 +1667,13 @@ return appWindow;`;
       const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),1500);
     };
-    $("xip-export").addEventListener("click",()=>{
-      try {
-        const m=validate(manifest());
-        const bundle={format:"webos-xip",version:1,manifest:m,entry:{type:"javascript",handler:"main.js"},files:{"main.js":code.value,"styles.css":$("xip-css").value},metadata:{createdAt:new Date().toISOString(),minimumWebOSVersion:"1.0"}};
-        download(m.id+".xip",JSON.stringify(bundle,null,2),"application/x-webos-xip+json");
-        status.textContent="Exported "+m.id+".xip";
-      } catch(error){status.textContent=error.message;}
-    });
-    $("xip-import-file").addEventListener("change",async event=>{
-      const file=event.target.files?.[0];if(!file)return;
-      try{
-        const bundle=JSON.parse(await file.text());
-        if(bundle.format!=="webos-xip"||bundle.version!==1||!bundle.manifest||typeof bundle.files?.["main.js"]!=="string")throw new Error("This is not a supported WebOS XIP v1 package.");
-        $("xip-id").value=bundle.manifest.id||"";$("xip-name").value=bundle.manifest.name||"";
-        $("xip-icon").value=bundle.manifest.icon||"📦";$("xip-description").value=bundle.manifest.description||"";
-        $("xip-dock").checked=bundle.manifest.dock!==false;code.value=bundle.files["main.js"];
-        $("xip-css").value=bundle.files["styles.css"]||"";paint();status.textContent="Loaded "+file.name+". Review it before installing.";
-      }catch(error){status.textContent="Import failed: "+error.message;}
-      event.target.value="";
-    });
-    $("xip-install").addEventListener("click",async()=>{
-      try{
-        const m=validate(manifest()), handlerName="WebOS_AppHandler_"+m.id.replace(/[^a-z0-9]/g,"_");
-        const fn=new Function("api","argument",code.value);
-        window[handlerName]=fn;
-        const cssText=$("xip-css").value;
-        if(cssText){
-          const styleId="webos-app-style-"+m.id;
-          let style=document.getElementById(styleId);if(!style){style=document.createElement("style");style.id=styleId;document.head.appendChild(style);}
-          style.textContent=cssText;
-        }
-        await window.WebOSFileSystem?.putText?.("/Desktop/Apps/"+m.id+".js",code.value);
-        await window.WebOSFileSystem?.putText?.("/Desktop/Apps/"+m.id+".css",cssText);
-        window.WebOSAppRegistry.register({...m,handler:handlerName});
-        window.WebOSAppRegistry.render();
-        status.textContent="Installed "+m.name+". Export its .xip package to share it.";
-        window.WebOSNotifications?.notify("App installed",m.name+" is ready in your launcher.",{icon:m.icon});
-      }catch(error){status.textContent="Install failed: "+error.message;}
-    });
+    $("xip-export").addEventListener("click",async()=>{try{const m=validateProject();const file=wasmFile.files?.[0];const pkg=await window.WebOSWASM.exportProject(m.id).catch(()=>null);const modules=wasmModules();const custom=[];for(const id of modules){const item=await window.WebOSWASM.getModule(id);if(item?.source)custom.push(item);}const bundle={format:"webos-xip",version:2,manifest:{...m,modules},entry:{type:m.runtimeType,handler:"main.js",binary:"main.wasm"},files:{"main.js":code.value,"main.wasm":file?Array.from(new Uint8Array(await file.arrayBuffer())):pkg?.files?.["main.wasm"]||null,"main.c":wasmSource.value,"styles.css":$("xip-css").value},modules:custom,metadata:{createdAt:new Date().toISOString(),minimumWebOSVersion:"1.0"}};download(m.id+".xip",JSON.stringify(bundle,null,2),"application/x-webos-xip+json");status.textContent="Exported "+m.id+".xip";}catch(error){status.textContent=error.message;}});
+    $("xip-import-file").addEventListener("change",async event=>{const file=event.target.files?.[0];if(!file)return;try{const bundle=JSON.parse(await file.text());if(bundle.format!=="webos-xip"||![1,2].includes(bundle.version)||!bundle.manifest)throw Error("Unsupported XIP package.");const m=bundle.manifest;$("xip-id").value=m.id||"";$("xip-name").value=m.name||"";$("xip-icon").value=m.icon||"📦";$("xip-description").value=m.description||"";$("xip-dock").checked=m.dock!==false;$("xip-runtime-type").value=m.runtimeType||(bundle.version===1?"js":"wasm");code.value=bundle.files?.["main.js"]||"";wasmSource.value=bundle.files?.["main.c"]||"";$("xip-css").value=bundle.files?.["styles.css"]||"";$("xip-wasm-entry").value=m.entry||"_start";$("xip-wasm-modules").value=(m.modules||[]).join(",");paint();if(Array.isArray(bundle.modules))for(const mod of bundle.modules)await window.WebOSWASM.saveModule(mod);if(Array.isArray(bundle.files?.["main.wasm"])){$("xip-wasm-file").dataset.importedBinary=JSON.stringify(bundle.files["main.wasm"]);}applyRuntimePanels();status.textContent="Loaded "+file.name+". Review the project before installing.";}catch(error){status.textContent="Import failed: "+error.message;}event.target.value="";});
+    $("xip-install").addEventListener("click",async()=>{try{const m=validateProject(),file=wasmFile.files?.[0];let bytes=file?await file.arrayBuffer():null;if(!bytes&&$("xip-wasm-file").dataset.importedBinary){bytes=new Uint8Array(JSON.parse($("xip-wasm-file").dataset.importedBinary));}const record=await window.WebOSWASM.installProject({...m,modules:wasmModules(),entry:$("xip-wasm-entry").value.trim()},{jsSource:code.value,css:$("xip-css").value,wasmBytes:bytes,files:{"main.c":wasmSource.value,"styles.css":$("xip-css").value}});status.textContent="Installed "+record.name+" ("+record.runtimeType+"). It is saved in IndexedDB.";window.WebOSNotifications?.notify?.("App installed",record.name+" is ready in your launcher.",{icon:record.icon});if(record.runtimeType==="wasm")window.WebOSWASM.launch(record.id);}catch(error){status.textContent="Install failed: "+error.message;}});
     const wasmFile=$("xip-wasm-file"),wasmSource=$("xip-wasm-source");
+    const applyRuntimePanels=()=>{const type=$("xip-runtime-type").value;$("xip-js-panel").style.display=type==="wasm"?"none":"block";$("xip-wasm-builder").style.display=type==="js"?"none":"block";};
+    $("xip-runtime-type").addEventListener("change",applyRuntimePanels);applyRuntimePanels();
+    const validateProject=()=>{const m={...manifest(),runtimeType:$("xip-runtime-type").value};if(!/^[a-z0-9][a-z0-9._-]{1,63}$/.test(m.id))throw Error("App ID must be 2–64 safe characters.");if(!m.name)throw Error("Enter an app display name.");if((m.runtimeType==="js"||m.runtimeType==="both")&&!code.value.trim())throw Error("JavaScript handler is required.");if((m.runtimeType==="wasm"||m.runtimeType==="both")&&!wasmFile.files?.[0]&&!wasmFile.dataset.importedBinary)throw Error("Choose a compiled .wasm binary.");if(m.runtimeType!=="wasm"&&code.value.trim())new Function("api","argument",code.value);return m;};
     const wasmManifest=()=>({id:$("xip-id").value.trim().toLowerCase(),name:$("xip-name").value.trim(),icon:$("xip-icon").value.trim()||"🧩",description:$("xip-description").value.trim(),dock:$("xip-dock").checked,entry:$("xip-wasm-entry").value.trim()});
     const wasmModules=()=>[...new Set($("xip-wasm-modules").value.split(",").map(x=>x.trim()).filter(Boolean))];
     $("xip-save-module").onclick=async()=>{try{const source=$("xip-new-module-source").value;new Function("host",source);const m=await window.WebOSWASM.saveModule({id:$("xip-new-module-id").value,name:$("xip-new-module-name").value,source});const ids=wasmModules();if(!ids.includes(m.id))$("xip-wasm-modules").value=[...ids,m.id].join(",");status.textContent="Saved custom module "+m.id;}catch(e){status.textContent="Module error: "+e.message;}};
