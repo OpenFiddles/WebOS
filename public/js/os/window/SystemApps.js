@@ -1117,7 +1117,7 @@ function openSystemMonitor() {
 
 function openWasmLab() {
     if (typeof closeLauncher === "function") closeLauncher();
-    const htmlTemplate = \`
+    const htmlTemplate = `
         <div class="AppPanel wasm-lab" style="padding:16px;display:flex;flex-direction:column;gap:12px;height:100%;box-sizing:border-box;font-family:system-ui,sans-serif;overflow:auto;">
             <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 <div><h2 style="margin:0;font-size:1.25rem;">WASM Lab</h2><div style="font-size:.82rem;opacity:.7;">WebAssembly module inspector &amp; runner</div></div>
@@ -1144,7 +1144,7 @@ function openWasmLab() {
             <div style="display:flex;flex-direction:column;flex:1;min-height:140px;"><h3 style="font-size:.9rem;margin:0 0 6px;">Runtime console</h3><pre id="wasm-output" role="log" aria-live="polite" style="margin:0;padding:12px;flex:1;min-height:120px;overflow:auto;background:#10151d;color:#d6e5f5;font:12px/1.55 ui-monospace,monospace;border-radius:10px;white-space:pre-wrap;word-break:break-word;">Choose a local .wasm file to inspect it.</pre></div>
             <small style="opacity:.65;">Runs in a disposable Web Worker so slow code can be stopped without freezing the desktop. This improves responsiveness; it is not a complete security sandbox. Modules with non-function imports or full WASI requirements need a compatible runtime.</small>
         </div>
-    \`;
+    `;
     const win = createWindow("WASM Lab", htmlTemplate);
     const $ = selector => win.querySelector(selector);
     const filePicker = $("#wasm-file"), exportsMenu = $("#wasm-export"), runButton = $("#wasm-run");
@@ -1227,7 +1227,7 @@ function openWasmLab() {
         try {
             args = JSON.parse(argsInput.value || "[]");
             if (!Array.isArray(args)) throw new Error("Arguments must be a JSON array.");
-            args = args.map(value => typeof value === "string" && /^-?\\d+n$/.test(value) ? BigInt(value.slice(0, -1)) : value);
+            args = args.map(value => typeof value === "string" && /^-?\d+n$/.test(value) ? BigInt(value.slice(0, -1)) : value);
         } catch (error) { write("Invalid arguments: " + error.message, "error"); return; }
 
         output.textContent = "";
@@ -1248,7 +1248,7 @@ function openWasmLab() {
             " const result=await WebAssembly.instantiate(module,imports);instanceRef=result;const fn=result.exports[data.exportName];if(typeof fn!=='function')throw new Error('Selected export is not a function.');",
             " log('Module instantiated. Calling export…','system');const value=fn(...data.args);log('Return value: '+(typeof value==='bigint'?value.toString()+'n':String(value)),'system');self.postMessage({type:'done'});",
             " }catch(error){self.postMessage({type:'failure',message:error&&error.message?error.message:String(error)});}};"
-        ].join("\\n");
+        ].join("\n");
 
         try {
             const blob = new Blob([workerSource], {type:"text/javascript"});
