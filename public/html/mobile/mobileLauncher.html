@@ -43,8 +43,16 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
 @media(max-height:650px){.home-content{gap:14px}.app{gap:5px}.app-icon{width:49px;height:49px;border-radius:16px}.apps{gap:12px 8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
 </style>
+<link rel="stylesheet" href="../../css/display/regular_theme.css">
+<link rel="stylesheet" href="../../css/display/appearance_bridge.css">
+<link rel="stylesheet" href="../../css/display/settings_session.css">
+<link rel="stylesheet" href="../../css/display/notifications.css">
+<link rel="stylesheet" href="../../css/display/developer_platform.css">
+<link rel="stylesheet" href="../../css/display/files_explorer.css">
+<link rel="stylesheet" href="../../css/display/experience_motion.css">
+<link rel="stylesheet" href="../../css/display/mobile_shell.css">
 </head>
-<body>
+<body data-webos-mode="mobile">
 <main class="shell" id="shell">
   <header class="status">
     <span id="clock">9:41</span>
@@ -78,71 +86,27 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
   </section>
   <div class="toast" id="toast" role="status"></div>
 </main>
-<script>
-const apps=[
- {id:"files",name:"Files",icon:"📁",desc:"Browse your WebOS files and folders."},
- {id:"browser",name:"Browser",icon:"🌐",desc:"Browse the web from WebOS Mobile."},
- {id:"notes",name:"Notes",icon:"📝",desc:"Capture thoughts and quick notes."},
- {id:"settings",name:"Settings",icon:"⚙️",desc:"Configure your mobile environment."},
- {id:"gallery",name:"Gallery",icon:"🌄",desc:"Your images, all in one place."},
- {id:"calculator",name:"Calculator",icon:"🧮",desc:"A simple calculator for quick maths."},
- {id:"terminal",name:"Terminal",icon:"⌨️",desc:"A mobile command interface."},
- {id:"store",name:"App Hub",icon:"▦",desc:"Discover apps for WebOS."}
-];
-const $=id=>document.getElementById(id);
-const favourites=["browser","files","notes","settings"];
-const appButton=app=>{const b=document.createElement("button");b.className="app";b.type="button";b.innerHTML='<span class="app-icon" aria-hidden="true">'+app.icon+'</span><span>'+app.name+'</span>';b.addEventListener("click",()=>openApp(app.id));return b};
-function renderApps(query=""){
- const matches=apps.filter(a=>a.name.toLowerCase().includes(query.toLowerCase()));
- $("favourites").replaceChildren(...matches.filter(a=>favourites.includes(a.id)).map(appButton));
- $("dock").replaceChildren(...favourites.map(id=>appButton(apps.find(a=>a.id===id))));
- $("all-app-grid").replaceChildren(...(matches.length?matches.map(appButton):[Object.assign(document.createElement("div"),{className:"empty",textContent:"No apps found"})]));
-}
-function updateTime(){
- const now=new Date();$("clock").textContent=new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(now);
- $("date").textContent=new Intl.DateTimeFormat(undefined,{weekday:"short",month:"short",day:"numeric"}).format(now);
- const h=now.getHours();$("greeting").textContent=h<12?"Good morning.":h<18?"Good afternoon.":"Good evening.";
-}
-function showOverlay(id){$(id).classList.add("open")}
-function hideOverlay(id){$(id).classList.remove("open")}
-function toast(message){$("toast").textContent=message;$("toast").classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>$("toast").classList.remove("show"),1900)}
-function openApp(id){
- hideOverlay("drawer");hideOverlay("quick-panel");
- const app=apps.find(a=>a.id===id);if(!app)return;
- $("app-title").textContent=app.name;$("app-body").replaceChildren();
- const body=$("app-body");
- const card=document.createElement("div");card.className="app-card";card.innerHTML="<strong>"+app.icon+" "+app.name+"</strong><p class='muted'>"+app.desc+"</p>";body.append(card);
- if(id==="browser"){
-  const form=document.createElement("form");form.className="browser-form";form.innerHTML='<input type="url" id="mobile-url" placeholder="https://example.com" value="https://example.com"><button>Go</button>';body.append(form);
-  const frame=document.createElement("iframe");frame.className="browser-frame";frame.title="Web browser";frame.loading="lazy";body.append(frame);
-  form.addEventListener("submit",e=>{e.preventDefault();let url=$("mobile-url").value.trim();if(!/^https?:\/\//i.test(url))url="https://"+url;frame.src=url;});
- }else if(id==="notes"){
-  const area=document.createElement("textarea");area.placeholder="Write a note…";area.style.cssText="width:100%;min-height:45vh;background:#111d30;color:#fff;border:1px solid #33435d;border-radius:14px;padding:14px;font:inherit;resize:vertical;user-select:text";
-  try{area.value=localStorage.getItem("webos-mobile-notes")||""}catch(e){}
-  area.addEventListener("input",()=>{try{localStorage.setItem("webos-mobile-notes",area.value)}catch(e){}});body.append(area);
- }else if(id==="calculator"){
-  const output=document.createElement("input");output.readOnly=true;output.value="0";output.style.cssText="width:100%;padding:16px;background:#111d30;color:white;border:1px solid #33435d;border-radius:14px;font-size:26px;text-align:right";
-  const grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px";
-  ["7","8","9","÷","4","5","6","×","1","2","3","−","C","0",".","+","="].forEach(key=>{const b=document.createElement("button");b.className="quick";b.textContent=key;b.addEventListener("click",()=>{if(key==="C")output.value="0";else if(key==="="){try{const expr=output.value.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");if(!/^[0-9+*/.() -]+$/.test(expr))throw Error();output.value=String(Function('"use strict";return ('+expr+')')())}catch(e){output.value="Error"}}else output.value=output.value==="0"?key:output.value+key});grid.append(b)});body.append(output,grid);
- }else if(id==="settings"){
-  ["Mobile launcher","Appearance","Notifications","About WebOS"].forEach((label,i)=>{const row=document.createElement("div");row.className="app-card";row.innerHTML="<strong>"+label+"</strong><p class='muted'>"+["Independent mobile home screen and app drawer.","Dark blue and violet system theme.","Notification controls for this environment.","OpenFiddles · WebOS Mobile"][i]+"</p>";body.append(row)});
- }else{
-  const p=document.createElement("p");p.className="muted";p.textContent=id==="files"?"The dedicated mobile Files app is being built as part of the mobile environment.":id==="gallery"?"Your mobile Gallery surface is ready for its media integration.":id==="terminal"?"The mobile Terminal app will connect to a safe command interface in a later update.":"The WebOS App Hub will list installable mobile apps here.";body.append(p);
- }
- $("app-screen").classList.add("open");
-}
-$("all-apps").addEventListener("click",()=>{renderApps($("drawer-search").value);showOverlay("drawer");$("drawer-search").focus()});
-$("gesture").addEventListener("click",()=>showOverlay("drawer"));
-$("quick-open").addEventListener("click",()=>showOverlay("quick-panel"));
-$("home-search").addEventListener("input",e=>{renderApps(e.target.value);if(e.target.value)showOverlay("drawer");});
-$("drawer-search").addEventListener("input",e=>renderApps(e.target.value));
-document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>hideOverlay(b.dataset.close)));
-document.querySelectorAll("[data-toggle]").forEach(b=>b.addEventListener("click",()=>{b.classList.toggle("active");const small=b.querySelector("small");small.textContent=b.classList.contains("active")?"On":"Off"}));
-$("app-back").addEventListener("click",()=>$("app-screen").classList.remove("open"));
-$("app-home").addEventListener("click",()=>$("app-screen").classList.remove("open"));
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){hideOverlay("drawer");hideOverlay("quick-panel");$("app-screen").classList.remove("open")}});
-let touchStart=0;document.addEventListener("touchstart",e=>{touchStart=e.changedTouches[0].clientY},{passive:true});document.addEventListener("touchend",e=>{const delta=touchStart-e.changedTouches[0].clientY;if(delta>65&&touchStart>window.innerHeight-100)showOverlay("drawer")},{passive:true});
-renderApps();updateTime();setInterval(updateTime,30000);
-</script>
+
+
+  <template id="WindowTemplate">
+    <div class="window-shell glass" role="dialog" aria-modal="true">
+      <div class="resize-handle top" data-direction="n"></div><div class="resize-handle right" data-direction="e"></div><div class="resize-handle bottom" data-direction="s"></div><div class="resize-handle left" data-direction="w"></div><div class="resize-handle corner-se" data-direction="se"></div>
+      <header class="window-titlebar"><div class="window-title-content"><img class="window-icon" src="" alt="" aria-hidden="true"><span class="window-title-text">Application</span></div><nav class="window-controls" aria-label="Application controls"><button class="win-btn minimize" type="button" aria-label="Minimize">−</button><button class="win-btn maximize" type="button" aria-label="Maximize">□</button><button class="win-btn close" type="button" aria-label="Close app">×</button></nav></header>
+      <main class="window-body"></main>
+    </div>
+  </template>
+  <main id="window-workspace" aria-label="Mobile application workspace"></main>
+  <nav id="taskbar-apps" aria-hidden="true"></nav>
+  <script src="../../js/os/window/Launcher.js"></script>
+  <script src="../../js/os/desktop/filesystem.js"></script>
+  <script src="../../js/os/desktop/Permissions.js"></script>
+  <script src="../../js/os/desktop/app-registry.js"></script>
+  <script src="../../js/os/window/WindowManager.js"></script>
+  <script src="../../js/os/desktop/Notifications.js"></script>
+  <script src="../../js/os/desktop/Appearance.js"></script>
+  <script src="../../js/os/window/SystemApps.js"></script>
+  <script src="../../js/os/window/Documentation.js"></script>
+  <script src="../../js/os/window/AnimationStudio.js"></script>
+  <script src="../../js/os/mobile/mobile-runtime.js"></script>
 </body>
 </html>

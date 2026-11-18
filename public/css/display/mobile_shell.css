@@ -1,0 +1,56 @@
+/* WebOS mobile shell: shared desktop app windows presented as native full-screen surfaces. */
+body[data-webos-mode="mobile"] { --window-min-width: 0px; --window-min-height: 0px; }
+body[data-webos-mode="mobile"] .home-content { animation: mobile-home-enter 620ms cubic-bezier(.18,.9,.25,1) both; }
+body[data-webos-mode="mobile"] .greeting { animation: mobile-fade-up 560ms 70ms both; }
+body[data-webos-mode="mobile"] .search { animation: mobile-fade-up 560ms 130ms both; }
+body[data-webos-mode="mobile"] .section-head { animation: mobile-fade-up 560ms 180ms both; }
+body[data-webos-mode="mobile"] .app { animation: mobile-app-pop 520ms calc(160ms + var(--app-index, 0) * 34ms) cubic-bezier(.18,1.2,.35,1) both; }
+body[data-webos-mode="mobile"] .app:active { transform: scale(.91); }
+body[data-webos-mode="mobile"] .app-icon { transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease, border-color 220ms ease; }
+body[data-webos-mode="mobile"] .app:active .app-icon { transform: translateY(2px) scale(.94); box-shadow: 0 3px 10px #0006; }
+body[data-webos-mode="mobile"] .dock { animation: mobile-dock-enter 650ms 120ms cubic-bezier(.18,.9,.25,1) both; }
+body[data-webos-mode="mobile"] .overlay { transition: transform 420ms cubic-bezier(.18,.9,.25,1), opacity 300ms ease; opacity: 0; visibility: hidden; }
+body[data-webos-mode="mobile"] .overlay.open { opacity: 1; visibility: visible; }
+body[data-webos-mode="mobile"] .overlay.open .overlay-head,
+body[data-webos-mode="mobile"] .overlay.open .drawer-search,
+body[data-webos-mode="mobile"] .overlay.open .quick-grid { animation: mobile-fade-up 420ms both; }
+body[data-webos-mode="mobile"] #window-workspace { position: fixed; inset: 0; z-index: 30; overflow: hidden; pointer-events: none; }
+body[data-webos-mode="mobile"] #window-workspace > .window-shell,
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-app-window {
+  position: fixed !important; inset: 0 !important; width: 100vw !important; width: 100dvw !important;
+  height: 100vh !important; height: 100dvh !important; min-width: 0 !important; min-height: 0 !important;
+  max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important;
+  z-index: 31 !important; display: flex; flex-direction: column; pointer-events: auto;
+  transform-origin: 50% 100%; animation: mobile-app-open 420ms cubic-bezier(.18,.9,.25,1) both;
+  padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+}
+body[data-webos-mode="mobile"] .window-titlebar { min-height: 56px; height: 56px; padding: 0 16px; cursor: default; touch-action: auto; }
+body[data-webos-mode="mobile"] .window-controls { gap: 0; }
+body[data-webos-mode="mobile"] .window-controls .minimize,
+body[data-webos-mode="mobile"] .window-controls .maximize { display: none !important; }
+body[data-webos-mode="mobile"] .window-controls .close { display: inline-flex; width: 38px; height: 38px; border-radius: 50%; font-size: 20px; }
+body[data-webos-mode="mobile"] .window-body { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+body[data-webos-mode="mobile"] .window-body > iframe { width: 100%; height: 100%; min-height: 65vh; border: 0; }
+body[data-webos-mode="mobile"] #taskbar-apps { display: none !important; }
+body[data-webos-mode="mobile"] .files-explorer-v2 { min-height: 100%; border-radius: 0; }
+body[data-webos-mode="mobile"] .files-sidebar { width: 118px; flex-basis: 118px; padding: 10px 6px; }
+body[data-webos-mode="mobile"] .files-location { padding: 9px 7px; font-size: 12px; }
+body[data-webos-mode="mobile"] .notes-workspace { grid-template-columns: 1fr !important; overflow: auto; }
+body[data-webos-mode="mobile"] .notes-pane { min-height: 42vh; }
+body[data-webos-mode="mobile"] .notes-toolbar { position: sticky; top: 0; z-index: 2; }
+body[data-webos-mode="mobile"] .as-layout { grid-template-columns: 1fr !important; }
+body[data-webos-mode="mobile"] .as-editor { min-width: 0; }
+body[data-webos-mode="mobile"] .AppPanel { max-width: none !important; min-height: 100%; }
+body[data-webos-mode="mobile"] .EmulatorFrame { min-height: 70vh; }
+body[data-webos-mode="mobile"] .app-screen { display: none !important; }
+@keyframes mobile-home-enter { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mobile-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes mobile-app-pop { from { opacity: 0; transform: translateY(12px) scale(.88); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mobile-dock-enter { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes mobile-app-open { from { opacity: 0; transform: translateY(28px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 420px) { body[data-webos-mode="mobile"] .files-sidebar { width: 104px; flex-basis: 104px; } body[data-webos-mode="mobile"] .files-sidebar-heading { font-size: 9px; } }
+@media (prefers-reduced-motion: reduce) {
+  body[data-webos-mode="mobile"] *, body[data-webos-mode="mobile"] *::before, body[data-webos-mode="mobile"] *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important;
+  }
+}
