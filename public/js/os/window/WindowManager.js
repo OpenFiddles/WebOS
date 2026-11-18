@@ -85,8 +85,11 @@ function createWindow(title, content) {
     win.style.top = (80 + Math.random() * 80) + "px";
 
     // Bind operational controllers safely
-    if (typeof makeWindowDraggable === "function") makeWindowDraggable(win);
-    if (typeof makeWindowResizable === "function") makeWindowResizable(win);
+    // Mobile uses a full-screen app surface rather than desktop drag/resize controls.
+    if (document.body.dataset.webosMode !== "mobile") {
+        if (typeof makeWindowDraggable === "function") makeWindowDraggable(win);
+        if (typeof makeWindowResizable === "function") makeWindowResizable(win);
+    }
     if (typeof wireWindowButtons === "function") wireWindowButtons(win);
 
     // Mount inside workspace layer instead of the unconstrained body root
