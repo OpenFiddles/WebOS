@@ -435,7 +435,8 @@ function openFiles() {
         if(files.length)status.textContent="Imported "+accepted.length+" text file(s)"+(skipped?" · skipped "+skipped+" unsupported binary file(s)":"");
         picker.value="";render();
     });
-    win.querySelector("#files-backup").addEventListener("click",async()=>{try{const data=await window.WebOSFileSystem.exportBackup();downloadText("webos-filesystem-backup.json",JSON.stringify(data),"application/json");status.textContent="Backup exported · "+data.entries.length+" entries";}catch(e){status.textContent="Backup failed: "+e.message;}});\n    win.querySelector("#files-select-all").addEventListener("click",async()=>{
+    win.querySelector("#files-backup").addEventListener("click",async()=>{try{const data=await window.WebOSFileSystem.exportBackup();downloadText("webos-filesystem-backup.json",JSON.stringify(data),"application/json");status.textContent="Backup exported · "+data.entries.length+" entries";}catch(e){status.textContent="Backup failed: "+e.message;}});
+    win.querySelector("#files-select-all").addEventListener("click",async()=>{
         const entries=await window.WebOSFileSystem.list(path);entries.forEach(entry=>selected.add(entry.path));render();
     });
     win.querySelector("#files-clear-selection").addEventListener("click",()=>{selected.clear();render();});
