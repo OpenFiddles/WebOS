@@ -14,7 +14,7 @@
     function openDatabase() {
         if (databasePromise) return databasePromise;
         databasePromise = new Promise((resolve, reject) => {
-            const request = indexedDB.open(databaseName, 2); // Schema synchronization version
+            const request = indexedDB.open(databaseName, 3); // Schema synchronization version
             
             request.onupgradeneeded = () => {
                 const database = request.result;
@@ -368,7 +368,15 @@
         return null;
     }
 
-    // Freeze and bind the object export cleanly
+
+    async function search(query, options = {}) { await ensureSeeded(); const q=String(query||"").trim().toLowerCase(); if(!q)return []; const root=normalize(options.root||"/"),limit=Math.max(1,Math.min(1000,Number(options.limit)||250)),db=await openDatabase(); const entries=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);}); return entries.filter(e=>e.path!==root&&(root==="/"||e.path.startsWith(root+"/"))&&e.path.split("/").pop().toLowerCase().includes(q)).sort((a,b)=>a.path.localeCompare(b.path,undefined,{numeric:true,sensitivity:"base"})).slice(0,limit); }
+    async function getUsage(){await ensureSeeded();const db=await openDatabase(),e=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);});return{files:e.filter(x=>x.type==="file").length,folders:e.filter(x=>x.type==="directory").length,bytes:e.reduce((n,x)=>n+(x.type==="file"?(Number(x.size)||0):0),0),items:e.length};}
+    async function trash(path){const src=normalize(path);if(src==="/")throw Error("Cannot trash the filesystem root.");const dest="/Trash/"+Date.now().toString(36)+"-"+src.split("/").pop().replace(/[^a-z0-9._-]/gi,"_");await move(src,dest);return dest;}
+    async function restore(path,destination){return move(path,destination);}
+    async function emptyTrash(){const items=await list("/Trash");for(const item of items)await remove(item.path);return items.length;}
+    async function exportBackup(){const db=await openDatabase(),entries=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);});return{format:"webos-filesystem-backup",version:1,exportedAt:new Date().toISOString(),entries:entries.map(e=>({...e,content:e.binary&&e.content instanceof ArrayBuffer?Array.from(new Uint8Array(e.content)):e.content}))};}
+    async function importBackup(data){if(data?.format!=="webos-filesystem-backup"||data.version!==1||!Array.isArray(data.entries))throw Error("Unsupported WebOS filesystem backup.");const entries=data.entries.map(e=>{const path=normalize(e.path);if(path!==e.path||!["file","directory"].includes(e.type))throw Error("Invalid backup entry.");return{...e,path,content:e.binary?new Uint8Array(e.content).buffer:e.content};});if(!entries.some(e=>e.path==="/")||new Set(entries.map(e=>e.path)).size!==entries.length)throw Error("Backup has missing root or duplicate paths.");const db=await openDatabase();await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readwrite"),s=tx.objectStore(storeName);entries.forEach(e=>s.put(e));tx.oncomplete=ok;tx.onerror=()=>no(tx.error);});return{imported:entries.length};}
+\n    // Freeze and bind the object export cleanly
         window.WebOSFileSystem = Object.freeze({
             openDatabase,
             normalize,

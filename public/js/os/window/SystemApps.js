@@ -226,7 +226,7 @@ function openFiles() {
         '<button type="button" class="files-location active" data-location="/"> <span>⌂</span> Home</button>',
         '<button type="button" class="files-location" data-location="/Desktop"><span>▧</span> Desktop</button>',
         '<button type="button" class="files-location" data-location="/Documents"><span>▤</span> Documents</button>',
-        '<button type="button" class="files-location" data-location="/Downloads"><span>⇩</span> Downloads</button>',
+        '<button type="button" class="files-location" data-location="/Downloads"><span>⇩</span> Downloads</button><button type="button" class="files-location" data-location="/Pictures"><span>▧</span> Pictures</button><button type="button" class="files-location" data-location="/Trash"><span>⌫</span> Trash</button>',
         '<div class="files-sidebar-divider"></div><div class="files-sidebar-heading">CREATE</div>',
         '<button type="button" class="files-location" id="files-new-html"><span>〈/〉</span> HTML document</button>',
         '<button type="button" class="files-location" id="files-new-css"><span>▦</span> CSS stylesheet</button>',
@@ -238,8 +238,8 @@ function openFiles() {
         '<div class="files-toolbar-row files-toolbar-actions"><input id="files-search" type="search" placeholder="Search this folder…" aria-label="Search files">',
         '<select id="files-sort" aria-label="Sort files"><option value="name">Name</option><option value="modified">Date modified</option><option value="size">Size</option><option value="type">File type</option></select>',
         '<button type="button" class="files-action-btn" id="new-folder">＋ Folder</button><button type="button" class="files-action-btn" id="new-file">＋ File</button>',
-        '<button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false" title="Toggle grid view">▦</button>',
-        '<input id="file-picker" type="file" accept=".txt,.md,.json,.js,.mjs,.ts,.html,.htm,.css,.xml,.svg,.csv,.yml,.yaml,.toml,.ini,.log,.py,.sh,.sql" multiple hidden></div>',
+        '<button type="button" class="files-action-btn variant-secondary" id="upload-file">⇧ Import</button><button type="button" class="files-action-btn variant-secondary" id="files-view" aria-pressed="false" title="Toggle grid view">▦</button><button type="button" class="files-action-btn variant-secondary" id="files-backup">Backup</button>',
+        '<input id="file-picker" type="file" accept="*/*" multiple hidden></div>',
         '<div class="files-selection-bar" id="files-selection-bar" hidden><span id="files-selection-count">0 selected</span><button type="button" id="files-select-all">Select all</button><button type="button" id="files-delete-selected" class="danger">Delete selected</button><button type="button" id="files-clear-selection">Clear</button></div>',
         '</header><main class="files-grid-workspace"><ul class="files-node-list" id="file-list" aria-label="Folder contents"></ul></main>',
         '<footer class="files-statusbar"><span id="file-status" aria-live="polite">IndexedDB storage · Ready</span><span id="files-count">0 items</span></footer>',
@@ -354,7 +354,7 @@ function openFiles() {
                 const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="×";del.title="Delete item";
                 del.addEventListener("click",async()=>{
                     if(!window.confirm('Permanently delete "'+n+'" from WebOS storage?'))return;
-                    try{await window.WebOSFileSystem.remove(entry.path);selected.delete(entry.path);status.textContent="Deleted "+n;render();}
+                    try{if(path==="/Trash")await window.WebOSFileSystem.remove(entry.path);else await window.WebOSFileSystem.trash(entry.path);selected.delete(entry.path);status.textContent=path==="/Trash"?"Permanently deleted "+n:"Moved to Trash: "+n;render();}
                     catch(err){window.alert("Delete failed: "+err.message);}
                 });
                 tools.append(rename,duplicate,dl,del);item.append(check,open,tools);list.appendChild(item);
@@ -364,17 +364,17 @@ function openFiles() {
         } catch(err){status.textContent="Could not read folder: "+err.message;console.error("WebOS Files:",err);}
     }
     function downloadText(filename,content,type) {
-        const blob=new Blob([content],{type:type||"application/octet-stream"}),url=URL.createObjectURL(blob);
+        const blob=content instanceof Blob?content:new Blob([content],{type:type||"application/octet-stream"}),url=URL.createObjectURL(blob);
         const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
         setTimeout(()=>URL.revokeObjectURL(url),1000);
     }
-    async function downloadEntry(entry){const file=await window.WebOSFileSystem.read(entry.path);if(file)downloadText(name(entry),file.content||"");}
+    async function downloadEntry(entry){const file=await window.WebOSFileSystem.read(entry.path);if(!file)return;if(file.binary){const bytes=await window.WebOSFileSystem.readBinary(entry.path);downloadText(name(entry),new Blob([bytes],{type:file.mimeType||"application/octet-stream"}));}else downloadText(name(entry),file.content||"",file.mimeType);}
     async function openFile(entry) {
         const file=await window.WebOSFileSystem.read(entry.path);if(!file)return;
         const ext=extension(entry),previewable=["html","htm"].includes(ext);
         const panel=document.createElement("div");panel.className="file-editor-container files-code-workspace";
         const info=document.createElement("div");info.className="file-editor-info";info.textContent=entry.path+" · "+prettySize(size(file));
-        const editor=document.createElement("textarea");editor.className="raw-code-textarea";editor.spellcheck=false;editor.value=file.content||"";editor.setAttribute("aria-label","File contents");
+        const editor=document.createElement("textarea");editor.className="raw-code-textarea";editor.spellcheck=false;editor.value=file.binary?"Binary file · "+prettySize(file.size):(file.content||"");editor.readOnly=!!file.binary;editor.setAttribute("aria-label","File contents");
         const footer=document.createElement("div");footer.className="editor-action-footer";
         const save=document.createElement("button");save.type="button";save.className="files-action-btn";save.textContent="Save";
         const dl=document.createElement("button");dl.type="button";dl.className="files-action-btn variant-secondary";dl.textContent="Download";
@@ -390,7 +390,7 @@ function openFiles() {
             });
             footer.appendChild(preview);
         }
-        save.addEventListener("click",async()=>{try{await window.WebOSFileSystem.putText(entry.path,editor.value);state.textContent="Saved · "+new Date().toLocaleTimeString();render();}catch(err){state.textContent="Save failed: "+err.message;}});
+        save.disabled=!!file.binary;save.addEventListener("click",async()=>{try{await window.WebOSFileSystem.putText(entry.path,editor.value,file.mimeType||"text/plain");state.textContent="Saved · "+new Date().toLocaleTimeString();render();}catch(err){state.textContent="Save failed: "+err.message;}});
         dl.addEventListener("click",()=>downloadText(name(entry),editor.value));
         footer.append(save,dl,state);panel.append(info,editor,footer);createWindow(name(entry),panel);
     }
@@ -435,7 +435,7 @@ function openFiles() {
         if(files.length)status.textContent="Imported "+accepted.length+" text file(s)"+(skipped?" · skipped "+skipped+" unsupported binary file(s)":"");
         picker.value="";render();
     });
-    win.querySelector("#files-select-all").addEventListener("click",async()=>{
+    win.querySelector("#files-backup").addEventListener("click",async()=>{try{const data=await window.WebOSFileSystem.exportBackup();downloadText("webos-filesystem-backup.json",JSON.stringify(data),"application/json");status.textContent="Backup exported · "+data.entries.length+" entries";}catch(e){status.textContent="Backup failed: "+e.message;}});\n    win.querySelector("#files-select-all").addEventListener("click",async()=>{
         const entries=await window.WebOSFileSystem.list(path);entries.forEach(entry=>selected.add(entry.path));render();
     });
     win.querySelector("#files-clear-selection").addEventListener("click",()=>{selected.clear();render();});
@@ -587,7 +587,7 @@ function openSettings() {
 
             <!-- SYSTEM DATA MANAGEMENT SECTION -->
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <h2>System</h2>
+                <h2>System</h2><label for="settings-search">Search settings</label><input id="settings-search" type="search" placeholder="Find a setting…"><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="settings-export" type="button">Export settings</button><button id="settings-import-trigger" type="button">Import settings</button><input id="settings-import-file" type="file" accept="application/json" hidden></div>
                 <label class="setting-field" style="display:flex;align-items:center;gap:.6rem;cursor:pointer;">
                     <input id="fullscreen-always-choice" type="checkbox">
                     <span><strong>Enable always Fullscreen</strong><br><small>Keep WebOS in fullscreen after your next interaction. Browser permission and user-gesture rules still apply.</small></span>
@@ -642,6 +642,8 @@ function openSettings() {
         settingsPanel.insertBefore(pane, settingsPanel.firstChild);
         settingsPanel.insertBefore(tabBar, pane);
     }
+    const settingsSearch=win.querySelector("#settings-search");settingsSearch?.addEventListener("input",()=>{const q=settingsSearch.value.trim().toLowerCase();let first=-1;settingsSections.forEach((s,i)=>{const match=!q||s.textContent.toLowerCase().includes(q);s.hidden=!match;if(match&&first<0)first=i;});tabBar?.querySelectorAll(".settings-tab").forEach((b,i)=>{b.hidden=!!q&&settingsSections[i]?.hidden;b.classList.toggle("active",i===first);});});
+    const exportPrefs=()=>{const values={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k))values[k]=localStorage.getItem(k);}const u=URL.createObjectURL(new Blob([JSON.stringify({format:"webos-settings",version:1,values},null,2)],{type:"application/json"})),a=document.createElement("a");a.href=u;a.download="webos-settings-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};win.querySelector("#settings-export")?.addEventListener("click",exportPrefs);const settingsFile=win.querySelector("#settings-import-file");win.querySelector("#settings-import-trigger")?.addEventListener("click",()=>settingsFile?.click());settingsFile?.addEventListener("change",async()=>{const f=settingsFile.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.format!=="webos-settings"||d.version!==1||!d.values)throw Error("Unsupported settings backup.");for(const [k,v] of Object.entries(d.values))if(k.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k)&&typeof v==="string")localStorage.setItem(k,v);status.textContent="Settings imported. Reloading…";setTimeout(()=>location.reload(),500);}catch(e){status.textContent="Import failed: "+e.message;}finally{settingsFile.value="";}});
     const fullCssEditor = win.querySelector("#css-full-editor");
     if (!fullCssEditor) { console.error("Settings UI is missing #css-full-editor."); return win; }
 
@@ -1105,73 +1107,17 @@ function openCalculator() {
 
 function openCalendar() {
     closeLauncher();
-
-    // 1. Clean, readable HTML template
-    const htmlTemplate = `
-        <div class="AppPanel">
-            <h2>Calendar</h2>
-            <input id="calendar-date" type="date">
-            <textarea id="calendar-note" placeholder="Add a note for this date..."></textarea>
-            <button type="button" id="calendar-save">Save event</button>
-            <p id="calendar-status" aria-live="polite"></p>
-        </div>
-    `;
-
-    const win = createWindow("Calendar", htmlTemplate);
-    
-    // Elements caching
-    const dateInput = win.querySelector("#calendar-date");
-    const noteInput = win.querySelector("#calendar-note");
-    const saveButton = win.querySelector("#calendar-save");
-    const statusText = win.querySelector("#calendar-status");
-
-    // Set today's date automatically
-    dateInput.value = new Date().toISOString().slice(0, 10);
-
-    // Helper to generate the exact file path key
-    const getFilePath = () => `/Documents/Calendar/${dateInput.value}.txt`;
-
-    // 2. Load existing note when date changes
-    dateInput.onchange = async () => {
-        noteInput.disabled = true; // Disable inputs to prevent typing while fetching
-        statusText.textContent = "Loading event...";
-        
-        try {
-            const file = await WebOSFileSystem.read(getFilePath());
-            noteInput.value = file?.content || "";
-            statusText.textContent = "";
-        } catch (error) {
-            console.error("Failed to read calendar data:", error);
-            statusText.textContent = "Error loading event.";
-        } finally {
-            noteInput.disabled = false;
-        }
-    };
-
-    // Trigger initial load for today's date
-    dateInput.onchange();
-
-    // 3. Save note event listener
-    saveButton.onclick = async () => {
-        saveButton.disabled = true;
-        statusText.textContent = "Saving...";
-
-        try {
-            await WebOSFileSystem.putText(getFilePath(), noteInput.value);
-            statusText.textContent = `Saved successfully for ${dateInput.value}!`;
-        } catch (error) {
-            console.error("Failed to save calendar data:", error);
-            statusText.textContent = "Error saving event. Please try again.";
-        } finally {
-            saveButton.disabled = false;
-        }
-    };
-
-    return win;
+    const html=`<section class="webos-calendar"><header class="calendar-heading"><div><h2>Calendar</h2><p id="calendar-month-label"></p></div><div class="calendar-nav"><button id="calendar-prev" type="button">‹</button><button id="calendar-today" type="button">Today</button><button id="calendar-next" type="button">›</button></div></header><div class="calendar-layout"><section><div class="calendar-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div id="calendar-grid" class="calendar-grid"></div></section><aside class="calendar-event-panel"><h3 id="calendar-selected-label">Selected date</h3><label for="calendar-event-title">Event title</label><input id="calendar-event-title" maxlength="100" placeholder="Add a title"><label for="calendar-note">Notes</label><textarea id="calendar-note" placeholder="Details and plans…"></textarea><button id="calendar-save" type="button">Save event</button><button id="calendar-delete" type="button">Delete event</button><p id="calendar-status" role="status"></p></aside></div><footer class="calendar-footer"><span>Events are saved locally in WebOS Documents.</span><button id="calendar-open-files" type="button">Open Files</button></footer></section>`;
+    const win=createWindow("Calendar",html);if(!win)return null;const $=id=>win.querySelector("#"+id),grid=$("calendar-grid"),title=$("calendar-event-title"),note=$("calendar-note"),status=$("calendar-status");let month=new Date(),selected=new Date();month.setDate(1);
+    const key=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),filePath=d=>"/Documents/Calendar/"+key(d)+".json",same=(a,b)=>key(a)===key(b);
+    async function load(){ $("calendar-selected-label").textContent=selected.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});try{const f=await WebOSFileSystem.read(filePath(selected));let d=f?.content?JSON.parse(f.content):null;if(f?.content&&!d?.notes)d={notes:f.content};title.value=d?.title||"";note.value=d?.notes||"";status.textContent="";}catch(e){title.value="";note.value="";status.textContent="Could not load event: "+e.message;}}
+    async function render(){ $("calendar-month-label").textContent=month.toLocaleDateString(undefined,{month:"long",year:"numeric"});grid.replaceChildren();const first=new Date(month.getFullYear(),month.getMonth(),1),start=new Date(first);start.setDate(1-first.getDay());for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const b=document.createElement("button");b.type="button";b.className="calendar-day"+(d.getMonth()!==month.getMonth()?" outside":"")+(same(d,new Date())?" today":"")+(same(d,selected)?" selected":"");b.textContent=d.getDate();b.addEventListener("click",()=>{selected=d;grid.querySelectorAll(".calendar-day").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");load();});try{if(await WebOSFileSystem.read(filePath(d))){const dot=document.createElement("i");dot.className="calendar-event-dot";b.append(dot);}}catch(_){}grid.append(b);}}
+    $("calendar-prev").onclick=()=>{month.setMonth(month.getMonth()-1);render();};$("calendar-next").onclick=()=>{month.setMonth(month.getMonth()+1);render();};$("calendar-today").onclick=()=>{selected=new Date();month=new Date(selected.getFullYear(),selected.getMonth(),1);render().then(load);};
+    $("calendar-save").onclick=async()=>{try{await WebOSFileSystem.putText(filePath(selected),JSON.stringify({title:title.value.trim(),notes:note.value,updatedAt:new Date().toISOString()}),"application/json");status.textContent="Event saved.";render();}catch(e){status.textContent="Save failed: "+e.message;}};
+    $("calendar-delete").onclick=async()=>{try{await WebOSFileSystem.remove(filePath(selected));title.value="";note.value="";status.textContent="Event deleted.";render();}catch(e){status.textContent="Delete failed: "+e.message;}};
+    $("calendar-open-files").onclick=()=>openFiles();render().then(load);return win;
 }
-
-
-function openSystemMonitor() {
+\nfunction openSystemMonitor() {
     closeLauncher();
     const html = `<section class="system-monitor">
       <header class="sm-header"><div><h2>System Monitor</h2><p>Live host and WebOS runtime telemetry</p></div><span class="sm-live"><i></i> LIVE</span></header>
@@ -1695,3 +1641,6 @@ return appWindow;`;
     $("xip-wasm-import").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text()),r=await window.WebOSWASM.importPackage(p);$("xip-id").value=r.id;$("xip-name").value=r.name;$("xip-icon").value=r.icon;$("xip-description").value=r.description;$("xip-dock").checked=r.dock;$("xip-wasm-entry").value=r.entry||"_start";$("xip-wasm-modules").value=(r.modules||[]).join(",");wasmSource.value=r.files?.["main.c"]||"";watSource.value=r.files?.["main.wat"]||"";status.textContent="Imported "+r.name+" to IndexedDB.";window.WebOSWASM.launch(r.id);}catch(x){status.textContent="Import failed: "+x.message;}e.target.value="";};
     return win;
 }
+\n
+function openPaint(){if(typeof closeLauncher==="function")closeLauncher();const html=`<section class="webos-paint"><header class="paint-toolbar"><label>Color <input id="paint-color" type="color" value="#202938"></label><label>Size <input id="paint-size" type="range" min="1" max="48" value="5"><output id="paint-size-label">5 px</output></label><label>Tool <select id="paint-tool"><option value="brush">Brush</option><option value="eraser">Eraser</option><option value="line">Line</option><option value="rect">Rectangle</option><option value="circle">Ellipse</option></select></label><button id="paint-undo" type="button">Undo</button><button id="paint-redo" type="button">Redo</button><button id="paint-clear" type="button">Clear</button><button id="paint-save" type="button">Export PNG</button></header><div class="paint-canvas-wrap"><canvas id="paint-canvas" width="1200" height="760"></canvas></div><footer id="paint-status">Ready · Draw with pointer or touch.</footer></section>`;const win=createWindow("Paint",html);if(!win)return null;const $=id=>win.querySelector("#"+id),c=$("paint-canvas"),x=c.getContext("2d"),undo=[],redo=[];x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);let down=false,start=null,last=null,base=null;const pos=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height};},snapshot=()=>{undo.push(c.toDataURL());if(undo.length>25)undo.shift();redo.length=0;},restore=url=>{const im=new Image();im.onload=()=>{x.clearRect(0,0,c.width,c.height);x.drawImage(im,0,0);};im.src=url;},shape=(a,b,t)=>{x.beginPath();if(t==="line"){x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);}else if(t==="rect")x.rect(a.x,a.y,b.x-a.x,b.y-a.y);else x.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.abs(b.x-a.x)/2,Math.abs(b.y-a.y)/2,0,0,Math.PI*2);x.stroke();},style=()=>{x.strokeStyle=$("paint-tool").value==="eraser"?"#fff":$("paint-color").value;x.lineWidth=Number($("paint-size").value)*($("paint-tool").value==="eraser"?3:1);x.lineCap="round";x.lineJoin="round";};
+c.onpointerdown=e=>{down=true;c.setPointerCapture(e.pointerId);start=last=pos(e);snapshot();base=c.toDataURL();};c.onpointermove=e=>{if(!down)return;const p=pos(e),t=$("paint-tool").value;style();if(t==="brush"||t==="eraser"){x.beginPath();x.moveTo(last.x,last.y);x.lineTo(p.x,p.y);x.stroke();last=p;}else{const im=new Image();im.onload=()=>{if(!down)return;x.clearRect(0,0,c.width,c.height);x.drawImage(im,0,0);style();shape(start,p,t);};im.src=base;}};const finish=()=>{down=false;start=last=base=null;};c.onpointerup=finish;c.onpointercancel=finish;$("paint-size").oninput=e=>$("paint-size-label").textContent=e.target.value+" px";$("paint-undo").onclick=()=>{if(undo.length){redo.push(c.toDataURL());restore(undo.pop());}};$("paint-redo").onclick=()=>{if(redo.length){undo.push(c.toDataURL());restore(redo.pop());}};$("paint-clear").onclick=()=>{if(confirm("Clear the canvas?")){snapshot();x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);}};$("paint-save").onclick=()=>c.toBlob(blob=>{if(!blob)return;const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="webos-paint.png";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);$("paint-status").textContent="PNG exported.";});return win;}
