@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "1.4";
+const VERSION = "1.5";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -69,23 +69,6 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
   const requestUrl = new URL(request.url);
-
-  if (request.referrer && request.referrer.includes("/api/browser-proxy")) {
-    try {
-      const referrerUrl = new URL(request.referrer);
-      const original = referrerUrl.searchParams.get("url");
-      if (original) {
-        const targetOrigin = new URL(original).origin;
-        if (requestUrl.origin === self.location.origin && !requestUrl.pathname.startsWith("/api/")) {
-          const remote = targetOrigin + requestUrl.pathname + requestUrl.search;
-          event.respondWith(fetch("/api/browser-proxy?url=" + encodeURIComponent(remote)));
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("WebOS proxy URL rewrite failed:", error);
-    }
-  }
 
   if (requestUrl.origin !== self.location.origin || requestUrl.pathname.startsWith("/api/")) return;
   if (request.method !== "GET" || requestUrl.pathname.endsWith(".iso") || requestUrl.pathname.endsWith(".img")) return;

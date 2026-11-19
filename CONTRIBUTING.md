@@ -43,7 +43,6 @@ Do not commit generated secrets, access tokens, private configuration, personal 
 - Handle unavailable browser capabilities and denied permissions gracefully.
 - Treat all data received from apps, iframes, messages, remote sites, and user files as untrusted.
 - Do not assume an iframe is a complete security boundary. Validate origins and message payloads, use the narrowest practical sandbox and permissions, and avoid exposing privileged APIs unnecessarily.
-- Preserve the browser-proxy restrictions. Changes to URL validation, DNS handling, redirects, or proxy routing require careful security review.
 - Avoid claiming native hardware or operating-system access when a feature is only a browser API or best-effort approximation.
 - Keep service-worker caching intentional. Startup assets belong in the core cache only when they are needed for the startup experience.
 

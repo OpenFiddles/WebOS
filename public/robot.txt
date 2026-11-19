@@ -13,7 +13,6 @@ Disallow: /html/apps/
 Disallow: /js/os/
 Disallow: /js/boot/
 Disallow: /css/boot/
-Disallow: /api/browser-proxy
 
 # Block indexing of direct emulator components to preserve runtime boundaries
 Disallow: *.ext2

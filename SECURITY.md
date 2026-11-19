@@ -15,16 +15,14 @@ Do not include real credentials, access tokens, private user data, or data belon
 
 ## Areas that deserve special care
 
-WebOS is a browser application with a server-side web compatibility proxy. Security-sensitive areas include:
+WebOS is a browser-hosted application with a lightweight Node.js server. Security-sensitive areas include:
 
-- URL validation, DNS resolution, redirects, and server-side proxy requests.
+- API endpoint input validation and server configuration.
 - Cross-origin isolation and response headers.
 - Iframe sandbox attributes, permissions, and cross-window messaging.
 - App Creator and JavaScript/WebAssembly runtime imports.
 - Filesystem and permission APIs.
 - Service-worker caching and update behavior.
-
-The browser proxy is not a general-purpose browser engine. Changes to its network access controls should receive careful review to avoid server-side request forgery and access to private network resources.
 
 ## Supported versions
 

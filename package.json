@@ -2,7 +2,7 @@
   "name": "@openfiddles/WebOS",
   "version": "0.6",
   "private": true,
-  "description": "A browser-native WebOS with a constrained web compatibility proxy and optional Node WebSocket bridge.",
+  "description": "A browser-hosted WebOS desktop environment with a lightweight Node.js server.",
   "keywords": [
     "os",
     "node",
@@ -30,11 +30,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
-    "axios": "^1.7.7",
     "dotenv": "^16.4.7",
     "express": "^4.21.0",
     "@vercel/analytics": "^1.3.1",
-    "@vercel/speed-insights": "^1.0.12",
-    "ws": "^8.18.0"
+    "@vercel/speed-insights": "^1.0.12"
   }
 }

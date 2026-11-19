@@ -1,10 +1,9 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const favourites = ["browser", "files", "notes", "settings"];
+  const favourites = ["files", "notes", "settings"];
   const apps = [
     { id:"files", name:"Files", icon:"📁", description:"Browse your WebOS files and folders.", handler:"openFiles" },
-    { id:"browser", name:"Browser", icon:"🌐", description:"Browse the web from WebOS.", handler:"openBrowser" },
     { id:"notes", name:"Notes", icon:"📝", description:"Notes and Markdown Studio.", handler:"openNotes" },
     { id:"settings", name:"Settings", icon:"⚙️", description:"Configure your WebOS environment.", handler:"openSettings" },
     { id:"calculator", name:"Calculator", icon:"🧮", description:"WebOS calculator.", handler:"openCalculator" },

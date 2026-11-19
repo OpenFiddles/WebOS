@@ -226,8 +226,7 @@
 
 .AppPanel input:focus,
 .AppPanel textarea:focus,
-.LauncherSearch:focus,
-.BrowserAddress:focus {
+.LauncherSearch:focus {
     outline: none;
     border-color: var(--accent);
     background: rgba(0, 0, 0, 0.4);
@@ -252,8 +251,7 @@
     line-height: 1.5;
 }
 
-.AppPanel button,
-.BrowserBar button {
+.AppPanel button {
     align-self: flex-start;
     background: var(--accent-strong);
     border: 0;
@@ -263,14 +261,12 @@
     box-shadow: 0 2px 8px rgba(168, 78, 0, 0.2);
 }
 
-.AppPanel button:hover,
-.BrowserBar button:hover {
+.AppPanel button:hover {
     background: var(--accent);
     box-shadow: 0 4px 12px rgba(212, 0, 0, 0.3);
 }
 
-.AppPanel button:active,
-.BrowserBar button:active {
+.AppPanel button:active {
     transform: scale(0.97);
 }
 
@@ -328,80 +324,6 @@
     border: 0;
     background: #0d0d0d;
 }
-
-/* Browser Application Sandboxing */
-.BrowserShell {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    gap: 10px;
-    padding: 12px;
-    box-sizing: border-box;
-    min-height: 0;
-}
-
-.BrowserBar {
-    display: flex;
-    gap: 8px;
-    padding: 4px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    border: 1px solid var(--line);
-}
-
-.BrowserAddress {
-    flex: 1;
-    min-width: 0;
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    background: rgba(0, 0, 0, 0.25);
-    color: #ffffff;
-    user-select: text;
-    font-size: 13px;
-}
-
-.BrowserFrame {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    border: 0;
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);
-}
-
-.BrowserHint {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
-    border: 1px solid rgba(255, 180, 110, 0.25);
-    border-radius: 8px;
-    background: rgba(115, 62, 28, 0.2);
-    color: #ffd7ae;
-    font-size: 12px;
-    backdrop-filter: blur(10px);
-}
-
-.BrowserHint.visible {
-    display: flex;
-}
-
-.BrowserHint button {
-    flex: 0 0 auto;
-    padding: 6px 12px;
-    border: 0;
-    border-radius: 6px;
-    background: #ffb36b;
-    color: #24150c;
-    cursor: pointer;
-    font: inherit;
-    font-weight: 700;
-}
-
 
 /* FlairOS hosted emulator application */
 .EmulatorWindow .window-body {

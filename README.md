@@ -2,7 +2,7 @@
 
 > A browser-based desktop environment built with HTML, CSS, JavaScript, and browser APIs.
 
-WebOS brings a desktop-style workspace to the browser. It includes a window manager, launcher, dock, virtual filesystem, built-in applications, a developer platform, and browser-based runtime experiments.
+WebOS brings a desktop-style workspace to the web. It includes a window manager, launcher, dock, virtual filesystem, built-in applications, a developer platform, and JavaScript/WebAssembly runtime experiments.
 
 - **Live deployment:** https://web-os-iota.vercel.app
 - **GitLab repository:** https://gitlab.com/openfiddles/WebOS
@@ -19,7 +19,7 @@ WebOS brings a desktop-style workspace to the browser. It includes a window mana
 - Responsive mobile entry point and a separate mobile shell.
 
 ### Built-in applications
-The app registry currently includes Files, Notes, Browser, Better Settings, System Monitor, Calculator, Calendar, Documentation, Animation Studio, App Creator, WASM Lab, and the FlairOS Emulator.
+The app registry currently includes Files, Notes, Better Settings, System Monitor, Calculator, Calendar, Documentation, Animation Studio, App Creator, WASM Lab, and the FlairOS Emulator.
 
 The exact set of available applications can change as the project develops.
 
@@ -36,7 +36,7 @@ The exact set of available applications can change as the project develops.
 - App Creator and the in-app Documentation app provide additional guidance. Runtime and API details are evolving.
 
 ### Emulator experiments
-- The FlairOS Emulator app loads the separately hosted FlairOS project from https://openfiddles.github.io/FlairOS/ through WebOS's browser-proxy route.
+- The FlairOS Emulator app opens the separately hosted FlairOS project from https://openfiddles.github.io/FlairOS/ directly in an embedded frame; sites that block embedding may need to be opened externally.
 - The repository also contains v86-related emulator assets and a Debian emulator page. These are experimental assets and should not be confused with a fully integrated Linux subsystem.
 - The separately hosted FlairOS environment requires network access.
 
@@ -63,19 +63,19 @@ For a non-watch server process:
 npm start
 ```
 
-The application is served by the Express server in `server.js`, which serves the `public/` directory and provides the browser compatibility proxy route.
+The application is served by the Express server in `server.js`, which serves the `public/` directory and exposes lightweight Node.js API endpoints.
 
 ## Deployment
 
 The repository includes `vercel.json` for Vercel deployment. It routes requests through `server.js` and configures cross-origin isolation response headers used by browser capabilities that require them.
 
-The browser proxy is a constrained compatibility layer, **not a full browser engine**. Some websites will not work, especially sites that depend on complex authentication or cookies, WebSockets, service workers, DRM, anti-bot checks, or browser features the proxy cannot reproduce. The proxy validates public HTTP(S) targets and blocks local/private network addresses, but it should still be treated as a sensitive server-side network feature and maintained carefully.
+The built-in WebOS Browser and its server-side proxy have been removed. WebOS remains a browser-hosted desktop environment, and links opened from apps are handed to the user's normal browser.
 
 ## Project structure
 
 ```text
 .
-├── server.js                 # Express static server and web compatibility proxy
+├── server.js                 # Express static server and Node.js API endpoints
 ├── vercel.json               # Vercel routing and response headers
 ├── package.json              # Runtime requirements and npm scripts
 ├── LICENSE

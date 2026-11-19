@@ -339,7 +339,12 @@ function launchApp(app) {
 window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin || !event.data || event.data.source !== "webos-terminal") return;
     if (event.data.action === "open-url") {
-        openBrowser(event.data.url);
+        try {
+            const target = new URL(String(event.data.url || ""));
+            if (target.protocol === "https:" || target.protocol === "http:") {
+                window.open(target.href, "_blank", "noopener,noreferrer");
+            }
+        } catch (_) {}
     } else if (event.data.action === "launch-app") {
         launchApp(event.data.app);
     }
@@ -374,7 +379,7 @@ function openEmulator() {
 
     const frame = document.createElement("iframe");
     frame.className = "EmulatorFrame";
-    frame.src = "/api/browser-proxy?url=" + encodeURIComponent("https://openfiddles.github.io/FlairOS/");
+    frame.src = "https://openfiddles.github.io/FlairOS/";
     frame.title = "FlairOS emulator";
     frame.loading = "eager";
     frame.referrerPolicy = "strict-origin-when-cross-origin";
@@ -415,7 +420,6 @@ function openEmulator() {
 
 [
     ["alpine", "FlairOS Emulator", "F", "Launch your hosted FlairOS environment", "openEmulator", true],
-    ["browser", "Browser", "B", "Browse the web", "openBrowser", true],
     ["files", "Files", "F", "Manage local files", "openFiles", true],
     ["notes", "Notes", "N", "Write and save notes", "openNotes", false],
     ["settings", "Better Settings", "S", "Tune your WebOS", "openSettings", true],
@@ -568,7 +572,6 @@ document.querySelectorAll("[data-desktop-app]").forEach(button => {
 
         const shortcuts = {
             l: () => document.getElementById("open-launcher")?.click(),
-            b: () => launchApp("browser"),
             e: () => launchApp("files"),
             n: () => launchApp("notes"),
             s: () => launchApp("settings"),
