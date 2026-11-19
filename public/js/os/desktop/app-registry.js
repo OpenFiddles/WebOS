@@ -152,7 +152,23 @@
      * MODIFIED: Natively wraps and passes a custom API wrapper to the launching app.
      */
     function launch(id, argument) {
-        const definition = definitions.get(String(id));
+        const appId = String(id);
+        const definition = definitions.get(appId);
+        if (definition) {
+            const existing = [...document.querySelectorAll("#window-workspace .window-shell")].find(win => win.dataset.webosAppId === appId && !win.classList.contains("is-closing"));
+            if (existing) {
+                existing.classList.remove("is-minimized");
+                if (typeof focusWindow === "function") focusWindow(existing);
+                return existing;
+            }
+        }
+        const windowsBefore = new Set(document.querySelectorAll("#window-workspace .window-shell"));
+        const tagWindow = result => {
+            let win = result instanceof HTMLElement && result.matches(".window-shell") ? result : null;
+            if (!win) win = [...document.querySelectorAll("#window-workspace .window-shell")].find(item => !windowsBefore.has(item)) || null;
+            if (win && definition) win.dataset.webosAppId = appId;
+            return win || result;
+        };
         if (!definition) {
             console.warn("[WebOS App Registry] Unknown app:", id);
             return window.createWindow?.("WebOS", "Unknown app: " + id) || null;
@@ -167,13 +183,13 @@
             const appAPIInstance = new window.WebOSAppClient(definition.id);
             const result = handler(appAPIInstance, argument);
             if (result && typeof result.then === "function") {
-                return result.catch(error => {
+                return result.then(tagWindow).catch(error => {
                     console.error("[WebOS App Registry] Async launch failed:", definition.id, error);
                     window.createWindow?.(definition.name + " — Error", "The app could not start: " + (error?.message || String(error)));
                     return null;
                 });
             }
-            return result;
+            return tagWindow(result);
         } catch (error) {
             console.error("[WebOS App Registry] Launch failed:", definition.id, error);
             return window.createWindow?.(definition.name + " — Error", "The app could not start: " + (error?.message || String(error))) || null;
