@@ -74,9 +74,9 @@ function rewriteCss(css, baseUrl) {
 function rewriteJavaScript(source, baseUrl) {
   const route = raw => { try { return proxyUrl(new URL(raw, baseUrl).href, baseUrl); } catch (_) { return raw; } };
   return source
-    .replace(/(\b(?:from\s*|import\s*|import\s*\\(\s*)['"])(\\.{1,2}\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
-    .replace(/(\bnew\s+(?:Worker|SharedWorker)\s*\\(\s*['"])(\\.{1,2}\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
-    .replace(/\bimport\\.meta\\.url\b/g, JSON.stringify(baseUrl));
+    .replace(/(\b(?:from\s*|import\s*|import\s*\(\s*)['"])(\.{1,2}\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
+    .replace(/(\bnew\s+(?:Worker|SharedWorker)\s*\(\s*['"])(\.{1,2}\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
+    .replace(/\bimport\.meta\.url\b/g, JSON.stringify(baseUrl));
 }
 function rewriteHtml(html, baseUrl) {
   const removeCsp = html.replace(/<meta\b[^>]*http-equiv\s*=\s*(['"]?)content-security-policy\1[^>]*>/gi, '');
