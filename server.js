@@ -20,8 +20,19 @@ app.use(express.raw({ type: '*/*', limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '');
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+// Supabase is optional: do not let missing environment variables crash the Vercel function at startup.
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 app.get('/api/os-check', async (req, res) => {
+  if (!supabase) {
+    return res.status(503).json({
+      status: 'Database Not Configured',
+      message: 'Set SUPABASE_URL and SUPABASE_ANON_KEY to enable the database check.'
+    });
+  }
   try {
     const { data, error } = await supabase.from('your_table').select('*').limit(1);
     if (error) throw error;
