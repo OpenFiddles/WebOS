@@ -504,6 +504,7 @@ function openSettings() {
                         <option value="smooth">Smooth</option><option value="snappy">Snappy</option><option value="cinematic">Cinematic</option>
                     </select>
                 </div>
+                <div class="setting-field"><label for="ambient-animation-choice">Animated desktop atmosphere</label><select id="ambient-animation-choice"><option value="none">Off</option><option value="aurora">Aurora drift</option><option value="stars">Starfield</option><option value="mesh">Moving mesh</option><option value="waves">Soft waves</option><option value="rain">Rainfall</option></select><small>Ambient motion behind desktop icons and windows. Reduced motion disables the effects.</small></div>
                 <div class="setting-field liquid-glass-setting"><label><input id="liquid-glass-choice" type="checkbox"> Experimental Liquid Glass</label><small>Layered backdrop blur, spectral highlights and supported SVG displacement effects. Rendering varies by browser and GPU.</small></div>
                 <button type="button" id="reset-appearance">Restore appearance defaults</button>
             </section>
@@ -548,6 +549,18 @@ function openSettings() {
 
                 <div class="setting-field" style="display:flex;flex-direction:column;gap:6px;">
                     <label for="css-starter">CSS starter preset</label><div style="display:flex;gap:.5rem;flex-wrap:wrap"><select id="css-starter"><option value="">Choose a starter…</option><option value="rounded">Soft rounded windows</option><option value="minimal">Minimal monochrome</option><option value="neon">Neon developer</option><option value="paper">Warm paper</option></select><button type="button" id="css-insert-starter">Insert starter</button></div>
+                    <h3>Window designer · live preview</h3>
+                    <div class="window-designer-grid">
+                      <label>Corner radius <output id="designer-radius-value">16px</output><input id="designer-radius" type="range" min="0" max="32" value="16"></label>
+                      <label>Backdrop blur <output id="designer-blur-value">18px</output><input id="designer-blur" type="range" min="0" max="40" value="18"></label>
+                      <label>Panel opacity <output id="designer-opacity-value">92%</output><input id="designer-opacity" type="range" min="55" max="100" value="92"></label>
+                      <label>Shadow strength <output id="designer-shadow-value">35%</output><input id="designer-shadow" type="range" min="0" max="75" value="35"></label>
+                      <label>Titlebar height <output id="designer-title-height-value">40px</output><input id="designer-title-height" type="range" min="28" max="60" value="40"></label>
+                      <label>Window border <input id="designer-border" type="color" value="#65758b"></label>
+                      <label>Titlebar color <input id="designer-title-color" type="color" value="#273449"></label>
+                      <label>Title text color <input id="designer-title-text" type="color" value="#f4f7fb"></label>
+                    </div>
+                    <div style="display:flex;gap:.5rem;flex-wrap:wrap"><button type="button" id="designer-reset">Reset window design</button><span id="designer-status" aria-live="polite">Changes preview live and save locally.</span></div>
                     <label for="css-full-editor">Custom CSS stylesheet</label>
                     <textarea id="css-full-editor" spellcheck="false" style="width:100%;min-height:150px;resize:vertical;font:12px/1.5 ui-monospace,monospace;" placeholder="/* Add CSS rules here */"></textarea>
                     <small style="opacity:.7;">Saved locally and injected into the desktop. @import and script-like CSS expressions are blocked.</small>
@@ -560,6 +573,17 @@ function openSettings() {
             </section>
 
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 0.5rem 0;" />
+
+            <!-- SESSION LOCK AND SECURITY SECTION -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+              <h2>Lock &amp; Security</h2><p>Protect this WebOS session with a local PIN, a pattern, or a swipe gesture.</p>
+              <div class="setting-field"><label for="lock-method-choice">Lock method</label><select id="lock-method-choice"><option value="pin">PIN / passcode</option><option value="pattern">3×3 pattern</option><option value="swipe">Swipe to unlock (no passcode)</option></select></div>
+              <div class="setting-field" id="lock-pin-field"><label for="lock-passcode">New PIN</label><input id="lock-passcode" type="password" inputmode="numeric" autocomplete="new-password" maxlength="64" placeholder="At least 4 characters"><small>PIN verification is stored as a salted PBKDF2 hash on this device.</small></div>
+              <div class="setting-field" id="lock-pattern-field" hidden><label>Draw a pattern to save</label><div class="webos-setup-pattern" id="lock-setup-pattern">${Array.from({length:9},(_,i)=>'<button type="button" data-setup-dot="'+(i+1)+'" aria-label="Pattern dot '+(i+1)+'"></button>').join("")}</div><button type="button" id="lock-pattern-clear">Clear pattern</button><small id="lock-pattern-count">Connect at least 4 different dots.</small></div>
+              <label class="setting-field"><input id="lock-startup-choice" type="checkbox"> Lock WebOS automatically when it starts</label>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap"><button type="button" id="lock-save-method">Save lock method</button><button type="button" id="lock-now">Lock now</button><button type="button" id="lock-remove-method">Remove lock method</button></div>
+              <small>Swipe mode is a convenience screen, not authentication. This browser-only lock does not encrypt files or protect against someone with developer-tools/device access.</small>
+            </section>
 
             <!-- SYSTEM DATA MANAGEMENT SECTION -->
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -589,7 +613,7 @@ function openSettings() {
         tabBar.setAttribute("aria-label", "Settings categories");
         const pane = document.createElement("div");
         pane.className = "settings-tab-content";
-        const labels = ["Appearance", "Customization", "System"];
+        const labels = ["Appearance", "Customization", "Lock & Security", "System"];
         settingsSections.forEach((section, index) => {
             const id = "webos-settings-tab-" + index;
             const button = document.createElement("button");
@@ -629,8 +653,25 @@ function openSettings() {
         document.head.appendChild(styleElement);
     }
     const storedCustomCss = localStorage.getItem("webos-custom-css") || "";
-    styleElement.textContent = storedCustomCss;
+    let designerCss = localStorage.getItem("webos-window-designer-css") || "";
+    styleElement.textContent = storedCustomCss + "\n" + designerCss;
     fullCssEditor.value = storedCustomCss;
+    const designerIds = ["radius","blur","opacity","shadow","title-height","border","title-color","title-text"];
+    const designerDefaults = {radius:16,blur:18,opacity:92,shadow:35,"title-height":40,border:"#65758b","title-color":"#273449","title-text":"#f4f7fb"};
+    let designerState = {...designerDefaults};
+    try { designerState = {...designerDefaults, ...JSON.parse(localStorage.getItem("webos-window-designer-state") || "{}")}; } catch (_) {}
+    function applyWindowDesigner() {
+      const q = id => win.querySelector("#designer-"+id);
+      for (const id of designerIds) if(q(id)) designerState[id] = ["border","title-color","title-text"].includes(id) ? q(id).value : Number(q(id).value);
+      designerCss = ".window-shell.glass{border-radius:"+designerState.radius+"px!important;background:rgba(22,30,45,"+(designerState.opacity/100).toFixed(2)+")!important;backdrop-filter:blur("+designerState.blur+"px)!important;border:1px solid "+designerState.border+"!important;box-shadow:0 18px 48px rgba(0,0,0,"+(designerState.shadow/100).toFixed(2)+")!important}.window-titlebar{height:"+designerState["title-height"]+"px!important;background:"+designerState["title-color"]+"!important;color:"+designerState["title-text"]+"!important}.window-title-content,.window-title-text{color:"+designerState["title-text"]+"!important}";
+      localStorage.setItem("webos-window-designer-state",JSON.stringify(designerState));localStorage.setItem("webos-window-designer-css",designerCss);
+      styleElement.textContent = (localStorage.getItem("webos-custom-css") || "") + "\n" + designerCss;
+      for(const id of ["radius","blur","opacity","shadow","title-height"]){const output=win.querySelector("#designer-"+id+"-value");if(output)output.textContent=designerState[id]+(id==="opacity"||id==="shadow"?"%":"px");}
+      const label=win.querySelector("#designer-status");if(label)label.textContent="Live preview applied and saved locally.";
+    }
+    for(const id of designerIds){const input=win.querySelector("#designer-"+id);if(input){input.value=designerState[id];input.addEventListener("input",applyWindowDesigner);}}
+    applyWindowDesigner();
+    win.querySelector("#designer-reset").addEventListener("click",()=>{designerState={...designerDefaults};for(const id of designerIds){const input=win.querySelector("#designer-"+id);if(input)input.value=designerState[id];}applyWindowDesigner();});
 
     // 3. Extract active DOM element bindings from compiled frame template
     const choice = win.querySelector("#theme-choice");
@@ -641,9 +682,16 @@ function openSettings() {
     const wallpaperChoice = win.querySelector("#wallpaper-choice");
     const wallpaperFile = win.querySelector("#wallpaper-file");
     const animationChoice = win.querySelector("#animation-choice");
+    const ambientChoice = win.querySelector("#ambient-animation-choice");
     const liquidGlassChoice = win.querySelector("#liquid-glass-choice");
     const status = win.querySelector("#settings-status");
     const fullscreenChoice = win.querySelector("#fullscreen-always-choice");
+    const lockMethodChoice = win.querySelector("#lock-method-choice");
+    const lockPinField = win.querySelector("#lock-pin-field");
+    const lockPatternField = win.querySelector("#lock-pattern-field");
+    const lockPasscode = win.querySelector("#lock-passcode");
+    const lockStartupChoice = win.querySelector("#lock-startup-choice");
+    let setupPattern = [];
     
     const btnSpectate = win.querySelector("#btn-spectate");
     const hintText = win.querySelector("#inspector-hint");
@@ -664,8 +712,20 @@ function openSettings() {
     motion.checked = localStorage.getItem("webos-reduced-motion") === "true";
     accentChoice.value = localStorage.getItem("webos-accent") || "#53b5ff";
     animationChoice.value = localStorage.getItem("webos-motion-style") || "smooth";
+    ambientChoice.value = localStorage.getItem("webos-ambient-animation") || "aurora";
     liquidGlassChoice.checked = localStorage.getItem("webos-liquid-glass") === "true";
     fullscreenChoice.checked = localStorage.getItem("webos-always-fullscreen") === "true";
+    lockMethodChoice.value = window.WebOSLock?.getMode() || "pin";
+    lockStartupChoice.checked = localStorage.getItem("webos-lock-on-startup") === "true";
+    const updateLockFields = () => { lockPinField.hidden = lockMethodChoice.value !== "pin"; lockPatternField.hidden = lockMethodChoice.value !== "pattern"; };
+    updateLockFields();
+    lockMethodChoice.addEventListener("change", updateLockFields);
+    win.querySelector("#lock-setup-pattern").addEventListener("click", e => { const dot=e.target.closest("[data-setup-dot]"); if(!dot)return; const n=dot.dataset.setupDot; if(!setupPattern.includes(n)){setupPattern.push(n);dot.classList.add("selected");win.querySelector("#lock-pattern-count").textContent=setupPattern.length+" dots selected."; } });
+    win.querySelector("#lock-pattern-clear").addEventListener("click",()=>{setupPattern=[];win.querySelectorAll("[data-setup-dot]").forEach(x=>x.classList.remove("selected"));win.querySelector("#lock-pattern-count").textContent="Connect at least 4 different dots.";});
+    lockStartupChoice.addEventListener("change",()=>localStorage.setItem("webos-lock-on-startup",String(lockStartupChoice.checked)));
+    win.querySelector("#lock-save-method").addEventListener("click",async()=>{try{const mode=lockMethodChoice.value;const secret=mode==="pin"?lockPasscode.value:mode==="pattern"?setupPattern.join("-"):"";await window.WebOSLock.configure(mode,secret);lockPasscode.value="";setupPattern=[];win.querySelectorAll("[data-setup-dot]").forEach(x=>x.classList.remove("selected"));win.querySelector("#lock-pattern-count").textContent="Connect at least 4 different dots.";status.textContent=mode==="swipe"?"Swipe lock saved (no passcode).":"Lock method saved on this device.";}catch(error){status.textContent=error.message;}});
+    win.querySelector("#lock-now").addEventListener("click",()=>{if(!window.WebOSLock?.lock())status.textContent="Save a lock method first.";});
+    win.querySelector("#lock-remove-method").addEventListener("click",()=>{localStorage.removeItem("webos-lock-config");localStorage.removeItem("webos-lock-on-startup");lockStartupChoice.checked=false;status.textContent="Session lock removed.";});
     document.body.dataset.liquidGlass = String(liquidGlassChoice.checked);
     const savedWallpaper = localStorage.getItem("webos-wallpaper") || "aurora";
     const savedCustomWallpaper = localStorage.getItem("webos-custom-wallpaper");
@@ -729,6 +789,7 @@ function openSettings() {
         localStorage.setItem("webos-motion-style", animationChoice.value);
         document.body.dataset.motion = animationChoice.value;
     });
+    ambientChoice.addEventListener("change", () => { localStorage.setItem("webos-ambient-animation", ambientChoice.value); window.WebOSAppearance?.apply(); status.textContent = "Desktop atmosphere updated."; });
     liquidGlassChoice.addEventListener("change", () => {
         localStorage.setItem("webos-liquid-glass", String(liquidGlassChoice.checked));
         document.body.dataset.liquidGlass = String(liquidGlassChoice.checked);
@@ -798,6 +859,7 @@ function openSettings() {
         localStorage.removeItem("webos-wallpaper");
         localStorage.removeItem("webos-custom-wallpaper");
         localStorage.removeItem("webos-motion-style");
+        localStorage.removeItem("webos-ambient-animation"); ambientChoice.value = "aurora";
         localStorage.removeItem("webos-reduced-motion");
         choice.value = "ocean";
         accentChoice.value = "#53b5ff";
@@ -939,7 +1001,7 @@ function openSettings() {
             testStyle.remove();
         }
         localStorage.setItem("webos-custom-css", value);
-        styleElement.textContent = value;
+        styleElement.textContent = value + "\n" + designerCss;
         fullCssEditor.value = value;
         status.textContent = "CSS validated, saved locally, and injected.";
         return probe;
@@ -990,7 +1052,8 @@ function openSettings() {
 
     btnClearCss.onclick = () => {
         if (confirm("Reset all custom injected CSS modifications?")) {
-            styleElement.textContent = "";
+            styleElement.textContent = designerCss;
+            localStorage.removeItem("webos-custom-css");
             fullCssEditor.value = "";
             localStorage.removeItem("webos-custom-css");
             insSelectorInput.value = "";
