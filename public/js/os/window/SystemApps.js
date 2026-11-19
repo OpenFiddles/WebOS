@@ -590,6 +590,31 @@ function openSettings() {
               <small>Swipe mode is a convenience screen, not authentication. This browser-only lock does not encrypt files or protect against someone with developer-tools/device access.</small>
             </section>
 
+
+            <!-- FULL SYSTEM BACKUP AND RECOVERY -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Backup &amp; Recovery</h2>
+                <p>Export your WebOS virtual files and supported WebOS preferences into one portable JSON backup.</p>
+                <div class="webos-backup-actions">
+                    <button type="button" id="webos-full-export">Export everything</button>
+                    <button type="button" id="webos-full-import-trigger">Restore backup</button>
+                    <input id="webos-full-import-file" type="file" accept="application/json,.json" hidden>
+                </div>
+                <label for="webos-restore-mode">Restore behavior</label>
+                <select id="webos-restore-mode"><option value="merge">Merge into current files</option><option value="replace">Replace current virtual filesystem</option></select>
+                <small>Restore validates the backup before writing. Replace affects the WebOS virtual filesystem only. Browser lock credentials and browser/device data are intentionally excluded; export those separately using the browser's own backup options if needed.</small>
+                <p id="webos-backup-status" role="status" aria-live="polite">No backup operation running.</p>
+            </section>
+
+            <!-- ACCESSIBILITY AND INTERFACE CONTROLS -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Accessibility</h2>
+                <label for="webos-ui-scale">Interface scale <output id="webos-ui-scale-value">100%</output></label>
+                <input id="webos-ui-scale" type="range" min="85" max="125" step="5" value="100">
+                <label class="setting-field"><input id="webos-high-contrast" type="checkbox"> Increase interface contrast</label>
+                <small>These options affect WebOS interface presentation and are saved on this browser.</small>
+            </section>
+
             <!-- SYSTEM DATA MANAGEMENT SECTION -->
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <h2>System</h2><label for="settings-search">Search settings</label><input id="settings-search" type="search" placeholder="Find a setting…"><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="settings-export" type="button">Export settings</button><button id="settings-import-trigger" type="button">Import settings</button><input id="settings-import-file" type="file" accept="application/json" hidden></div>
@@ -618,7 +643,7 @@ function openSettings() {
         tabBar.setAttribute("aria-label", "Settings categories");
         const pane = document.createElement("div");
         pane.className = "settings-tab-content";
-        const labels = ["Appearance", "Customization", "Lock & Security", "System"];
+        const labels = ["Appearance", "Customization", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
         settingsSections.forEach((section, index) => {
             const id = "webos-settings-tab-" + index;
             const button = document.createElement("button");
@@ -648,7 +673,15 @@ function openSettings() {
         settingsPanel.insertBefore(tabBar, pane);
     }
     const settingsSearch=win.querySelector("#settings-search");settingsSearch?.addEventListener("input",()=>{const q=settingsSearch.value.trim().toLowerCase();let first=-1;settingsSections.forEach((s,i)=>{const match=!q||s.textContent.toLowerCase().includes(q);s.hidden=!match;if(match&&first<0)first=i;});settingsPanel.querySelectorAll(".settings-tab").forEach((b,i)=>{b.hidden=!!q&&settingsSections[i]?.hidden;b.classList.toggle("active",i===first);});});
-    const exportPrefs=()=>{const values={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k))values[k]=localStorage.getItem(k);}const u=URL.createObjectURL(new Blob([JSON.stringify({format:"webos-settings",version:1,values},null,2)],{type:"application/json"})),a=document.createElement("a");a.href=u;a.download="webos-settings-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};win.querySelector("#settings-export")?.addEventListener("click",exportPrefs);const settingsFile=win.querySelector("#settings-import-file");win.querySelector("#settings-import-trigger")?.addEventListener("click",()=>settingsFile?.click());settingsFile?.addEventListener("change",async()=>{const f=settingsFile.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.format!=="webos-settings"||d.version!==1||!d.values)throw Error("Unsupported settings backup.");for(const [k,v] of Object.entries(d.values))if(k.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k)&&typeof v==="string")localStorage.setItem(k,v);status.textContent="Settings imported. Reloading…";setTimeout(()=>location.reload(),500);}catch(e){status.textContent="Import failed: "+e.message;}finally{settingsFile.value="";}});
+    const collectWebOSPreferences=()=>{const values={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k))values[k]=localStorage.getItem(k);}return values;};
+    const downloadJSON=(data,name)=>{const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);};
+    const exportPrefs=()=>downloadJSON({format:"webos-settings",version:1,values:collectWebOSPreferences()},"webos-settings-backup.json");
+    win.querySelector("#settings-export")?.addEventListener("click",exportPrefs);
+    const fullExport=win.querySelector("#webos-full-export"),fullImportTrigger=win.querySelector("#webos-full-import-trigger"),fullImportFile=win.querySelector("#webos-full-import-file"),backupStatus=win.querySelector("#webos-backup-status");
+    fullExport?.addEventListener("click",async()=>{try{if(!window.WebOSFileSystem?.exportBackup)throw Error("Filesystem backup API is unavailable. Reload WebOS and try again.");backupStatus.textContent="Collecting virtual filesystem…";const filesystem=await window.WebOSFileSystem.exportBackup();const backup={format:"webos-system-backup",version:1,createdAt:new Date().toISOString(),product:"WebOS",preferences:collectWebOSPreferences(),filesystem};downloadJSON(backup,"webos-full-backup-"+new Date().toISOString().slice(0,10)+".json");backupStatus.textContent="Full backup exported: "+filesystem.entries.length+" filesystem entries and supported preferences.";}catch(error){backupStatus.textContent="Export failed: "+error.message;}});
+    fullImportTrigger?.addEventListener("click",()=>fullImportFile?.click());
+    fullImportFile?.addEventListener("change",async()=>{const file=fullImportFile.files?.[0];if(!file)return;try{backupStatus.textContent="Reading and validating backup…";const backup=JSON.parse(await file.text());if(backup.format!=="webos-system-backup"||backup.version!==1||!backup.filesystem||!backup.preferences||typeof backup.preferences!=="object")throw Error("This is not a supported full WebOS backup.");if(!window.WebOSFileSystem?.importBackup)throw Error("Filesystem restore API is unavailable.");const mode=win.querySelector("#webos-restore-mode")?.value||"merge";const count=backup.filesystem.entries?.length||0;if(!confirm("Restore "+count+" virtual filesystem entries and WebOS preferences? "+(mode==="replace"?"This REPLACES the current virtual filesystem.":"Existing matching paths will be updated; other files remain.")))return;const result=await window.WebOSFileSystem.importBackup(backup.filesystem,{replace:mode==="replace"});for(const [key,value] of Object.entries(backup.preferences)){if(key.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(key)&&typeof value==="string")localStorage.setItem(key,value);}backupStatus.textContent="Restored "+result.imported+" filesystem entries. Reloading WebOS…";setTimeout(()=>location.reload(),700);}catch(error){backupStatus.textContent="Restore failed: "+error.message;}finally{fullImportFile.value="";}});
+    const settingsFile=win.querySelector("#settings-import-file");win.querySelector("#settings-import-trigger")?.addEventListener("click",()=>settingsFile?.click());settingsFile?.addEventListener("change",async()=>{const file=settingsFile.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.format!=="webos-settings"||data.version!==1||!data.values)throw Error("Unsupported settings backup.");for(const [key,value] of Object.entries(data.values))if(key.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(key)&&typeof value==="string")localStorage.setItem(key,value);status.textContent="Settings imported. Reloading…";setTimeout(()=>location.reload(),500);}catch(error){status.textContent="Import failed: "+error.message;}finally{settingsFile.value="";}});const settingsFile=win.querySelector("#settings-import-file");win.querySelector("#settings-import-trigger")?.addEventListener("click",()=>settingsFile?.click());settingsFile?.addEventListener("change",async()=>{const f=settingsFile.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.format!=="webos-settings"||d.version!==1||!d.values)throw Error("Unsupported settings backup.");for(const [k,v] of Object.entries(d.values))if(k.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k)&&typeof v==="string")localStorage.setItem(k,v);status.textContent="Settings imported. Reloading…";setTimeout(()=>location.reload(),500);}catch(e){status.textContent="Import failed: "+e.message;}finally{settingsFile.value="";}});
     const fullCssEditor = win.querySelector("#css-full-editor");
     if (!fullCssEditor) { console.error("Settings UI is missing #css-full-editor."); return win; }
 
@@ -712,6 +745,9 @@ function openSettings() {
     let selectedDomSelector = "";
 
     // 4. Set initialization states based on storage settings
+    const scaleInput=win.querySelector("#webos-ui-scale"),scaleOutput=win.querySelector("#webos-ui-scale-value"),contrastInput=win.querySelector("#webos-high-contrast");
+    const applyAccessibility=()=>{const scale=Math.max(85,Math.min(125,Number(scaleInput?.value)||100));localStorage.setItem("webos-ui-scale",String(scale));localStorage.setItem("webos-high-contrast",String(!!contrastInput?.checked));if(scaleOutput)scaleOutput.textContent=scale+"%";let style=document.getElementById("webos-accessibility-style");if(!style){style=document.createElement("style");style.id="webos-accessibility-style";document.head.appendChild(style);}style.textContent=":root{--webos-ui-scale:"+scale/100+"}#Desktop{font-size:calc(1rem * var(--webos-ui-scale))}"+(contrastInput?.checked?"#Desktop{filter:contrast(1.12)}.window-shell,.LauncherInner{border:1px solid currentColor!important}":"");};
+    if(scaleInput){scaleInput.value=localStorage.getItem("webos-ui-scale")||"100";scaleInput.addEventListener("input",applyAccessibility);}if(contrastInput){contrastInput.checked=localStorage.getItem("webos-high-contrast")==="true";contrastInput.addEventListener("change",applyAccessibility);}applyAccessibility();
     const selectedTheme = localStorage.getItem("webos-theme") || "ocean";
     choice.value = selectedTheme;
     desktopStyleChoice.value = localStorage.getItem("webos-desktop-style") || "webos";

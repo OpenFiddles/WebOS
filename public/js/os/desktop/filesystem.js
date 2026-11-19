@@ -382,7 +382,32 @@
     async function restore(path,destination){return move(path,destination);}
     async function emptyTrash(){const items=await list("/Trash");for(const item of items)await remove(item.path);return items.length;}
     async function exportBackup(){const db=await openDatabase(),entries=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);});return{format:"webos-filesystem-backup",version:1,exportedAt:new Date().toISOString(),entries:entries.map(e=>({...e,content:e.binary&&e.content instanceof ArrayBuffer?Array.from(new Uint8Array(e.content)):e.content}))};}
-    async function importBackup(data){if(data?.format!=="webos-filesystem-backup"||data.version!==1||!Array.isArray(data.entries))throw Error("Unsupported WebOS filesystem backup.");const entries=data.entries.map(e=>{const path=normalize(e.path);if(path!==e.path||!["file","directory"].includes(e.type))throw Error("Invalid backup entry.");return{...e,path,content:e.binary?new Uint8Array(e.content).buffer:e.content};});if(!entries.some(e=>e.path==="/")||new Set(entries.map(e=>e.path)).size!==entries.length)throw Error("Backup has missing root or duplicate paths.");const db=await openDatabase();await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readwrite"),s=tx.objectStore(storeName);entries.forEach(e=>s.put(e));tx.oncomplete=ok;tx.onerror=()=>no(tx.error);});return{imported:entries.length};}
+    async function importBackup(data, options = {}) {
+        if (data?.format !== "webos-filesystem-backup" || data.version !== 1 || !Array.isArray(data.entries)) throw Error("Unsupported WebOS filesystem backup.");
+        if (data.entries.length > 50000) throw Error("Backup contains too many entries.");
+        const paths = new Set();
+        const entries = data.entries.map(entry => {
+            if (!entry || typeof entry !== "object") throw Error("Invalid backup entry.");
+            const path = normalize(entry.path);
+            if (path !== entry.path || !["file", "directory"].includes(entry.type) || paths.has(path)) throw Error("Invalid or duplicate backup path.");
+            paths.add(path);
+            let content = entry.content;
+            if (entry.binary) {
+                if (!Array.isArray(content) || content.length > 100000000 || content.some(byte => !Number.isInteger(byte) || byte < 0 || byte > 255)) throw Error("Invalid binary file data.");
+                content = new Uint8Array(content).buffer;
+            } else if (entry.type === "file" && typeof content !== "string") throw Error("Invalid text file data.");
+            return { ...entry, path, content };
+        });
+        if (!paths.has("/") || entries.find(entry => entry.path === "/")?.type !== "directory") throw Error("Backup has no valid filesystem root.");
+        const db = await openDatabase();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, "readwrite"), store = tx.objectStore(storeName);
+            if (options.replace === true) store.clear();
+            entries.forEach(entry => store.put(entry));
+            tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error || new Error("Restore cancelled."));
+        });
+        return { imported: entries.length, replaced: options.replace === true };
+    }
 
     // Freeze and bind the object export cleanly
         window.WebOSFileSystem = Object.freeze({
@@ -398,7 +423,14 @@
             exists,
             makeDirectory,
             copy,
-            move
+            move,
+            search,
+            getUsage,
+            trash,
+            restore,
+            emptyTrash,
+            exportBackup,
+            importBackup
         });
 })();
     
