@@ -1415,6 +1415,40 @@ function openBrowser(initialUrl) {
         event.preventDefault();
         navigate(addressBar.value);
     });
+    addressBar.addEventListener("focus", () => addressBar.select());
+    addressBar.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            if (activeTab && activeTab.pointer >= 0) addressBar.value = activeTab.history[activeTab.pointer];
+            addressBar.blur();
+        }
+    });
+    win.addEventListener("keydown", event => {
+        if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+        const key = event.key.toLowerCase();
+        if (key === "l") {
+            event.preventDefault();
+            addressBar.focus();
+            addressBar.select();
+        } else if (key === "t") {
+            event.preventDefault();
+            createTab();
+            addressBar.focus();
+        } else if (key === "r") {
+            event.preventDefault();
+            if (activeTab && activeTab.pointer >= 0) navigate(activeTab.history[activeTab.pointer], false);
+        } else if (key === "w") {
+            event.preventDefault();
+            if (tabs.length > 1 && activeTab) {
+                const closing = activeTab;
+                clearTimeout(closing.timer);
+                closing.frame.remove();
+                closing.button.remove();
+                tabs.splice(tabs.indexOf(closing), 1);
+                activateTab(tabs[tabs.length - 1]);
+            }
+        }
+    });
     win.addEventListener("webos:window-close", () => tabs.forEach(tab => clearTimeout(tab.timer)));
 
     createTab(initialUrl || "https://example.com");
