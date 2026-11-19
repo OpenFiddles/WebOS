@@ -1,2 +1,9 @@
 default:
   image: node:latest
+
+validate-node:
+  image: node:24-bookworm-slim
+  stage: test
+  script:
+    - node --check server.js
+    - node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8'))"

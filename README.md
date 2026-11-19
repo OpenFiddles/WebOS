@@ -122,3 +122,12 @@ WebOS uses third-party packages listed in `package.json` and includes emulator-r
 ## License
 
 WebOS is distributed under the GNU General Public License, version 3 or (at your option) any later version. See [LICENSE](LICENSE).
+
+## Browser proxy compatibility
+
+The browser proxy is a constrained compatibility layer, not a full browser engine. It now keeps an encrypted, WebOS-origin cookie jar across ordinary proxy requests, forwards common authorization and range headers, supports common HTTP methods, and includes a WebSocket bridge for persistent Node.js deployments.
+
+- Set `WEBOS_PROXY_SECRET` to a long, random secret in deployment settings. It encrypts the proxy cookie state. Without a stable secret, cookie sessions can be lost when a serverless instance changes.
+- WebSocket upgrades require a persistent Node.js server. Vercel Functions do not provide the persistent HTTP upgrade socket required by this bridge, so WebSockets will not work on the Vercel-hosted deployment unless the WebSocket endpoint is hosted separately on a compatible Node service.
+- Cookie storage is bounded and browser compatibility is best-effort. Sites that depend on service workers, browser fingerprinting, DRM, complex cross-origin policies, or unsupported browser APIs may still not work.
+- Keep the proxy's public-host validation and DNS pinning in place. Do not expose it as an unrestricted network relay.
