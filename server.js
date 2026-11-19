@@ -166,7 +166,7 @@ function persistCookieJar(res, cookies) {
     jar = jar.slice(0, -1);
     token = encryptCookieState(jar);
   }
-  res.append('Set-Cookie', PROXY_STATE_COOKIE + '=' + token + '; Path=/; HttpOnly; SameSite=Lax' + (process.env.NODE_ENV === 'production' ? '; Secure' : '') + '; Max-Age=2592000');
+  res.append('Set-Cookie', PROXY_STATE_COOKIE + '=' + token + '; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000');
 }
 function vettedLookup(target) {
   return (hostname, options, callback) => {
@@ -230,14 +230,18 @@ async function fetchPublicUrl(startUrl, req, cookieJar = []) {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
         'Accept': req.headers.accept || '*/*',
         'Accept-Language': req.headers['accept-language'] || 'en-US,en;q=0.9',
-        ...(req.headers['content-type'] ? { 'Content-Type': req.headers['content-type'] } : {}),
-        ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}),
-        ...(req.headers.range ? { Range: req.headers.range } : {}),
-        ...(req.headers['if-none-match'] ? { 'If-None-Match': req.headers['if-none-match'] } : {}),
-        ...(req.headers['if-modified-since'] ? { 'If-Modified-Since': req.headers['if-modified-since'] } : {}),
-        ...(cookiesForUrl(cookieJar, target) ? { Cookie: cookiesForUrl(cookieJar, target) } : {})
+        ...(req.headers['content-type'] ? { 'Content-Type': req.headers['content-type'] } : {})
       },
-      lookup: vettedLookup(target),
+      lookup: (hostname, options, callback) => {
+        const vetted = target._webosResolvedAddresses || [];
+        if (!vetted.length || hostname.toLowerCase() !== target.hostname.toLowerCase()) {
+          return callback(new Error('The proxy could not verify the destination host.'));
+        }
+        const matching = vetted.filter(item => !options.family || item.family === options.family);
+        const selected = matching[0] || vetted[0];
+        if (options.all) return callback(null, vetted.map(item => ({ address: item.address, family: item.family })));
+        return callback(null, selected.address, selected.family);
+      },
       timeout: 15000, maxRedirects: 0, maxContentLength: 15 * 1024 * 1024,
       responseType: 'arraybuffer', validateStatus: () => true
     });
@@ -265,10 +269,7 @@ async function browserProxy(req, res) {
         }
       }
     }
-    let cookieJar = decryptCookieState(req);
-    const { response, finalUrl } = await fetchPublicUrl(destination.href, req, cookieJar);
-    cookieJar = updateCookieJar(cookieJar, response.headers['set-cookie'], new URL(finalUrl));
-    persistCookieJar(res, cookieJar);
+    let cookieJar = decryptCookieState(req);\n    const { response, finalUrl } = await fetchPublicUrl(destination.href, req, cookieJar);\n    cookieJar = updateCookieJar(cookieJar, response.headers['set-cookie'], new URL(finalUrl));\n    persistCookieJar(res, cookieJar);
     const contentType = String(response.headers['content-type'] || 'application/octet-stream');
     let body = Buffer.from(response.data || []);
     if (/text\/html/i.test(contentType)) body = Buffer.from(rewriteHtml(body.toString('utf8'), finalUrl));
@@ -277,10 +278,7 @@ async function browserProxy(req, res) {
     res.status(response.status);
     res.setHeader('Content-Type', contentType);
     if (response.headers['content-disposition']) res.setHeader('Content-Disposition', response.headers['content-disposition']);
-    if (response.headers['content-language']) res.setHeader('Content-Language', response.headers['content-language']);
-    for (const header of ['content-range', 'accept-ranges', 'etag', 'last-modified']) {
-      if (response.headers[header]) res.setHeader(header, response.headers[header]);
-    }
+    if (response.headers['content-language']) res.setHeader('Content-Language', response.headers['content-language']);\n    for (const header of ['content-range', 'accept-ranges', 'etag', 'last-modified', 'cache-control']) {\n      if (response.headers[header]) res.setHeader(header, response.headers[header]);\n    }
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -303,85 +301,8 @@ app.all('/api/browser-proxy', (req, res) => {
   browserProxy(req, res);
 });
 
-
-const wsServer = new WebSocket.Server({
-  noServer: true,
-  perMessageDeflate: false,
-  handleProtocols: protocols => protocols.values().next().value || false
-});
-function attachWebSocketProxy(server) {
-  server.on('upgrade', (req, socket, head) => {
-    if (!req.url || !req.url.startsWith('/api/browser-ws?')) return;
-    (async () => {
-      let upstream;
-      try {
-        const requestUrl = new URL(req.url, 'http://webos.local');
-        const rawTarget = requestUrl.searchParams.get('__webos_url');
-        if (!rawTarget) throw new Error('Missing WebSocket destination.');
-        const target = await validateTarget(rawTarget.replace(/^wss:/i, 'https:').replace(/^ws:/i, 'http:'));
-        const wsTarget = new URL(target.href);
-        wsTarget.protocol = wsTarget.protocol === 'https:' ? 'wss:' : 'ws:';
-        const jar = decryptCookieState(req);
-        const cookie = cookiesForUrl(jar, target);
-        const protocols = req.headers['sec-websocket-protocol']
-          ? req.headers['sec-websocket-protocol'].split(',').map(x => x.trim()).filter(Boolean) : [];
-        upstream = new WebSocket(wsTarget.href, protocols, {
-          headers: cookie ? { Cookie: cookie } : {},
-          lookup: vettedLookup(target),
-          handshakeTimeout: 15000,
-          perMessageDeflate: false,
-          maxPayload: 16 * 1024 * 1024
-        });
-        const timer = setTimeout(() => {
-          if (upstream.readyState !== WebSocket.OPEN) {
-            upstream.terminate();
-            if (!socket.destroyed) socket.destroy();
-          }
-        }, 17000);
-        upstream.once('open', () => {
-          clearTimeout(timer);
-          wsServer.handleUpgrade(req, socket, head, client => {
-            wsServer.emit('connection', client, req);
-            client.on('message', (data, isBinary) => {
-              if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary: isBinary });
-            });
-            upstream.on('message', (data, isBinary) => {
-              if (client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary });
-            });
-            client.on('close', (code, reason) => { if (upstream.readyState < WebSocket.CLOSING) upstream.close(code, reason); });
-            upstream.on('close', (code, reason) => { if (client.readyState < WebSocket.CLOSING) client.close(code, reason); });
-            client.on('error', () => upstream.terminate());
-            upstream.on('error', () => client.close(1011, 'Upstream WebSocket error'));
-          });
-        });
-        upstream.once('unexpected-response', (_request, response) => {
-          clearTimeout(timer);
-          if (!socket.destroyed) {
-            socket.write('HTTP/1.1 ' + response.statusCode + ' ' + (response.statusMessage || 'WebSocket upgrade failed') + '\r\nConnection: close\r\n\r\n');
-            socket.destroy();
-          }
-        });
-        upstream.once('error', error => {
-          clearTimeout(timer);
-          console.warn('[browser-websocket]', error.message);
-          if (!socket.destroyed) socket.destroy();
-        });
-      } catch (error) {
-        console.warn('[browser-websocket]', error.message);
-        if (!socket.destroyed) {
-          socket.write('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n');
-          socket.destroy();
-        }
-        upstream?.terminate();
-      }
-    })();
-  });
-}
-
-if (!process.env.VERCEL) {
+if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
-  const server = http.createServer(app);
-  attachWebSocketProxy(server);
-  server.listen(PORT, () => console.log('WebOS kernel listening on port ' + PORT));
+  app.listen(PORT, () => console.log('WebOS kernel listening on port ' + PORT));
 }
 module.exports = app;
