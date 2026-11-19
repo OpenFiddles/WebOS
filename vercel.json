@@ -1,18 +1,5 @@
 {
-  "version": 2,
-  "cleanUrls": false,
-  "trailingSlash": false,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "public/**"
-        ]
-      }
-    }
-  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
     {
       "source": "/(.*)",
@@ -30,16 +17,6 @@
           "value": "cross-origin"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/server.js"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/server.js"
     }
   ]
 }
