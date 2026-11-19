@@ -12,28 +12,27 @@ const dns = require('node:dns').promises;
 const net = require('node:net');
 const crypto = require('node:crypto');
 const http = require('node:http');
-const WebSocket = require('ws');
+// Vercel functions do not support persistent WebSocket upgrades; avoid loading this dependency there.
+const WebSocket = process.env.VERCEL ? null : require('ws');
 
 const app = express();
-const { createClient } = require('@supabase/supabase-js');
 app.use(express.raw({ type: '*/*', limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-// Supabase is optional: do not let missing environment variables crash the Vercel function at startup.
-const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+// Supabase is optional and loaded only when its diagnostic endpoint is requested.
 app.get('/api/os-check', async (req, res) => {
-  if (!supabase) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     return res.status(503).json({
       status: 'Database Not Configured',
       message: 'Set SUPABASE_URL and SUPABASE_ANON_KEY to enable the database check.'
     });
   }
   try {
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase.from('your_table').select('*').limit(1);
     if (error) throw error;
     res.status(200).json({ status: 'Kernel Database Active', payload: data });
