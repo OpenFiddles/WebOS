@@ -221,7 +221,6 @@ function rewriteHtml(html, baseUrl) {
 async function fetchPublicUrl(startUrl, req, cookieJar = []) {
   const axios = require('axios');
   let target = await validateTarget(startUrl);
-  let activeCookies = cookieJar;
   let response;
   for (let redirects = 0; redirects <= 5; redirects++) {
     response = await axios({
@@ -236,13 +235,12 @@ async function fetchPublicUrl(startUrl, req, cookieJar = []) {
         ...(req.headers.range ? { Range: req.headers.range } : {}),
         ...(req.headers['if-none-match'] ? { 'If-None-Match': req.headers['if-none-match'] } : {}),
         ...(req.headers['if-modified-since'] ? { 'If-Modified-Since': req.headers['if-modified-since'] } : {}),
-        ...(cookiesForUrl(activeCookies, target) ? { Cookie: cookiesForUrl(activeCookies, target) } : {})
+        ...(cookiesForUrl(cookieJar, target) ? { Cookie: cookiesForUrl(cookieJar, target) } : {})
       },
       lookup: vettedLookup(target),
       timeout: 15000, maxRedirects: 0, maxContentLength: 15 * 1024 * 1024,
       responseType: 'arraybuffer', validateStatus: () => true
     });
-    activeCookies = updateCookieJar(activeCookies, response.headers['set-cookie'], target);
     if ([301,302,303,307,308].includes(response.status) && response.headers.location) {
       if (redirects === 5) throw new Error('The website redirected too many times.');
       target = await validateTarget(new URL(response.headers.location, target).href);
@@ -251,7 +249,7 @@ async function fetchPublicUrl(startUrl, req, cookieJar = []) {
     }
     break;
   }
-  return { response, finalUrl: target.href, cookieJar: activeCookies };
+  return { response, finalUrl: target.href };
 }
 async function browserProxy(req, res) {
   try {
@@ -268,8 +266,8 @@ async function browserProxy(req, res) {
       }
     }
     let cookieJar = decryptCookieState(req);
-    const { response, finalUrl, cookieJar: updatedCookieJar } = await fetchPublicUrl(destination.href, req, cookieJar);
-    cookieJar = updatedCookieJar;
+    const { response, finalUrl } = await fetchPublicUrl(destination.href, req, cookieJar);
+    cookieJar = updateCookieJar(cookieJar, response.headers['set-cookie'], new URL(finalUrl));
     persistCookieJar(res, cookieJar);
     const contentType = String(response.headers['content-type'] || 'application/octet-stream');
     let body = Buffer.from(response.data || []);
