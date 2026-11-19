@@ -4,9 +4,8 @@
  * This is not a Chromium engine: sites using unsupported browser APIs, service workers,
  * complex authentication/cookies, WebSockets, DRM, or anti-bot checks may still fail.
  */
-require('dotenv').config();
+if (!process.env.VERCEL) require('dotenv').config();
 const express = require('express');
-const axios = require('axios');
 const path = require('path');
 const dns = require('node:dns').promises;
 const net = require('node:net');
@@ -18,6 +17,7 @@ const WebSocket = process.env.VERCEL ? null : require('ws');
 const app = express();
 app.use(express.raw({ type: '*/*', limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/api/health', (_req, res) => res.status(200).json({ ok: true, runtime: 'vercel-node', node: process.version }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -219,6 +219,7 @@ function rewriteHtml(html, baseUrl) {
   return attrs.replace(/<head(\s[^>]*)?>/i, match => match + headBase + bridge);
 }
 async function fetchPublicUrl(startUrl, req, cookieJar = []) {
+  const axios = require('axios');
   let target = await validateTarget(startUrl);
   let activeCookies = cookieJar;
   let response;
