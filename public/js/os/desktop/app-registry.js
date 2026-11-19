@@ -114,9 +114,32 @@
     }
 
     const definitions = new Map();
-    window.addEventListener("DOMContentLoaded",()=>{if(!definitions.has("paint"))register({id:"paint",name:"Paint",description:"Draw and export PNG images",icon:"🎨",dock:true,handler:"openPaint"});render();},{once:true});
+    const builtInApps = [
+        ["files","File Explorer","Browse, manage, and back up files","📁","openFiles",true],
+        ["notes","Notes","Write and organize notes","📝","openNotes",false],
+        ["settings","Settings","Personalize and configure WebOS","⚙️","openSettings",true],
+        ["about","About WebOS","System information and credits","ℹ️","openAbout",false],
+        ["calculator","Calculator","Everyday calculations","🧮","openCalculator",false],
+        ["calendar","Calendar","Dates, events, and reminders","📅","openCalendar",true],
+        ["monitor","System Monitor","Inspect system and runtime status","📊","openSystemMonitor",false],
+        ["wasm","WASM Lab","Build and run WebAssembly projects","🧩","openWasmLab",false],
+        ["appcreator","App Creator","Create JavaScript and WASM applications","🛠️","openAppCreator",true],
+        ["paint","Paint","Draw and export PNG images","🎨","openPaint",true]
+    ];
+
+    function registerBuiltIns() {
+        builtInApps.forEach(([id,name,description,icon,handler,dock]) => {
+            if (!definitions.has(id)) register({id,name,description,icon,handler,dock});
+        });
+        render();
+    }
+    if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", registerBuiltIns, {once:true});
+    else registerBuiltIns();
 
     function register(definition) {
+        if (!definition || typeof definition !== "object" || typeof definition.id !== "string" || !definition.id.trim()) {
+            throw new TypeError("App registration requires a non-empty id.");
+        }
         definitions.set(definition.id, Object.freeze({ ...definition }));
     }
 
@@ -129,68 +152,66 @@
      * MODIFIED: Natively wraps and passes a custom API wrapper to the launching app.
      */
     function launch(id, argument) {
-        const definition = definitions.get(id);
+        const definition = definitions.get(String(id));
         if (!definition) {
-            return window.createWindow("WebOS", "Unknown app: " + id);
+            console.warn("[WebOS App Registry] Unknown app:", id);
+            return window.createWindow?.("WebOS", "Unknown app: " + id) || null;
         }
-        
         let handler = definition.handler;
-        if (typeof handler === "string") {
-            handler = window[handler];
-        }
-        
+        if (typeof handler === "string") handler = window[handler];
         if (typeof handler !== "function") {
-            return window.createWindow("WebOS", "App handler is unavailable: " + definition.name);
+            console.error("[WebOS App Registry] Missing handler for", definition.id, handler);
+            return window.createWindow?.("App unavailable", "The handler for " + definition.name + " is not loaded. Refresh WebOS and try again.") || null;
         }
-        
-        // ================================================================
-        // API INJECTION ENGINE
-        // Dynamically instantiate a custom sandboxed API context client 
-        // using the app's unique registry id token metadata boundary.
-        // ================================================================
-        const appAPIInstance = new window.WebOSAppClient(definition.id);
-        
-        // Execute app logic: Passes the API proxy first, then any custom initial arguments
-        return handler(appAPIInstance, argument);
+        try {
+            const appAPIInstance = new window.WebOSAppClient(definition.id);
+            const result = handler(appAPIInstance, argument);
+            if (result && typeof result.then === "function") {
+                return result.catch(error => {
+                    console.error("[WebOS App Registry] Async launch failed:", definition.id, error);
+                    window.createWindow?.(definition.name + " — Error", "The app could not start: " + (error?.message || String(error)));
+                    return null;
+                });
+            }
+            return result;
+        } catch (error) {
+            console.error("[WebOS App Registry] Launch failed:", definition.id, error);
+            return window.createWindow?.(definition.name + " — Error", "The app could not start: " + (error?.message || String(error))) || null;
+        }
     }
 
     function render() {
-        // FIX: Match the exact uppercase class name from your index.html layout template
-        const grid = document.querySelector(".LauncherGrid"); 
+        const grid = document.querySelector(".LauncherGrid") || document.getElementById("launcher-grid");
         const dock = document.getElementById("dock");
-        if (!grid || !dock) return;
-        
-        grid.replaceChildren();
-        dock.replaceChildren();
-        
-        all().forEach((definition) => {
-            const launcherButton = document.createElement("button");
-            launcherButton.className = "AppIcon";
-            launcherButton.type = "button";
-            launcherButton.dataset.app = definition.id;
-            
-            const rawSearchToken = [definition.name, definition.description, definition.id].join(" ").toLowerCase();
-            launcherButton.dataset.search = rawSearchToken;
-            launcherButton.setAttribute("aria-label", `${definition.name}: ${definition.description}`);
-            
-            const iconNode = document.createElement("strong");
-            iconNode.textContent = definition.icon;
-            const nameNode = document.createElement("span");
-            nameNode.textContent = definition.name;
-            const descriptionNode = document.createElement("small");
-            descriptionNode.textContent = definition.description;
-            launcherButton.append(iconNode, nameNode, descriptionNode);
-            
-            launcherButton.addEventListener("click", () => launch(definition.id));
-            grid.appendChild(launcherButton);
-            
-            if (definition.dock) {
+        if (grid) grid.replaceChildren();
+        if (dock) dock.replaceChildren();
+        if (!grid && !dock) return;
+
+        all().forEach(definition => {
+            if (grid) {
+                const launcherButton = document.createElement("button");
+                launcherButton.className = "AppIcon";
+                launcherButton.type = "button";
+                launcherButton.dataset.app = definition.id;
+                launcherButton.dataset.search = [definition.name, definition.description, definition.id].join(" ").toLowerCase();
+                launcherButton.setAttribute("aria-label", definition.name + ": " + (definition.description || "Open application"));
+                const iconNode = document.createElement("strong");
+                iconNode.textContent = definition.icon || "▣";
+                const nameNode = document.createElement("span");
+                nameNode.textContent = definition.name || definition.id;
+                const descriptionNode = document.createElement("small");
+                descriptionNode.textContent = definition.description || "";
+                launcherButton.append(iconNode, nameNode, descriptionNode);
+                launcherButton.addEventListener("click", () => launch(definition.id));
+                grid.appendChild(launcherButton);
+            }
+            if (dock && definition.dock) {
                 const dockButton = document.createElement("button");
                 dockButton.className = "DockIcon";
                 dockButton.type = "button";
-                dockButton.title = definition.name;
-                dockButton.textContent = definition.icon;
-                
+                dockButton.title = definition.name || definition.id;
+                dockButton.setAttribute("aria-label", "Open " + (definition.name || definition.id));
+                dockButton.textContent = definition.icon || "▣";
                 dockButton.addEventListener("click", () => launch(definition.id));
                 dock.appendChild(dockButton);
             }
