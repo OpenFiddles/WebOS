@@ -1342,7 +1342,7 @@ function openBrowser(initialUrl) {
         const parsed = new URL(url);
         tab.frame.src = parsed.origin === window.location.origin
             ? url
-            : "/api/browser-proxy?url=" + encodeURIComponent(url);
+            : "/api/browser-proxy?__webos_url=" + encodeURIComponent(url);
         tab.timer = window.setTimeout(() => {
             tab.loading = false;
             if (activeTab === tab) {
