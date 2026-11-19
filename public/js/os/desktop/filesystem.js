@@ -381,7 +381,7 @@
     async function trash(path){const src=normalize(path);if(src==="/")throw Error("Cannot trash the filesystem root.");const dest="/Trash/"+Date.now().toString(36)+"-"+src.split("/").pop().replace(/[^a-z0-9._-]/gi,"_");await move(src,dest);return dest;}
     async function restore(path,destination){return move(path,destination);}
     async function emptyTrash(){const items=await list("/Trash");for(const item of items)await remove(item.path);return items.length;}
-    async function exportBackup(){const db=await openDatabase(),entries=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);});return{format:"webos-filesystem-backup",version:1,exportedAt:new Date().toISOString(),entries:entries.map(e=>({...e,content:e.binary&&e.content instanceof ArrayBuffer?Array.from(new Uint8Array(e.content)):e.content}))};}
+    async function exportBackup(){await ensureSeeded();const db=await openDatabase(),entries=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);});return{format:"webos-filesystem-backup",version:1,exportedAt:new Date().toISOString(),entries:entries.map(e=>({...e,content:e.binary&&e.content instanceof ArrayBuffer?Array.from(new Uint8Array(e.content)):e.content}))};}
     async function importBackup(data, options = {}) {
         if (data?.format !== "webos-filesystem-backup" || data.version !== 1 || !Array.isArray(data.entries)) throw Error("Unsupported WebOS filesystem backup.");
         if (data.entries.length > 50000) throw Error("Backup contains too many entries.");
