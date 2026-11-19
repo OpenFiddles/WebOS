@@ -52,7 +52,14 @@
             request.onerror = () => resolve(false);
         });
 
-        if (hasRoot) return;
+        if (hasRoot) {
+            const defaults=["/Pictures","/Music","/Videos","/Applications","/Trash"];
+            for(const path of defaults){
+                const exists=await new Promise(resolve=>{const tx=database.transaction(storeName,"readonly"),r=tx.objectStore(storeName).get(path);r.onsuccess=()=>resolve(!!r.result);r.onerror=()=>resolve(false);});
+                if(!exists)await new Promise((resolve,reject)=>{const tx=database.transaction(storeName,"readwrite");tx.objectStore(storeName).put({path,type:"directory",size:0,created:Date.now(),modified:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});
+            }
+            return;
+        }
         
         const seedData = [
             { path: "/", type: "directory", size: 0, modified: Date.now() },
