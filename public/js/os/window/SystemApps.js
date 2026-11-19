@@ -1258,6 +1258,9 @@ function openBrowser(initialUrl) {
         <div class="BrowserFramesContainer" style="position:relative;display:flex;flex:1;min-height:0;background:#fff;">
             <div class="BrowserHint" role="status" style="display:none;position:absolute;top:0;left:0;right:0;background:#9d3030;color:#fff;padding:10px;text-align:center;z-index:5;">Compatibility mode: basic HTML, CSS, images, forms, and common fetch/XHR requests are proxied. Sites requiring sign-in cookies, DRM, WebSockets, or unsupported browser APIs may not work. Use ↗ for full browser compatibility.</div>
         </div>
+        <footer class="BrowserStatus" role="status" aria-live="polite" style="display:flex;justify-content:space-between;gap:8px;padding:5px 10px;background:#171717;color:#b8c7d8;font-size:12px;border-top:1px solid #333;">
+            <span class="BrowserStatusText">Ready</span><span class="BrowserSecurityLabel">WebOS compatibility proxy · HTTP(S) only</span>
+        </footer>
     </div>`;
     
     const win = createWindow("Browser", htmlTemplate);
@@ -1271,6 +1274,7 @@ function openBrowser(initialUrl) {
     const addressBar = win.querySelector(".BrowserAddressInput");
     const framesContainer = win.querySelector(".BrowserFramesContainer");
     const hint = win.querySelector(".BrowserHint");
+    const browserStatus = win.querySelector(".BrowserStatusText");
     const searchForm = win.querySelector(".BrowserBar");
     const backButton = win.querySelector(".BrowserBack");
     const forwardButton = win.querySelector(".BrowserForward");
@@ -1311,6 +1315,7 @@ function openBrowser(initialUrl) {
             item.button.setAttribute("aria-selected", item === tab ? "true" : "false");
         });
         hint.style.display = "none";
+        browserStatus.textContent = tab.loading ? "Loading…" : (tab.history.length ? "Page ready" : "Ready");
         updateControls(tab);
     }
 
@@ -1331,13 +1336,19 @@ function openBrowser(initialUrl) {
         }
         addressBar.value = url;
         hint.style.display = "none";
+        browserStatus.textContent = "Connecting to " + new URL(url).hostname + "…";
+        tab.loading = true;
         clearTimeout(tab.timer);
         const parsed = new URL(url);
         tab.frame.src = parsed.origin === window.location.origin
             ? url
             : "/api/browser-proxy?url=" + encodeURIComponent(url);
         tab.timer = window.setTimeout(() => {
-            if (activeTab === tab) hint.style.display = "block";
+            tab.loading = false;
+            if (activeTab === tab) {
+                hint.style.display = "block";
+                browserStatus.textContent = "Still waiting. The site may block proxy compatibility; try ↗ to open it externally.";
+            }
         }, 12000);
         updateControls(tab);
     }
@@ -1356,7 +1367,19 @@ function openBrowser(initialUrl) {
         // Remote pages run in an opaque-origin sandbox so they cannot reach the WebOS parent window.
         frame.setAttribute("sandbox", "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads");
         const tab = { id, button, frame, history: [], pointer: -1, timer: null };
-        frame.addEventListener("load", () => clearTimeout(tab.timer));
+        frame.addEventListener("load", () => {
+            clearTimeout(tab.timer);
+            tab.loading = false;
+            if (activeTab === tab) {
+                hint.style.display = "none";
+                browserStatus.textContent = "Page loaded · " + new URL(tab.history[tab.pointer]).hostname;
+            }
+        });
+        frame.addEventListener("error", () => {
+            clearTimeout(tab.timer);
+            tab.loading = false;
+            if (activeTab === tab) browserStatus.textContent = "Could not load this page. Check the address or open it externally.";
+        });
         button.addEventListener("click", () => activateTab(tab));
         tabs.push(tab);
         tabContainer.appendChild(button);
