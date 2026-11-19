@@ -113,7 +113,8 @@
         window.WebOSAppClient = WebOSAppClient;
     }
 
-    const definitions = new Map();\n    window.addEventListener("DOMContentLoaded",()=>{if(!definitions.has("paint"))register({id:"paint",name:"Paint",description:"Draw and export PNG images",icon:"🎨",dock:true,handler:"openPaint"});render();},{once:true});
+    const definitions = new Map();
+    window.addEventListener("DOMContentLoaded",()=>{if(!definitions.has("paint"))register({id:"paint",name:"Paint",description:"Draw and export PNG images",icon:"🎨",dock:true,handler:"openPaint"});render();},{once:true});
 
     function register(definition) {
         definitions.set(definition.id, Object.freeze({ ...definition }));

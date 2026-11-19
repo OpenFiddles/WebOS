@@ -376,7 +376,8 @@
     async function emptyTrash(){const items=await list("/Trash");for(const item of items)await remove(item.path);return items.length;}
     async function exportBackup(){const db=await openDatabase(),entries=await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readonly"),r=tx.objectStore(storeName).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error);});return{format:"webos-filesystem-backup",version:1,exportedAt:new Date().toISOString(),entries:entries.map(e=>({...e,content:e.binary&&e.content instanceof ArrayBuffer?Array.from(new Uint8Array(e.content)):e.content}))};}
     async function importBackup(data){if(data?.format!=="webos-filesystem-backup"||data.version!==1||!Array.isArray(data.entries))throw Error("Unsupported WebOS filesystem backup.");const entries=data.entries.map(e=>{const path=normalize(e.path);if(path!==e.path||!["file","directory"].includes(e.type))throw Error("Invalid backup entry.");return{...e,path,content:e.binary?new Uint8Array(e.content).buffer:e.content};});if(!entries.some(e=>e.path==="/")||new Set(entries.map(e=>e.path)).size!==entries.length)throw Error("Backup has missing root or duplicate paths.");const db=await openDatabase();await new Promise((ok,no)=>{const tx=db.transaction(storeName,"readwrite"),s=tx.objectStore(storeName);entries.forEach(e=>s.put(e));tx.oncomplete=ok;tx.onerror=()=>no(tx.error);});return{imported:entries.length};}
-\n    // Freeze and bind the object export cleanly
+
+    // Freeze and bind the object export cleanly
         window.WebOSFileSystem = Object.freeze({
             openDatabase,
             normalize,
