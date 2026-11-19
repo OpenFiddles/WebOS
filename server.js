@@ -295,14 +295,9 @@ app.all('/api/browser-proxy', (req, res) => {
 });
 
 
-const wsServer = new WebSocket.Server({
-  noServer: true,
-  perMessageDeflate: false,
-  handleProtocols: protocols => protocols.values().next().value || false
-});
 function attachWebSocketProxy(server) {
   server.on('upgrade', (req, socket, head) => {
-    if (!req.url || !req.url.startsWith('/api/browser-ws?')) return;
+    if (!req.url || !req.url.startsWith('/api/browser-ws?')) { socket.destroy(); return; }
     (async () => {
       let upstream;
       try {
@@ -331,8 +326,13 @@ function attachWebSocketProxy(server) {
         }, 17000);
         upstream.once('open', () => {
           clearTimeout(timer);
-          wsServer.handleUpgrade(req, socket, head, client => {
-            wsServer.emit('connection', client, req);
+          const localWsServer = new WebSocket.Server({
+            noServer: true,
+            perMessageDeflate: false,
+            handleProtocols: offered => upstream.protocol && offered.has(upstream.protocol) ? upstream.protocol : false
+          });
+          localWsServer.handleUpgrade(req, socket, head, client => {
+            localWsServer.emit('connection', client, req);
             client.on('message', (data, isBinary) => {
               if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary: isBinary });
             });
