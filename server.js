@@ -10,6 +10,9 @@ const axios = require('axios');
 const path = require('path');
 const dns = require('node:dns').promises;
 const net = require('node:net');
+const crypto = require('node:crypto');
+const http = require('node:http');
+const WebSocket = require('ws');
 
 const app = express();
 const { createClient } = require('@supabase/supabase-js');
@@ -63,6 +66,111 @@ async function validateTarget(input) {
   url._webosResolvedAddresses = addresses;
   return url;
 }
+
+const PROXY_STATE_COOKIE = 'webos_proxy_state';
+const COOKIE_SECRET = crypto.createHash('sha256').update(
+  process.env.WEBOS_PROXY_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || crypto.randomBytes(32)
+).digest();
+function parseRequestCookies(header = '') {
+  const out = {};
+  for (const part of header.split(';')) {
+    const index = part.indexOf('=');
+    if (index > 0) out[part.slice(0, index).trim()] = part.slice(index + 1).trim();
+  }
+  return out;
+}
+function decryptCookieState(req) {
+  try {
+    const token = parseRequestCookies(req.headers.cookie)[PROXY_STATE_COOKIE];
+    if (!token) return [];
+    const [ivText, tagText, dataText] = token.split('.');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', COOKIE_SECRET, Buffer.from(ivText, 'base64url'));
+    decipher.setAuthTag(Buffer.from(tagText, 'base64url'));
+    const plain = Buffer.concat([decipher.update(Buffer.from(dataText, 'base64url')), decipher.final()]);
+    const parsed = JSON.parse(plain.toString('utf8'));
+    return Array.isArray(parsed) ? parsed.filter(c => c && c.name && c.domain && c.value !== undefined && (!c.expires || c.expires > Date.now())) : [];
+  } catch (_) { return []; }
+}
+function encryptCookieState(cookies) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', COOKIE_SECRET, iv);
+  const data = Buffer.concat([cipher.update(JSON.stringify(cookies)), cipher.final()]);
+  return [iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), data.toString('base64url')].join('.');
+}
+function cookiePathMatches(requestPath, cookiePath) {
+  const p = cookiePath || '/';
+  return requestPath === p || (requestPath.startsWith(p) && (p.endsWith('/') || requestPath[p.length] === '/'));
+}
+function cookiesForUrl(cookies, url) {
+  const host = url.hostname.toLowerCase();
+  const now = Date.now();
+  return cookies.filter(c => {
+    const domain = String(c.domain).toLowerCase().replace(/^\./, '');
+    const domainOk = c.hostOnly ? host === domain : host === domain || host.endsWith('.' + domain);
+    return domainOk && cookiePathMatches(url.pathname || '/', c.path) &&
+      (!c.secure || url.protocol === 'https:') && (!c.expires || c.expires > now);
+  }).map(c => c.name + '=' + c.value).join('; ');
+}
+function updateCookieJar(cookies, setCookieHeaders, url) {
+  const jar = cookies.slice();
+  for (const line of (Array.isArray(setCookieHeaders) ? setCookieHeaders : setCookieHeaders ? [setCookieHeaders] : [])) {
+    const parts = String(line).split(';');
+    const first = parts.shift();
+    const split = first.indexOf('=');
+    if (split <= 0) continue;
+    const name = first.slice(0, split).trim();
+    const value = first.slice(split + 1).trim();
+    if (!name || /[\s;,]/.test(name)) continue;
+    const c = { name, value, domain: url.hostname.toLowerCase(), hostOnly: true, path: (url.pathname.match(/^.*\//) || ['/'])[0] || '/', secure: false, httpOnly: false, sameSite: '', updated: Date.now() };
+    let remove = false;
+    for (const attr of parts) {
+      const [rawKey, ...rawValue] = attr.trim().split('=');
+      const key = rawKey.toLowerCase(), val = rawValue.join('=').trim();
+      if (key === 'domain' && val) {
+        const domain = val.replace(/^\./, '').toLowerCase();
+        if (url.hostname !== domain && !url.hostname.endsWith('.' + domain)) { remove = true; break; }
+        c.domain = domain; c.hostOnly = false;
+      } else if (key === 'path' && val.startsWith('/')) c.path = val;
+      else if (key === 'secure') c.secure = true;
+      else if (key === 'httponly') c.httpOnly = true;
+      else if (key === 'samesite') c.sameSite = val;
+      else if (key === 'max-age') {
+        const seconds = Number(val);
+        if (Number.isFinite(seconds)) { if (seconds <= 0) remove = true; else c.expires = Date.now() + seconds * 1000; }
+      } else if (key === 'expires') {
+        const time = Date.parse(val);
+        if (Number.isFinite(time)) { c.expires = time; if (time <= Date.now()) remove = true; }
+      }
+    }
+    const index = jar.findIndex(old => old.name === c.name && old.domain === c.domain && old.path === c.path);
+    if (index >= 0) jar.splice(index, 1);
+    if (!remove) jar.push(c);
+  }
+  return jar.filter(c => !c.expires || c.expires > Date.now())
+    .sort((a, b) => b.updated - a.updated).slice(0, 40);
+}
+function persistCookieJar(res, cookies) {
+  let jar = cookies;
+  let token = encryptCookieState(jar);
+  while (Buffer.byteLength(token) > 3500 && jar.length) {
+    jar = jar.slice(0, -1);
+    token = encryptCookieState(jar);
+  }
+  res.append('Set-Cookie', PROXY_STATE_COOKIE + '=' + token + '; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000');
+}
+function vettedLookup(target) {
+  return (hostname, options, callback) => {
+    const vetted = target._webosResolvedAddresses || [];
+    if (!vetted.length || hostname.toLowerCase() !== target.hostname.toLowerCase()) {
+      return callback(new Error('The proxy could not verify the destination host.'));
+    }
+    const matching = vetted.filter(item => !options.family || item.family === options.family);
+    const selected = matching[0] || vetted[0];
+    if (options.all) return callback(null, vetted.map(item => ({ address: item.address, family: item.family })));
+    return callback(null, selected.address, selected.family);
+  };
+}
+
 const proxyUrl = url => '/api/browser-proxy?__webos_url=' + encodeURIComponent(url);
 function rewriteCss(css, baseUrl) {
   return css.replace(/url\(\s*(['"]?)(?!data:|blob:|#)([^)'"]+)\1\s*\)/gi, (all, quote, raw) => {
@@ -96,17 +204,17 @@ function rewriteHtml(html, baseUrl) {
   });
   attrs = attrs.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/gi, (all, open, css, close) => open + rewriteCss(css, baseUrl) + close);
   attrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/gi, (all, quote, css) => 'style=' + quote + rewriteCss(css, baseUrl) + quote);
-  const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var raw=typeof v==="string"?v:(v&&v.url)||"";var u=new URL(raw,base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?__webos_url="+encodeURIComponent(u.href)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);if(typeof Request!=="undefined"&&input instanceof Request){try{next=new Request(route(input.url),input)}catch(e){next=route(input.url)}}return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};var open=window.open;window.open=function(u){return open.call(this,route(u),...Array.prototype.slice.call(arguments,1))};})();</script>';
+  const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var raw=typeof v==="string"?v:(v&&v.url)||"";var u=new URL(raw,base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?__webos_url="+encodeURIComponent(u.href)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);if(typeof Request!=="undefined"&&input instanceof Request){try{next=new Request(route(input.url),input)}catch(e){next=route(input.url)}}return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};var open=window.open;window.open=function(u){return open.call(this,route(u),...Array.prototype.slice.call(arguments,1))};var NativeWebSocket=window.WebSocket;window.WebSocket=function(url,protocols){var u=new URL(url,base);if(u.protocol==='ws:'||u.protocol==='wss:'){var p=location.protocol==='https:'?'wss:':'ws:';var routed=p+'//'+location.host+'/api/browser-ws?__webos_url='+encodeURIComponent(u.href);return protocols===undefined?new NativeWebSocket(routed):new NativeWebSocket(routed,protocols)}return protocols===undefined?new NativeWebSocket(url):new NativeWebSocket(url,protocols)};window.WebSocket.prototype=NativeWebSocket.prototype;Object.defineProperty(window.WebSocket,'CONNECTING',{value:0});Object.defineProperty(window.WebSocket,'OPEN',{value:1});Object.defineProperty(window.WebSocket,'CLOSING',{value:2});Object.defineProperty(window.WebSocket,'CLOSED',{value:3});})();</script>';
   const headBase = '<base href="' + baseUrl.replace(/"/g, '&quot;') + '">';
   return attrs.replace(/<head(\s[^>]*)?>/i, match => match + headBase + bridge);
 }
-async function fetchPublicUrl(startUrl, req) {
+async function fetchPublicUrl(startUrl, req, cookieJar = []) {
   let target = await validateTarget(startUrl);
   let response;
   for (let redirects = 0; redirects <= 5; redirects++) {
     response = await axios({
       url: target.href, method: req.method === 'HEAD' ? 'HEAD' : req.method,
-      data: req.method === 'POST' ? req.body : undefined,
+      data: !['GET', 'HEAD'].includes(req.method) ? req.body : undefined,
       headers: {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
         'Accept': req.headers.accept || '*/*',
@@ -150,7 +258,7 @@ async function browserProxy(req, res) {
         }
       }
     }
-    const { response, finalUrl } = await fetchPublicUrl(destination.href, req);
+    let cookieJar = decryptCookieState(req);\n    const { response, finalUrl } = await fetchPublicUrl(destination.href, req, cookieJar);\n    cookieJar = updateCookieJar(cookieJar, response.headers['set-cookie'], new URL(finalUrl));\n    persistCookieJar(res, cookieJar);
     const contentType = String(response.headers['content-type'] || 'application/octet-stream');
     let body = Buffer.from(response.data || []);
     if (/text\/html/i.test(contentType)) body = Buffer.from(rewriteHtml(body.toString('utf8'), finalUrl));
@@ -159,7 +267,7 @@ async function browserProxy(req, res) {
     res.status(response.status);
     res.setHeader('Content-Type', contentType);
     if (response.headers['content-disposition']) res.setHeader('Content-Disposition', response.headers['content-disposition']);
-    if (response.headers['content-language']) res.setHeader('Content-Language', response.headers['content-language']);
+    if (response.headers['content-language']) res.setHeader('Content-Language', response.headers['content-language']);\n    for (const header of ['content-range', 'accept-ranges', 'etag', 'last-modified', 'cache-control']) {\n      if (response.headers[header]) res.setHeader(header, response.headers[header]);\n    }
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -172,13 +280,13 @@ async function browserProxy(req, res) {
 }
 app.options('/api/browser-proxy', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Content-Type, Accept, Range');
   res.setHeader('Access-Control-Max-Age', '600');
   res.status(204).end();
 });
 app.all('/api/browser-proxy', (req, res) => {
-  if (!['GET', 'HEAD', 'POST'].includes(req.method)) return res.status(405).send('This browser proxy currently supports GET, HEAD, and POST requests.');
+  if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return res.status(405).send('This browser proxy supports GET, HEAD, POST, PUT, PATCH, and DELETE requests.');
   browserProxy(req, res);
 });
 
