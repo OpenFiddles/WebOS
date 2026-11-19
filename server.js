@@ -71,6 +71,13 @@ function rewriteCss(css, baseUrl) {
     try { return '@import url("' + proxyUrl(new URL(raw, baseUrl).href, baseUrl) + '")'; } catch (_) { return all; }
   });
 }
+function rewriteJavaScript(source, baseUrl) {
+  const route = raw => { try { return proxyUrl(new URL(raw, baseUrl).href, baseUrl); } catch (_) { return raw; } };
+  return source
+    .replace(/(\\b(?:from\\s*|import\\s*|import\\s*\\(\\s*)['"])(\\.{1,2}\\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
+    .replace(/(\\bnew\\s+(?:Worker|SharedWorker)\\s*\\(\\s*['"])(\\.{1,2}\\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
+    .replace(/\\bimport\\.meta\\.url\\b/g, JSON.stringify(baseUrl));
+}
 function rewriteHtml(html, baseUrl) {
   const removeCsp = html.replace(/<meta\b[^>]*http-equiv\s*=\s*(['"]?)content-security-policy\1[^>]*>/gi, '');
   const withoutBase = removeCsp.replace(/<base\b[^>]*>/gi, '');
@@ -89,8 +96,9 @@ function rewriteHtml(html, baseUrl) {
   });
   attrs = attrs.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/gi, (all, open, css, close) => open + rewriteCss(css, baseUrl) + close);
   attrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/gi, (all, quote, css) => 'style=' + quote + rewriteCss(css, baseUrl) + quote);
-  const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var u=new URL(typeof v==="string"?v:(v&&v.url)||"",base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?url="+encodeURIComponent(u.href)+"&ref="+encodeURIComponent(base)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);if(typeof Request!=="undefined"&&input instanceof Request){try{next=new Request(route(input.url),input)}catch(e){next=route(input.url)}}return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};})();</script>';
-  return attrs.replace(/<head(\s[^>]*)?>/i, match => match + bridge);
+  const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var raw=typeof v==="string"?v:(v&&v.url)||"";var u=new URL(raw,base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?url="+encodeURIComponent(u.href)+"&ref="+encodeURIComponent(base)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);if(typeof Request!=="undefined"&&input instanceof Request){try{next=new Request(route(input.url),input)}catch(e){next=route(input.url)}}return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};var open=window.open;window.open=function(u){return open.call(this,route(u),...Array.prototype.slice.call(arguments,1))};})();</script>';
+  const headBase = '<base href="' + baseUrl.replace(/"/g, '&quot;') + '">';
+  return attrs.replace(/<head(\\s[^>]*)?>/i, match => match + headBase + bridge);
 }
 async function fetchPublicUrl(startUrl, req) {
   let target = await validateTarget(startUrl);
@@ -132,13 +140,26 @@ async function browserProxy(req, res) {
   try {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).send('Missing URL parameter.');
-    const { response, finalUrl } = await fetchPublicUrl(String(targetUrl), req);
+    // GET form fields arrive on the proxy endpoint; forward them to the target.
+    const destination = new URL(String(targetUrl));
+    if (req.method === 'GET') {
+      for (const [key, value] of Object.entries(req.query)) {
+        if (['url', 'ref', '__proto__', 'constructor'].includes(key)) continue;
+        for (const item of Array.isArray(value) ? value : [value]) {
+          if (item !== undefined && item !== null) destination.searchParams.append(key, String(item));
+        }
+      }
+    }
+    const { response, finalUrl } = await fetchPublicUrl(destination.href, req);
     const contentType = String(response.headers['content-type'] || 'application/octet-stream');
     let body = Buffer.from(response.data || []);
     if (/text\/html/i.test(contentType)) body = Buffer.from(rewriteHtml(body.toString('utf8'), finalUrl));
     else if (/text\/css/i.test(contentType)) body = Buffer.from(rewriteCss(body.toString('utf8'), finalUrl));
+    else if (/javascript|ecmascript/i.test(contentType)) body = Buffer.from(rewriteJavaScript(body.toString('utf8'), finalUrl));
     res.status(response.status);
     res.setHeader('Content-Type', contentType);
+    if (response.headers['content-disposition']) res.setHeader('Content-Disposition', response.headers['content-disposition']);
+    if (response.headers['content-language']) res.setHeader('Content-Language', response.headers['content-language']);
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -152,7 +173,7 @@ async function browserProxy(req, res) {
 app.options('/api/browser-proxy', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Content-Type, Accept');
+  res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || 'Content-Type, Accept, Range');
   res.setHeader('Access-Control-Max-Age', '600');
   res.status(204).end();
 });
