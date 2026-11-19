@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use or refer to this software in academic work, research, or other publications, please cite the project repository."
+message: "If you use WebOS in research, teaching, or another publication, please cite this software using the metadata below."
 title: "WebOS"
 version: "0.6"
 date-released: "2026-11-19"
@@ -12,12 +12,16 @@ url: "https://web-os-iota.vercel.app"
 license: "GPL-3.0-or-later"
 abstract: >-
   WebOS is a browser-based desktop environment built with HTML, CSS,
-  JavaScript, and browser APIs. It provides a desktop-style workspace,
-  application windows, built-in tools, a browser-local virtual filesystem,
-  and experimental JavaScript and WebAssembly application runtimes.
+  JavaScript, and browser APIs. It provides a desktop workspace with
+  configurable visual environments, application windows, a launcher and
+  dock, a browser-local virtual filesystem, developer tools, and experimental
+  JavaScript and WebAssembly application runtimes.
 keywords:
-  - browser-based desktop
+  - WebOS
+  - browser-based desktop environment
   - web operating system
   - JavaScript
   - WebAssembly
   - virtual filesystem
+  - desktop customization
+  - open source software

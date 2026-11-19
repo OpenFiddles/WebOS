@@ -8,6 +8,7 @@ WebOS brings a desktop-style workspace to the web. It includes a window manager,
 - **GitLab repository:** https://gitlab.com/openfiddles/WebOS
 - **Project namespace:** OpenFiddles
 - **Current package version:** 0.6
+- **Citation metadata:** [CITATION.cff](CITATION.cff)
 - **License:** GNU GPL v3.0 or later (see [LICENSE](LICENSE))
 
 ## Features
@@ -15,7 +16,8 @@ WebOS brings a desktop-style workspace to the web. It includes a window manager,
 ### Desktop experience
 - Draggable, resizable, minimizable, and maximizable application windows.
 - Launcher, taskbar, dock, desktop shortcuts, and desktop context menu.
-- Appearance settings for themes, accent colors, wallpapers, animation profiles, and reduced motion.
+- Appearance settings for themes, accent colors, custom wallpapers, animation profiles, reduced motion, and macOS/Windows/ChromeOS/Linux-inspired desktop presets.
+- Window chrome presets and a CSS customization editor with reusable starter styles.
 - Responsive mobile entry point and a separate mobile shell.
 
 ### Built-in applications

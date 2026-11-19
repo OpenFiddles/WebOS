@@ -460,6 +460,8 @@ function openSettings() {
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 1rem;">
                 <h2>Better Settings</h2>
                 
+                <div class="setting-field"><label for="desktop-style-choice">Desktop environment</label><select id="desktop-style-choice"><option value="webos">WebOS · Modern</option><option value="macos">macOS-inspired</option><option value="windows">Windows-inspired</option><option value="chromeos">ChromeOS-inspired</option><option value="linux">Linux workstation</option></select><small>Changes the menu bar, taskbar, dock, desktop spacing and window chrome.</small></div>
+                <div class="setting-field"><label for="window-style-choice">Window appearance</label><select id="window-style-choice"><option value="auto">Match desktop preset</option><option value="glass">Liquid glass</option><option value="flat">Flat panels</option><option value="compact">Compact classic</option></select></div>
                 <div class="setting-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
                     <label for="theme-choice">Accent theme</label>
                     <select id="theme-choice" style="padding: 0.4rem; border-radius: 4px;">
@@ -489,6 +491,7 @@ function openSettings() {
                         <option value="midnight">Midnight</option>
                         <option value="ember">Ember</option>
                         <option value="ocean">Ocean glow</option>
+                        <option value="sakura">Sakura</option><option value="forest">Forest</option><option value="graphite">Graphite</option><option value="sunset">Sunset sky</option>
                         <option value="custom">Custom image</option>
                     </select>
                     <input id="wallpaper-file" type="file" accept="image/*">
@@ -544,6 +547,7 @@ function openSettings() {
                 </div>
 
                 <div class="setting-field" style="display:flex;flex-direction:column;gap:6px;">
+                    <label for="css-starter">CSS starter preset</label><div style="display:flex;gap:.5rem;flex-wrap:wrap"><select id="css-starter"><option value="">Choose a starter…</option><option value="rounded">Soft rounded windows</option><option value="minimal">Minimal monochrome</option><option value="neon">Neon developer</option><option value="paper">Warm paper</option></select><button type="button" id="css-insert-starter">Insert starter</button></div>
                     <label for="css-full-editor">Custom CSS stylesheet</label>
                     <textarea id="css-full-editor" spellcheck="false" style="width:100%;min-height:150px;resize:vertical;font:12px/1.5 ui-monospace,monospace;" placeholder="/* Add CSS rules here */"></textarea>
                     <small style="opacity:.7;">Saved locally and injected into the desktop. @import and script-like CSS expressions are blocked.</small>
@@ -630,6 +634,8 @@ function openSettings() {
 
     // 3. Extract active DOM element bindings from compiled frame template
     const choice = win.querySelector("#theme-choice");
+    const desktopStyleChoice = win.querySelector("#desktop-style-choice");
+    const windowStyleChoice = win.querySelector("#window-style-choice");
     const motion = win.querySelector("#motion-choice");
     const accentChoice = win.querySelector("#accent-choice");
     const wallpaperChoice = win.querySelector("#wallpaper-choice");
@@ -653,6 +659,8 @@ function openSettings() {
     // 4. Set initialization states based on storage settings
     const selectedTheme = localStorage.getItem("webos-theme") || "ocean";
     choice.value = selectedTheme;
+    desktopStyleChoice.value = localStorage.getItem("webos-desktop-style") || "webos";
+    windowStyleChoice.value = localStorage.getItem("webos-window-style") || "auto";
     motion.checked = localStorage.getItem("webos-reduced-motion") === "true";
     accentChoice.value = localStorage.getItem("webos-accent") || "#53b5ff";
     animationChoice.value = localStorage.getItem("webos-motion-style") || "smooth";
@@ -694,6 +702,9 @@ function openSettings() {
         status.textContent = entered ? "Fullscreen enabled." :
             "Saved. Click or press a key in WebOS to enter fullscreen if the browser blocked the request.";
     });
+
+    desktopStyleChoice.addEventListener("change", () => { localStorage.setItem("webos-desktop-style", desktopStyleChoice.value); window.WebOSAppearance?.apply(); status.textContent = "Desktop preset applied."; });
+    windowStyleChoice.addEventListener("change", () => { localStorage.setItem("webos-window-style", windowStyleChoice.value); window.WebOSAppearance?.apply(); status.textContent = "Window appearance updated."; });
 
     choice.addEventListener("change", () => {
         localStorage.setItem("webos-theme", choice.value);
@@ -781,6 +792,8 @@ function openSettings() {
 
     win.querySelector("#reset-appearance").addEventListener("click", () => {
         localStorage.removeItem("webos-theme");
+        localStorage.removeItem("webos-desktop-style"); localStorage.removeItem("webos-window-style");
+        desktopStyleChoice.value = "webos"; windowStyleChoice.value = "auto";
         localStorage.removeItem("webos-accent");
         localStorage.removeItem("webos-wallpaper");
         localStorage.removeItem("webos-custom-wallpaper");
@@ -936,6 +949,18 @@ function openSettings() {
         try { validateAndApplyCss(fullCssEditor.value); }
         catch (error) { status.textContent = "CSS not applied: " + error.message; }
     };
+    win.querySelector("#css-insert-starter").addEventListener("click", () => {
+        const starters = {
+            rounded: "/* Soft rounded windows */\n.window-shell.glass{border-radius:22px!important;box-shadow:0 24px 70px rgba(0,0,0,.32)!important}\n.window-titlebar{min-height:48px}",
+            minimal: "/* Minimal monochrome */\n.window-shell.glass{background:#f4f4f5!important;color:#18181b!important;border:1px solid #d4d4d8!important;box-shadow:0 12px 36px #0002!important;backdrop-filter:none!important}\n.window-titlebar{background:#e4e4e7!important;color:#18181b!important}.window-body{color:#18181b!important;background:#fafafa!important}",
+            neon: "/* Neon developer */\n.window-shell.glass{border:1px solid #35f2d0!important;box-shadow:0 0 28px #35f2d033!important;background:#08131b!important}.window-titlebar{background:#0d202b!important}",
+            paper: "/* Warm paper */\n.window-shell.glass{background:#f1e8d8!important;color:#33291f!important;border:1px solid #cbb99e!important;backdrop-filter:none!important}.window-titlebar{background:#e3d5bf!important;color:#33291f!important}.window-body{background:#f8f1e6!important;color:#33291f!important}"
+        };
+        const css = starters[win.querySelector("#css-starter").value];
+        if (!css) { status.textContent = "Choose a CSS starter first."; return; }
+        fullCssEditor.value = fullCssEditor.value.trim() + (fullCssEditor.value.trim() ? "\n\n" : "") + css;
+        status.textContent = "Starter inserted. Select Validate & Apply CSS to preview and save it.";
+    });
 
     btnSaveCss.onclick = () => {
         if (!selectedDomSelector) return;

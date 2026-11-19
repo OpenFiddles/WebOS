@@ -9,11 +9,15 @@
     const motion=get("webos-motion-style","smooth");
     const reduced=get("webos-reduced-motion","false")==="true";
     const liquid=get("webos-liquid-glass","false")==="true";
+    const desktopStyle=get("webos-desktop-style","webos");
+    const windowStyle=get("webos-window-style","auto");
     body.dataset.theme=theme;
     body.dataset.wallpaper=custom?"custom":wallpaper;
     body.dataset.motion=motion;
     body.dataset.reducedMotion=String(reduced);
     body.dataset.liquidGlass=String(liquid);
+    body.dataset.desktopStyle=desktopStyle;
+    body.dataset.windowStyle=windowStyle;
     root.style.setProperty("--accent",accent);
     body.style.setProperty("--accent",accent);
     const desktop=document.getElementById("Desktop");
