@@ -74,9 +74,9 @@ function rewriteCss(css, baseUrl) {
 function rewriteJavaScript(source, baseUrl) {
   const route = raw => { try { return proxyUrl(new URL(raw, baseUrl).href, baseUrl); } catch (_) { return raw; } };
   return source
-    .replace(/(\\b(?:from\\s*|import\\s*|import\\s*\\(\\s*)['"])(\\.{1,2}\\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
-    .replace(/(\\bnew\\s+(?:Worker|SharedWorker)\\s*\\(\\s*['"])(\\.{1,2}\\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
-    .replace(/\\bimport\\.meta\\.url\\b/g, JSON.stringify(baseUrl));
+    .replace(/(\b(?:from\s*|import\s*|import\s*\\(\s*)['"])(\\.{1,2}\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
+    .replace(/(\bnew\s+(?:Worker|SharedWorker)\s*\\(\s*['"])(\\.{1,2}\/[^'"]+)(['"])/g, (all, before, raw, after) => before + route(raw) + after)
+    .replace(/\bimport\\.meta\\.url\b/g, JSON.stringify(baseUrl));
 }
 function rewriteHtml(html, baseUrl) {
   const removeCsp = html.replace(/<meta\b[^>]*http-equiv\s*=\s*(['"]?)content-security-policy\1[^>]*>/gi, '');
@@ -98,7 +98,7 @@ function rewriteHtml(html, baseUrl) {
   attrs = attrs.replace(/\bstyle\s*=\s*(['"])(.*?)\1/gi, (all, quote, css) => 'style=' + quote + rewriteCss(css, baseUrl) + quote);
   const bridge = '<script>(function(){var base=' + JSON.stringify(baseUrl) + ';function route(v){try{var raw=typeof v==="string"?v:(v&&v.url)||"";var u=new URL(raw,base);if(!/^https?:$/.test(u.protocol))return v;return "/api/browser-proxy?url="+encodeURIComponent(u.href)+"&ref="+encodeURIComponent(base)}catch(e){return v}}var f=window.fetch;window.fetch=function(input,init){var next=route(input);if(typeof Request!=="undefined"&&input instanceof Request){try{next=new Request(route(input.url),input)}catch(e){next=route(input.url)}}return f.call(this,next,init)};var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=route(u);return x.apply(this,arguments)};var open=window.open;window.open=function(u){return open.call(this,route(u),...Array.prototype.slice.call(arguments,1))};})();</script>';
   const headBase = '<base href="' + baseUrl.replace(/"/g, '&quot;') + '">';
-  return attrs.replace(/<head(\\s[^>]*)?>/i, match => match + headBase + bridge);
+  return attrs.replace(/<head(\s[^>]*)?>/i, match => match + headBase + bridge);
 }
 async function fetchPublicUrl(startUrl, req) {
   let target = await validateTarget(startUrl);
