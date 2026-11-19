@@ -559,8 +559,13 @@ function openSettings() {
 
             <!-- SYSTEM DATA MANAGEMENT SECTION -->
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <h2>System</h2>
+                <label class="setting-field" style="display:flex;align-items:center;gap:.6rem;cursor:pointer;">
+                    <input id="fullscreen-always-choice" type="checkbox">
+                    <span><strong>Enable always Fullscreen</strong><br><small>Keep WebOS in fullscreen after your next interaction. Browser permission and user-gesture rules still apply.</small></span>
+                </label>
                 <button type="button" id="clear-storage">Reset WebOS data</button>
-                <p id="settings-status" style="font-size: 0.9rem; margin: 0; opacity: 0.8;">Changes are saved on this device.</p>
+                <p id="settings-status" style="font-size: 0.9rem; margin: 0; opacity: 0.8;" aria-live="polite">Changes are saved on this device.</p>
             </section>
         </div>
     `;
@@ -632,6 +637,7 @@ function openSettings() {
     const animationChoice = win.querySelector("#animation-choice");
     const liquidGlassChoice = win.querySelector("#liquid-glass-choice");
     const status = win.querySelector("#settings-status");
+    const fullscreenChoice = win.querySelector("#fullscreen-always-choice");
     
     const btnSpectate = win.querySelector("#btn-spectate");
     const hintText = win.querySelector("#inspector-hint");
@@ -651,6 +657,7 @@ function openSettings() {
     accentChoice.value = localStorage.getItem("webos-accent") || "#53b5ff";
     animationChoice.value = localStorage.getItem("webos-motion-style") || "smooth";
     liquidGlassChoice.checked = localStorage.getItem("webos-liquid-glass") === "true";
+    fullscreenChoice.checked = localStorage.getItem("webos-always-fullscreen") === "true";
     document.body.dataset.liquidGlass = String(liquidGlassChoice.checked);
     const savedWallpaper = localStorage.getItem("webos-wallpaper") || "aurora";
     const savedCustomWallpaper = localStorage.getItem("webos-custom-wallpaper");
@@ -674,6 +681,20 @@ function openSettings() {
     }
 
     // 5. System Configuration Event Handlers
+    fullscreenChoice.addEventListener("change", async () => {
+        localStorage.setItem("webos-always-fullscreen", String(fullscreenChoice.checked));
+        if (!fullscreenChoice.checked) {
+            if (document.fullscreenElement) {
+                try { await document.exitFullscreen(); } catch (_) {}
+            }
+            status.textContent = "Always Fullscreen disabled.";
+            return;
+        }
+        const entered = await window.WebOSFullscreen?.enter();
+        status.textContent = entered ? "Fullscreen enabled." :
+            "Saved. Click or press a key in WebOS to enter fullscreen if the browser blocked the request.";
+    });
+
     choice.addEventListener("change", () => {
         localStorage.setItem("webos-theme", choice.value);
         document.body.dataset.theme = choice.value;
@@ -1376,6 +1397,30 @@ function openBrowser(initialUrl) {
     createTab(initialUrl || "https://example.com");
     return win;
 }
+// Persistent fullscreen preference. Browsers require a user activation, so retry on
+// the next real interaction instead of attempting a blocked request during page load.
+(() => {
+    let pending = false;
+    async function enter() {
+        if (localStorage.getItem("webos-always-fullscreen") !== "true") return false;
+        if (document.fullscreenElement) return true;
+        const target = document.documentElement;
+        if (!target?.requestFullscreen) return false;
+        try { await target.requestFullscreen(); pending = false; return true; }
+        catch (_) { pending = true; return false; }
+    }
+    function retry() {
+        if (pending || localStorage.getItem("webos-always-fullscreen") === "true") enter();
+    }
+    document.addEventListener("pointerdown", retry, true);
+    document.addEventListener("keydown", retry, true);
+    document.addEventListener("fullscreenchange", () => {
+        if (!document.fullscreenElement && localStorage.getItem("webos-always-fullscreen") === "true") pending = true;
+    });
+    window.WebOSFullscreen = Object.freeze({ enter });
+    pending = localStorage.getItem("webos-always-fullscreen") === "true";
+})();
+
 function openAppCreator() {
     if (typeof closeLauncher === "function") closeLauncher();
 

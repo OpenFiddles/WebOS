@@ -41,7 +41,7 @@ function isPrivateAddress(address) {
   if (net.isIPv6(ip)) {
     return ip === '::' || ip === '::1' || ip.startsWith('fc') || ip.startsWith('fd') ||
       ip.startsWith('fe8') || ip.startsWith('fe9') || ip.startsWith('fea') || ip.startsWith('feb') ||
-      ip.startsWith('::ffff:127.') || ip.startsWith('::ffff:10.') || ip.startsWith('::ffff:192.168.');
+      ip.startsWith('::ffff:');
   }
   return true;
 }
@@ -53,12 +53,14 @@ async function validateTarget(input) {
   if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
     throw new Error('Local and private network addresses are blocked.');
   }
-  if (net.isIP(host)) {
-    if (isPrivateAddress(host)) throw new Error('Private network addresses are blocked.');
-  } else {
-    const records = await dns.lookup(host, { all: true, verbatim: true });
-    if (!records.length || records.some(record => isPrivateAddress(record.address))) throw new Error('This host resolves to a private network address and was blocked.');
+  if (url.port && !['80', '443'].includes(url.port)) throw new Error('Only standard web ports are supported.');
+  const addresses = net.isIP(host)
+    ? [{ address: host, family: net.isIP(host) }]
+    : await dns.lookup(host, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some(record => isPrivateAddress(record.address))) {
+    throw new Error('This host resolves to a private network address and was blocked.');
   }
+  url._webosResolvedAddresses = addresses;
   return url;
 }
 const proxyUrl = (url, ref) => '/api/browser-proxy?url=' + encodeURIComponent(url) + (ref ? '&ref=' + encodeURIComponent(ref) : '');
@@ -103,6 +105,16 @@ async function fetchPublicUrl(startUrl, req) {
         'Accept-Language': req.headers['accept-language'] || 'en-US,en;q=0.9',
         ...(req.headers['content-type'] ? { 'Content-Type': req.headers['content-type'] } : {})
       },
+      lookup: (hostname, options, callback) => {
+        const vetted = target._webosResolvedAddresses || [];
+        if (!vetted.length || hostname.toLowerCase() !== target.hostname.toLowerCase()) {
+          return callback(new Error('The proxy could not verify the destination host.'));
+        }
+        const matching = vetted.filter(item => !options.family || item.family === options.family);
+        const selected = matching[0] || vetted[0];
+        if (options.all) return callback(null, vetted.map(item => ({ address: item.address, family: item.family })));
+        return callback(null, selected.address, selected.family);
+      },
       timeout: 15000, maxRedirects: 0, maxContentLength: 15 * 1024 * 1024,
       responseType: 'arraybuffer', validateStatus: () => true
     });
@@ -129,10 +141,12 @@ async function browserProxy(req, res) {
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (req.method !== 'HEAD') res.send(body); else res.end();
   } catch (error) {
-    res.status(502).type('text/plain').send('WebOS Browser could not load this page: ' + error.message);
+    console.warn('[browser-proxy]', error && error.message ? error.message : error);
+    res.status(502).type('text/plain').send('WebOS Browser could not load this page. ' + (error.message || 'Unknown proxy error'));
   }
 }
 app.options('/api/browser-proxy', (req, res) => {
