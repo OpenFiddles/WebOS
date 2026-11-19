@@ -304,10 +304,10 @@ function openFiles() {
         const current=++token;
         list.replaceChildren(); renderBreadcrumb(); back.disabled=path==="/";
         try {
-            const entries=await window.WebOSFileSystem.list(path);
-            if(current!==token || !win.isConnected) return;
             const q=search.value.trim().toLowerCase();
-            const rows=entries.filter(e=>name(e).toLowerCase().includes(q));
+            const entries=q?await window.WebOSFileSystem.search(q,{root:path,limit:500}):await window.WebOSFileSystem.list(path);
+            if(current!==token || !win.isConnected) return;
+            const rows=entries;
             rows.sort((a,b)=>{
                 if(a.type!==b.type) return a.type==="directory"?-1:1;
                 if(sort.value==="modified") return (b.modified||0)-(a.modified||0);
