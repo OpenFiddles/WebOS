@@ -391,8 +391,10 @@ function openFiles() {
             footer.appendChild(preview);
         }
         save.disabled=!!file.binary;save.addEventListener("click",async()=>{try{await window.WebOSFileSystem.putText(entry.path,editor.value,file.mimeType||"text/plain");state.textContent="Saved · "+new Date().toLocaleTimeString();render();}catch(err){state.textContent="Save failed: "+err.message;}});
-        dl.addEventListener("click",()=>downloadText(name(entry),editor.value));
-        footer.append(save,dl,state);panel.append(info,editor,footer);createWindow(name(entry),panel);
+        dl.addEventListener("click",()=>downloadEntry(entry));
+        footer.append(save,dl,state);
+        if(file.binary&&["png","jpg","jpeg","gif","webp","bmp"].includes(ext)){const image=document.createElement("img");image.alt=name(entry);image.style.cssText="display:block;max-width:100%;max-height:45vh;object-fit:contain;margin:10px auto;background:#fff;border-radius:8px";const bytes=await window.WebOSFileSystem.readBinary(entry.path);const url=URL.createObjectURL(new Blob([bytes],{type:file.mimeType||"image/png"}));image.src=url;panel.append(info,image,footer);const previewWindow=createWindow(name(entry),panel);previewWindow?.addEventListener("webos:window-close",()=>URL.revokeObjectURL(url),{once:true});return;}
+        panel.append(info,editor,footer);createWindow(name(entry),panel);
     }
     async function createStarter(extension) {
         const defaults={
