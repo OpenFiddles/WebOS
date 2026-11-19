@@ -117,3 +117,20 @@
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(lock,250),{once:true});else setTimeout(lock,250);
   }
 })();
+
+/* Rehydrate user styles before the first window is created, not only after
+   opening Settings. */
+(() => {
+  function restoreStyles() {
+    try {
+      const custom = localStorage.getItem("webos-custom-css") || "";
+      const designer = localStorage.getItem("webos-window-designer-css") || "";
+      if (!custom && !designer) return;
+      let style = document.getElementById("custom-user-styles");
+      if (!style) { style = document.createElement("style"); style.id = "custom-user-styles"; document.head.appendChild(style); }
+      style.textContent = custom + "\n" + designer;
+    } catch (error) { console.warn("WebOS could not restore saved appearance styles:", error); }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", restoreStyles, { once: true });
+  else restoreStyles();
+})();

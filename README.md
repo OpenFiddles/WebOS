@@ -17,7 +17,9 @@ WebOS brings a desktop-style workspace to the web. It includes a window manager,
 - Draggable, resizable, minimizable, and maximizable application windows.
 - Launcher, taskbar, dock, desktop shortcuts, and desktop context menu.
 - Appearance settings for themes, accent colors, custom wallpapers, animation profiles, reduced motion, and macOS/Windows/ChromeOS/Linux-inspired desktop presets.
-- Window chrome presets and a CSS customization editor with reusable starter styles.
+- Window chrome presets and a live window designer for radius, blur, opacity, shadow, borders, and titlebar colors, plus custom CSS and reusable starter styles.
+- Local session lock options: PIN/passcode, 3×3 pattern, or convenience swipe screen; PIN and pattern verifiers are salted PBKDF2 hashes stored locally.
+- Animated desktop atmospheres (aurora, stars, mesh, waves, and rainfall), with reduced-motion support.
 - Responsive mobile entry point and a separate mobile shell.
 
 ### Built-in applications

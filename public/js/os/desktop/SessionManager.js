@@ -38,7 +38,7 @@
     if(menu){closeMenu();return}
     menu=document.createElement("section");menu.className="webos-power-menu";menu.setAttribute("aria-label","Power and session");
     const user=document.createElement("div");user.className="webos-power-user";const name=document.createElement("strong");name.textContent=current.avatar+"  "+current.name;const detail=document.createElement("small");detail.textContent="WebOS session";user.append(name,detail);menu.appendChild(user);
-    addAction("▣","Lock session",()=>showOverlay("locked"));
+    addAction("▣","Lock session",()=>{if(!window.WebOSLock?.lock())alert("Set a PIN, pattern, or swipe lock in Settings → Lock & Security first.");});
     addAction("☾","Sleep",()=>showOverlay("sleep"));
     addAction("↻","Restart WebOS",()=>{showOverlay("restart");setTimeout(()=>location.reload(),650)});
     addAction("⇄","Switch user",()=>showOverlay("users"));
@@ -73,5 +73,5 @@
   toggle.addEventListener("click",showMenu);
   document.addEventListener("pointerdown",event=>{if(menu&&!menu.contains(event.target)&&event.target!==toggle)closeMenu()});
   document.addEventListener("keydown",event=>{if(event.key==="Escape")closeMenu()});
-  window.WebOSSession=Object.freeze({currentUser:()=>({...current}),lock:()=>showOverlay("locked"),sleep:()=>showOverlay("sleep"),switchUser:()=>showOverlay("users"),restart:()=>location.reload(),logout:()=>showOverlay("users")});
+  window.WebOSSession=Object.freeze({currentUser:()=>({...current}),lock:()=>window.WebOSLock?.lock()||false,sleep:()=>showOverlay("sleep"),switchUser:()=>showOverlay("users"),restart:()=>location.reload(),logout:()=>showOverlay("users")});
 })();
