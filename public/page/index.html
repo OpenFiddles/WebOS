@@ -1,59 +1,29 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b1020">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#100d10">
   <meta name="description" content="WebOS is a customizable browser-based operating environment for individuals, teams, schools, and enterprises.">
   <title>WebOS — Your workspace, your platform</title>
   <style>
-    :root{color-scheme:dark;--bg:#080d18;--panel:#111b2b;--line:#26364c;--muted:#a8b6ca;--accent:#7c9cff}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 75% -10%,#354d8b55,transparent 42%),radial-gradient(ellipse at 5% 35%,#285b5940,transparent 35%),var(--bg);color:#f5f7ff;font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-    a{color:inherit;text-decoration:none}.wrap{width:min(1120px,calc(100% - 40px));margin:auto}
-    header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff12}
-    .brand{display:flex;align-items:center;gap:11px;font-weight:750;font-size:19px}.mark{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#83a4ff,#69d9ca);color:#07101c;font-weight:900}
-    nav{display:flex;align-items:center;gap:24px;color:#c5d0e1;font-size:13px}nav a:hover,.muted-link:hover{color:white}
-    .actions{display:flex;gap:10px;align-items:center}.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:11px;border:1px solid var(--line);font-weight:650;font-size:13px}.primary{background:#dce6ff;color:#10182a;border-color:#dce6ff}.ghost{background:#ffffff08}
-    .hero{padding:100px 0 76px;max-width:850px}.eyebrow{display:inline-flex;padding:6px 11px;border:1px solid #6078b555;background:#8ca8ff12;border-radius:999px;color:#b8caff;font-size:12px;font-weight:650;letter-spacing:.04em}
+    :root{color-scheme:dark;--bg:#100d10;--panel:#21191b;--line:#49302d;--muted:#c8b9b4}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% -10%,#9a392d55,transparent 42%),var(--bg);color:#fff8f5;font:15px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    a{color:inherit;text-decoration:none}.wrap{width:min(1120px,calc(100% - 40px));margin:auto}header{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff18}
+    .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px}.brand img{width:38px;height:38px;object-fit:contain}nav{display:flex;gap:24px;color:#d7c6c0;font-size:13px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:11px;border:1px solid var(--line);font-weight:700;font-size:13px}.primary{background:linear-gradient(115deg,#ff343b,#ff914d);color:#260f0c;border:0}.ghost{background:#ffffff08}
+    .hero{padding:100px 0 76px;max-width:850px}.eyebrow{display:inline-flex;padding:6px 11px;border:1px solid #ff694b55;background:#ff553318;border-radius:999px;color:#ffb49a;font-size:12px;font-weight:700}
     h1{font-size:clamp(42px,7vw,76px);line-height:1.04;letter-spacing:-.055em;margin:24px 0 20px}.hero p{max-width:680px;color:var(--muted);font-size:18px;line-height:1.7}.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
-    .section{padding:48px 0 76px}.section h2{font-size:28px;letter-spacing:-.03em;margin:0 0 8px}.lead{color:var(--muted);margin:0 0 24px}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:linear-gradient(145deg,#172337dd,#101827dd);border:1px solid var(--line);border-radius:18px;padding:22px;min-height:180px}.card .icon{font-size:23px}.card h3{margin:12px 0 5px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:13px}
-    .bottom{margin:20px 0 64px;padding:28px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(110deg,#172b46,#172039)}.bottom p{color:#c0cce0}
-    footer{border-top:1px solid #ffffff15;padding:24px 0 40px;color:#93a2b8;font-size:12px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-    @media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}nav{display:none}.hero{padding:76px 0 56px}}
-    @media(max-width:520px){.grid{grid-template-columns:1fr}.wrap{width:min(100% - 28px,1120px)}header{height:66px}.actions .ghost{display:none}.hero p{font-size:16px}}
+    .section{padding:48px 0 76px}.section h2{font-size:28px;letter-spacing:-.03em;margin:0 0 8px}.lead{color:var(--muted);margin:0 0 24px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:linear-gradient(145deg,#281f21dd,#171315dd);border:1px solid var(--line);border-radius:18px;padding:22px;min-height:180px}.card .icon{font-size:23px}.card h3{margin:12px 0 5px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:13px}
+    .bottom{margin:20px 0 64px;padding:28px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(110deg,#3a211e,#211719)}.bottom p{color:#e0c9c0}footer{border-top:1px solid #ffffff15;padding:24px 0 40px;color:#b7a6a0;font-size:12px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    @media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}nav{display:none}.hero{padding:76px 0 56px}}@media(max-width:520px){.grid{grid-template-columns:1fr}.wrap{width:min(100% - 28px,1120px)}header{height:66px}.hero p{font-size:16px}}
   </style>
-</head>
-<body>
-  <header class="wrap">
-    <a class="brand" href="/page/"><span class="mark">W</span> WebOS</a>
-    <nav aria-label="Main navigation"><a href="#platform">Platform</a><a href="#audiences">Who it's for</a><a href="#plans">Plans</a></nav>
-    <div class="actions"><a class="btn ghost" href="/">Open WebOS</a><a class="btn primary" href="#plans">Explore plans</a></div>
-  </header>
-  <main class="wrap">
-    <section class="hero" id="platform">
-      <span class="eyebrow">A flexible workspace for everyone</span>
-      <h1>Your workspace.<br> Your platform.</h1>
-      <p>WebOS brings a customizable desktop experience to the browser, with a growing platform for personal productivity, collaboration, education, and managed organizational workspaces.</p>
-      <div class="hero-actions"><a class="btn primary" href="/">Launch WebOS desktop</a><a class="btn ghost" href="/mobile.html">Explore mobile edition</a></div>
-    </section>
-    <section class="section" id="audiences">
-      <h2>One platform. Different ways to work.</h2>
-      <p class="lead">Start with the browser-based desktop. Add cloud and organization services when you need them.</p>
-      <div class="grid">
-        <article class="card"><div class="icon">◈</div><h3>Personal</h3><p>A customizable desktop, local apps, files, and creative tools for individual use.</p></article>
-        <article class="card"><div class="icon">▦</div><h3>Teams & businesses</h3><p>Shared workspaces, people, collaboration, and centralized team administration.</p></article>
-        <article class="card"><div class="icon">⌂</div><h3>Education</h3><p>A foundation for classrooms, educators, student workspaces, and managed learning environments.</p></article>
-        <article class="card"><div class="icon">⬡</div><h3>Enterprise</h3><p>Organization-wide management, policy controls, and scalable cloud services.</p></article>
-      </div>
-    </section>
-    <section class="bottom" id="plans">
-      <h2>Free to use. Cloud services when you need more.</h2>
-      <p>The WebOS desktop remains available without a paid subscription. Paid plans are intended for hosted services such as team management, shared history, cloud workspaces, and virtual machine sandboxes. Plan availability and pricing will be announced as those services are built.</p>
-      <a class="btn primary" href="/">Try WebOS now</a>
-    </section>
-  </main>
-  <footer class="wrap"><span>© <span id="year"></span> WebOS</span><span>Browser-based operating environment</span><a href="/">Open desktop</a></footer>
-  <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
-</body>
-</html>
+</head><body>
+<header class="wrap"><a class="brand" href="/page/"><img src="/images/icons/3.png" alt="">WebOS</a><nav aria-label="Main navigation"><a href="#platform">Platform</a><a href="#audiences">Who it's for</a><a href="#plans">Plans</a></nav><a class="btn ghost" href="/">Open WebOS</a></header>
+<main class="wrap"><section class="hero" id="platform"><span class="eyebrow">A flexible workspace for everyone</span><h1>Your workspace.<br>Your platform.</h1><p>WebOS brings a customizable desktop experience to the browser, with a growing platform for personal productivity, collaboration, education, and managed organizational workspaces.</p><div class="hero-actions"><a class="btn primary" href="/">Launch WebOS desktop</a><a class="btn ghost" href="/page/what_is.html">Discover everything WebOS can do</a><a class="btn ghost" href="/mobile.html">Explore mobile edition</a></div></section>
+<section class="section" id="audiences"><h2>One platform. Different ways to work.</h2><p class="lead">Start with the browser-based desktop. Add cloud and organization services when you need them.</p><div class="grid">
+<article class="card"><div class="icon">◈</div><h3>Personal</h3><p>A customizable desktop, local apps, files, and creative tools for individual use.</p></article>
+<article class="card"><div class="icon">▦</div><h3>Teams & businesses</h3><p>Shared workspaces, people, collaboration, and centralized team administration.</p></article>
+<article class="card"><div class="icon">⌂</div><h3>Education</h3><p>A foundation for classrooms, educators, student workspaces, and managed learning environments.</p></article>
+<article class="card"><div class="icon">⬡</div><h3>Enterprise</h3><p>Organization-wide management, policy controls, and scalable cloud services.</p></article></div></section>
+<section class="bottom" id="plans"><h2>Personal WebOS is free.</h2><p>Use the core desktop at no cost, and donations are welcome. Paid plans are designed for hosted services and organization features, with each tier stepping up by $20 per month.</p><a class="btn primary" href="/page/what_is.html#plans">See all plans and features</a></section></main>
+<footer class="wrap"><span>© <span id="year"></span> WebOS</span><span>Browser-based operating environment</span><a href="/">Open desktop</a></footer><script>document.getElementById("year").textContent=new Date().getFullYear();</script></body></html>
