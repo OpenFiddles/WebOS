@@ -710,13 +710,23 @@ function openSettings() {
         tabBar.setAttribute("aria-label", "Settings categories");
         const pane = document.createElement("div");
         pane.className = "settings-tab-content";
-        const labels = ["Personalization", "Window Design", "Apps & Applications", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
+        const labelForSection = section => {
+            const heading = section.querySelector("h2")?.textContent.trim() || "Settings";
+            return ({
+                "Better Settings": "Personalization",
+                "Visual CSS Inspector": "Window Design"
+            })[heading] || heading;
+        };
+        const categoryOrder = ["Personalization", "Window Design", "Apps & Applications", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
+        settingsSections.sort((a, b) => categoryOrder.indexOf(labelForSection(a)) - categoryOrder.indexOf(labelForSection(b)));
         settingsSections.forEach((section, index) => {
+            const label = labelForSection(section);
             const id = "webos-settings-tab-" + index;
             const button = document.createElement("button");
             button.type = "button";
             button.className = "settings-tab" + (index === 0 ? " active" : "");
-            button.textContent = labels[index] || ("Settings " + (index + 1));
+            button.textContent = label;
+            button.title = label;
             button.id = id;
             button.setAttribute("role", "tab");
             button.setAttribute("aria-selected", String(index === 0));
@@ -736,8 +746,8 @@ function openSettings() {
             tabBar.appendChild(button);
             pane.appendChild(section);
         });
-        settingsPanel.insertBefore(pane, settingsPanel.firstChild);
-        settingsPanel.insertBefore(tabBar, pane);
+        settingsPanel.insertBefore(tabBar, settingsPanel.firstChild);
+        settingsPanel.insertBefore(settingsSearch, pane);
     }
 
     settingsSearch.addEventListener("input",()=>{
