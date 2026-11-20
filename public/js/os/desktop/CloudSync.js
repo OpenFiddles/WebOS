@@ -74,11 +74,8 @@
     Storage.prototype.setItem=function(key,value){const result=originalSet.call(this,key,value);if(this===localStorage&&String(key).startsWith("webos-")&&!EXCLUDED(String(key)))scheduleAutoSync();return result;};
     Storage.prototype.removeItem=function(key){const result=originalRemove.call(this,key);if(this===localStorage&&String(key).startsWith("webos-")&&!EXCLUDED(String(key)))scheduleAutoSync();return result;};
   }catch(_){}
-  try{
-    const fs=window.WebOSFileSystem;
-    if(fs){const wrapped=new Set(["putText","putBinary","remove","makeDirectory","copy","move","importBackup"]);
-      window.WebOSFileSystem=new Proxy(fs,{get(target,key){const value=Reflect.get(target,key,target);if(wrapped.has(key)&&typeof value==="function")return(...args)=>Promise.resolve(value.apply(target,args)).then(result=>{scheduleAutoSync();return result;});return typeof value==="function"?value.bind(target):value;}});
-    }
-  }catch(error){console.warn("[WebOS Cloud] Filesystem auto-sync hooks unavailable:",error);}
+  // WebOSFileSystem is intentionally frozen; do not Proxy it because that violates
+  // JavaScript Proxy invariants for non-configurable methods such as ensureSeeded.
+  // Preference auto-sync remains enabled; filesystem backups can be pushed manually.
   window.WebOSCloud=Object.freeze({ready:init(),getStatus,signIn,signUp,signOut,sync});
 })();
