@@ -1693,7 +1693,7 @@ function openAppManager() {
     if (typeof closeLauncher === "function") closeLauncher();
     const root=document.createElement("section");
     root.className="webos-app-manager";
-    root.innerHTML='<header class="wam-header"><div><h2>App Manager</h2><p>Review apps installed in this WebOS workspace.</p></div><button type="button" id="wam-refresh">Refresh</button></header><div class="wam-summary" id="wam-summary">Loading installed apps…</div><div class="wam-list" id="wam-list"></div><p class="wam-status" id="wam-status" role="status" aria-live="polite"></p>';
+    root.innerHTML='<header class="wam-header"><div><h2>App Manager</h2><p>Review apps installed in this WebOS workspace.</p></div><div class="wam-header-actions"><button type="button" id="wam-export">Export app list</button><button type="button" id="wam-refresh">Refresh</button></div></header><div class="wam-summary" id="wam-summary">Loading installed apps…</div><div class="wam-list" id="wam-list"></div><p class="wam-status" id="wam-status" role="status" aria-live="polite"></p>';
     const win=createWindow("App Manager",root);
     if(!win)return null;
     const list=win.querySelector("#wam-list"),summary=win.querySelector("#wam-summary"),status=win.querySelector("#wam-status");
@@ -1736,6 +1736,7 @@ function openAppManager() {
         if(!apps.length)list.append(make("p","wam-empty","No registered apps were found."));
     }
     win.querySelector("#wam-refresh").addEventListener("click",()=>renderApps().catch(error=>status.textContent=error.message));
+    win.querySelector("#wam-export").addEventListener("click",()=>{try{window.WebOSAppRegistry.downloadManifest();status.textContent="App registry metadata exported. App source packages are exported separately from App Creator or WASM Lab.";}catch(error){status.textContent="Export failed: "+error.message;}});
     renderApps().catch(error=>{summary.textContent="Could not load apps.";status.textContent=error.message;});
     return win;
 }
