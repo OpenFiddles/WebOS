@@ -1261,12 +1261,12 @@ function openSettings() {
         try{
             cloudStatus.textContent="Working…";
             const email=cloudEmail.value.trim(),password=cloudPassword.value;
-            if(action==="signin")await window.WebOSCloud.signIn(email,password);
-            else if(action==="signup")await window.WebOSCloud.signUp(email,password,cloudName.value.trim());
+            if(action==="signin"){await window.WebOSCloud.signIn(email,password);cloudPassword.value="";}
+            else if(action==="signup"){await window.WebOSCloud.signUp(email,password,cloudName.value.trim());cloudPassword.value="";}
             else if(action==="signout")await window.WebOSCloud.signOut();
             else if(action==="push"){const result=await window.WebOSCloud.sync("push");cloudStatus.textContent="Cloud backup saved · "+result.bytes+" bytes.";}
             else if(action==="pull"){if(!confirm("Restore your cloud backup? This replaces the current WebOS virtual files and synced preferences on this device."))return;const result=await window.WebOSCloud.sync("pull");cloudStatus.textContent="Cloud backup restored · "+result.files+" filesystem entries.";}
-        }catch(error){cloudStatus.textContent=(error?.message||"Cloud operation failed.")+" Local WebOS data remains available.";}
+        }catch(error){cloudStatus.textContent=(error?.message||"Cloud operation failed.")+" Local WebOS data remains available.";return;}
         renderCloudState();
     };
     cloudSignIn.addEventListener("click",()=>cloudAction("signin"));
