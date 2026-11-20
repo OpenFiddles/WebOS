@@ -51,9 +51,9 @@
     const summary=make("div","wpa-muted","Loading tasks…"), list=make("div","wpa-list");
     root.append(summary,list);
     const render=()=>{
-      const tasks=window.WebOS?.processes?.list?.()||[];
+      const tasks=(window.WebOS?.processes?.list?.()||[]).filter(task=>task.kind!=="window");
       const windows=[...document.querySelectorAll("#window-workspace .window-shell")];
-      summary.textContent=tasks.length+" tracked task(s) · "+windows.length+" open window(s)";
+      summary.textContent=tasks.length+" background/app task(s) · "+windows.length+" open window(s)";
       list.replaceChildren();
       if(!tasks.length&&!windows.length){list.append(make("div","wpa-empty","No running WebOS tasks."));return;}
       tasks.forEach(task=>{

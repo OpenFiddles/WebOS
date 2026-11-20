@@ -62,13 +62,13 @@
   const processManager=Object.freeze({register:registerTask,list:snapshot,subscribe});
   const system=Object.freeze({
     version:"3.0.0",runtime:"browser",
-    getInfo(){return {name:localStorage.getItem("webos-os-name")||"WebOS",version:"2.1.0",runtime:"browser",platform:navigator.userAgentData?.platform||navigator.platform||"Unavailable",browser:navigator.userAgentData?.brands?.map(x=>x.brand+" "+x.version).join(", ")||navigator.userAgent||"Unavailable",secureContext:secure,online:navigator.onLine,visibility:document.visibilityState};},
+    getInfo(){return {name:localStorage.getItem("webos-os-name")||"WebOS",version:"3.0.0",runtime:"browser",platform:navigator.userAgentData?.platform||navigator.platform||"Unavailable",browser:navigator.userAgentData?.brands?.map(x=>x.brand+" "+x.version).join(", ")||navigator.userAgent||"Unavailable",secureContext:secure,online:navigator.onLine,visibility:document.visibilityState};},
     capabilities
   });
   window.WebOSCore=Object.freeze({version:"3.0.0",system,hardware,storage,processes:processManager,events});
   window.WebOS=window.WebOS||{};
   Object.assign(window.WebOS,{version:"3.0.0",system,hardware,storage,processes:processManager,capabilities});
-  window.dispatchEvent(new CustomEvent("webos:core-ready",{detail:{version:"2.0.0"}}));
+  window.dispatchEvent(new CustomEvent("webos:core-ready",{detail:{version:"3.0.0"}}));
   const observed=new WeakMap();
   function scanWindows(){
     document.querySelectorAll("#window-workspace .window-shell").forEach(win=>{
