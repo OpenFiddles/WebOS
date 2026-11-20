@@ -62,7 +62,7 @@
   const processManager=Object.freeze({register:registerTask,list:snapshot,subscribe});
   const system=Object.freeze({
     version:"2.0.0",runtime:"browser",
-    getInfo(){return {name:localStorage.getItem("webos-os-name")||"WebOS",version:"2.0.0",runtime:"browser",secureContext:secure,online:navigator.onLine,visibility:document.visibilityState};},
+    getInfo(){return {name:localStorage.getItem("webos-os-name")||"WebOS",version:"2.1.0",runtime:"browser",platform:navigator.userAgentData?.platform||navigator.platform||"Unavailable",browser:navigator.userAgentData?.brands?.map(x=>x.brand+" "+x.version).join(", ")||navigator.userAgent||"Unavailable",secureContext:secure,online:navigator.onLine,visibility:document.visibilityState};},
     capabilities
   });
   window.WebOSCore=Object.freeze({version:"2.0.0",system,hardware,storage,processes:processManager,events});
