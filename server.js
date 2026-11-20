@@ -30,20 +30,25 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+function getSupabasePublicKey() {
+  // Prefer the current publishable key; retain the legacy anon key as a fallback.
+  return process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || "";
+}
+
 app.get("/api/cloud/config", (_req, res) => {
   res.set("Cache-Control", "no-store");
   const url = process.env.SUPABASE_URL || "";
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "";
+  const publicKey = getSupabasePublicKey();
   let validUrl = false;
   try { const parsed = new URL(url); validUrl = parsed.protocol === "https:" && parsed.hostname.endsWith(".supabase.co"); } catch (_) {}
-  if (!validUrl || !anonKey) return res.status(200).json({ configured:false, message:"Cloud accounts are not configured. WebOS will continue in local mode." });
-  return res.status(200).json({ configured:true, url, anonKey });
+  if (!validUrl || !publicKey) return res.status(200).json({ configured:false, message:"Cloud accounts are not configured. WebOS will continue in local mode." });
+  return res.status(200).json({ configured:true, url, anonKey:publicKey });
 });
 
 app.get("/api/media/config", (_req,res) => { res.set("Cache-Control","no-store"); res.json({workerUrl:process.env.MEDIA_WORKER_URL||""}); });
 
 app.get("/api/os-check", (_req, res) => {
-  const configured = Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY));
+  const configured = Boolean(process.env.SUPABASE_URL && getSupabasePublicKey());
   return res.status(200).json({ status:configured?"Cloud configuration present":"Local mode", configured });
 });
 

@@ -4,20 +4,20 @@ WebOS keeps working locally when Supabase is unavailable. Cloud account and back
 
 ## 1. Vercel environment variables
 
-In Vercel → Project → Settings → Environment Variables, add:
+In Vercel → Project → Settings → Environment Variables, configure:
 
 - `SUPABASE_URL` — the Project URL from Supabase → Project Settings → API.
-- `SUPABASE_ANON_KEY` — the legacy anon/public key, **or** `SUPABASE_PUBLISHABLE_KEY` — the publishable key.
+- `SUPABASE_PUBLISHABLE_KEY` — the current `sb_publishable_...` key. The legacy `SUPABASE_ANON_KEY` is supported only as a fallback.
 
-Set them for the environments you deploy (Production, and Preview/Development if needed), then redeploy.
+Set them for the environments you deploy (Production, and Preview/Development if needed), then redeploy. The production values are managed in the Vercel `web-os` project.
 
-The browser config endpoint intentionally returns only the public anon/publishable key. Never put `SUPABASE_SERVICE_ROLE_KEY` in browser code or expose it through an API response. WebOS cloud backup uses per-user access and Row Level Security; it does not need the service-role key.
+The browser config endpoint intentionally returns only the public publishable/anon key. Never put `SUPABASE_SECRET_KEY`, `service_role`, or any other server-only credential in browser code or expose it through an API response. WebOS cloud backup uses per-user access and Row Level Security; it does not need a secret key.
 
 ## 2. Create the cloud data table
 
-Open Supabase → SQL Editor, paste the contents of [schema.sql](./schema.sql), and run it. The script creates `public.webos_cloud_data` and policies that allow each authenticated user to access only the row whose `user_id` matches `auth.uid()`.
+The WebOS Supabase project should contain `public.webos_cloud_data`. The migration creates this table and policies that allow each authenticated user to access only the row whose `user_id` matches `auth.uid()`.
 
-Do not disable Row Level Security or add a public/anonymous policy.
+Keep Row Level Security enabled. Do not add public/anonymous access policies.
 
 ## 3. Enable email authentication
 
