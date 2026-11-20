@@ -52,6 +52,12 @@
   }
   window.WebOSWorkspaces=Object.freeze({list,activeId,create,rename,switchTo,assign,remove,refresh:apply});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",apply,{once:true});else apply();
-  const observer=new MutationObserver(()=>apply());
-  observer.observe(document.getElementById("window-workspace")||document.body,{childList:true,subtree:true});
+  const workspaceRoot=document.getElementById("window-workspace");
+  if(workspaceRoot){
+    const observer=new MutationObserver(records=>{
+      if(records.some(record=>[...record.addedNodes,...record.removedNodes].some(node=>node.nodeType===1&&(node.matches?.(".window-shell")||node.querySelector?.(".window-shell")))))apply();
+    });
+    // Watch direct window additions/removals, not app content rendered inside windows.
+    observer.observe(workspaceRoot,{childList:true});
+  }
 })();
