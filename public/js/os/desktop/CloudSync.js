@@ -47,17 +47,21 @@
       setState({mode:"ready",user:data.session?.user||null,message:data.session?.user?"Cloud account connected.":"Supabase is ready. Sign in to enable cloud data."});
     }catch(error){console.warn("[WebOS Cloud] Using local mode:",error?.message||error);setState({mode:"local",user:null,error:error?.message||String(error),message:"Cloud unavailable · local mode is active."});}
   }
+  function requireCaptchaToken(captchaToken){
+    if(captchaSiteKey&&!captchaToken)throw new Error("Complete the security check first.");
+    return captchaSiteKey?captchaToken:null;
+  }
   async function verifyTurnstile(captchaToken){
-    if(!captchaSiteKey)return null;
-    if(!captchaToken)throw new Error("Complete the security check first.");
-    const response=await fetch("/api/turnstile/verify",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({token:captchaToken})});
+    const token=requireCaptchaToken(captchaToken);
+    if(!token)return null;
+    const response=await fetch("/api/turnstile/verify",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({token})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok||!result.success)throw new Error(result.message||"Security verification failed. Please try again.");
-    return captchaToken;
+    return token;
   }
   async function signIn(email,password,captchaToken){
     if(!email||!password)throw new Error("Enter your email and password.");
-    const token=await verifyTurnstile(captchaToken);
+    const token=requireCaptchaToken(captchaToken);
     const {data,error}=await requireClient().auth.signInWithPassword({email,password,options:token?{captchaToken:token}:{}});
     if(error)throw error;
     setState({mode:"ready",user:data.user,message:"Signed in. Cloud data is ready."});return data;
@@ -65,7 +69,7 @@
   async function signUp(email,password,displayName,captchaToken){
     if(!email||!password)throw new Error("Enter an email and password.");
     if(password.length<8)throw new Error("Use a password with at least 8 characters.");
-    const token=await verifyTurnstile(captchaToken);
+    const token=requireCaptchaToken(captchaToken);
     const options={data:displayName?{display_name:displayName}:{},...(token?{captchaToken:token}:{})};
     const {data,error}=await requireClient().auth.signUp({email,password,options});if(error)throw error;
     if(data.session)setState({mode:"ready",user:data.user,message:"Account created and signed in."});
@@ -73,7 +77,7 @@
     return data;
   }
   async function signInAsGuest(captchaToken){
-    const token=await verifyTurnstile(captchaToken);
+    const token=requireCaptchaToken(captchaToken);
     const {data,error}=await requireClient().auth.signInAnonymously({options:token?{captchaToken:token}:{}});
     if(error)throw error;
     setState({mode:"ready",user:data.user,message:"Guest session ready."});return data;
@@ -89,7 +93,7 @@
   }
   async function resetPassword(email,captchaToken){
     if(!email)throw new Error("Enter your account email first.");
-    const token=await verifyTurnstile(captchaToken);
+    const token=requireCaptchaToken(captchaToken);
     const {data,error}=await requireClient().auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/html/BootScreen_popcorn.html",...(token?{captchaToken:token}:{})});
     if(error)throw error;return data;
   }
