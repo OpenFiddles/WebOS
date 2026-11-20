@@ -1207,7 +1207,7 @@ function openSettings() {
         const appCount=win.querySelector("#settings-app-count"),wasmCount=win.querySelector("#settings-wasm-count");
         if(appCount)appCount.textContent=String(apps.length);if(wasmCount)wasmCount.textContent=String(wasm.length);
     };
-    win.querySelector("#settings-open-app-manager")?.addEventListener("click",()=>window.WebOSAppRegistry?.launch?.("appmanager")||window.openAppManager?.());
+    win.querySelector("#settings-open-app-manager")?.addEventListener("click",()=>{if(typeof window.WebOSAppRegistry?.launch==="function")window.WebOSAppRegistry.launch("appmanager");else window.openAppManager?.();});
     win.querySelector("#settings-refresh-apps")?.addEventListener("click",()=>refreshAppSummary());
     refreshAppSummary();
     win.querySelectorAll("[data-dev-app]").forEach(button=>button.addEventListener("click",()=>window.WebOSAppRegistry?.launch?.(button.dataset.devApp)));
