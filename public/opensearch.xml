@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com">
+  <ShortName>WebOS</ShortName>
+  <Description>Search WebOS apps and documentation</Description>
+  <Url type="text/html" template="https://web-os-iota.vercel.app/{searchTerms}"/>
+  <Image width="32" height="32" type="image/png">https://web-os-iota.vercel.app/images/icon/1.png</Image>
+</OpenSearchDescription>

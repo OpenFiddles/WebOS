@@ -8,8 +8,8 @@
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#121212",
-  "theme_color": "#00a891",
+  "background_color": "#E25822",
+  "theme_color": "#E25822",
   "categories": [
     "productivity",
     "utilities"
@@ -17,6 +17,7 @@
   "scope": "/",
   "display_override": [
     "window-controls-overlay",
+    "standalone",
     "minimal-ui"
   ],
   "prefer_related_applications": false,
@@ -39,5 +40,45 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "screenshots": [
+    {
+      "src": "/images/wiki/desktop1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "WebOS Desktop Environment"
+    },
+    {
+      "src": "/images/wiki/desktop2.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "WebOS Desktop Environment"
+    }
+  ],
+  "shortcuts": [
+  {
+    "name": "About WebOS",
+    "short_name": "About",
+    "description": "Learn about the community behind WebOS",
+    "url": "/page/what_is.html?utm_source=pwa_shortcut",
+    "icons": [
+      {
+        "src": "/images/icons/1.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ]
+  }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 420
+  }
+
+
+
 }

@@ -1,0 +1,25 @@
+{
+    "version": "v4.0.0",
+    "entity": {
+      "type": "organisation",
+      "role": "owner",
+      "name": "OpenFiddles",
+      "email": "spout.vll@gmail.com",
+      "description": "Community-minded creative software studio behind WebOS.",
+      "webpageUrl": {
+        "url": "https://web-os-iota.vercel.app/page/doc/about_parent.html?utm_source=webOS"
+      }
+    },
+    "projects": [
+      {
+        "guid": "webos",
+        "name": "WebOS",
+        "description": "A lightweight web operating system built with HTML, CSS, and JavaScript.",
+        "webpageUrl": { "url": "https://web-os-iota.vercel.app/page" },
+        "repositoryUrl": { "url": "https://gitlab.com/openfiddles/WebOS" },
+        "licenses": ["spdx:AGPL-3.0"],
+        "tags": ["operating-system", "pwa", "web-desktop"]
+      }
+    ]
+  }
+  
