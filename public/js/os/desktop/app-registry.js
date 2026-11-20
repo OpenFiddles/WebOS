@@ -80,13 +80,39 @@
                     }
                 });
                 this.system = Object.freeze({
-                    getInfo: () => Object.freeze({
-                        name: "WebOS",
-                        runtime: "browser",
-                        browser: navigator.userAgent,
-                        secureContext: window.isSecureContext === true,
-                        language: navigator.language || "en"
-                    })
+                    getInfo: () => window.WebOS?.system?.getInfo?.() || Object.freeze({
+                        name: "WebOS", runtime: "browser", browser: navigator.userAgent,
+                        secureContext: window.isSecureContext === true, language: navigator.language || "en"
+                    }),
+                    capabilities: () => window.WebOS?.capabilities?.() || []
+                });
+                this.hardware = Object.freeze({
+                    capabilities: () => window.WebOS?.hardware?.capabilities?.() || [],
+                    requestUSB: filters => { if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestUSB(filters); },
+                    requestSerial: options => { if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestSerial(options); },
+                    requestHID: filters => { if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestHID(filters); },
+                    gpuInfo: () => window.WebOS.hardware.gpuInfo(),
+                    codecSupport: (kind, config) => window.WebOS.hardware.codecSupport(kind, config),
+                    requestXR: (mode, options) => window.WebOS.hardware.requestXR(mode, options)
+                });
+                this.storage = Object.freeze({
+                    estimate: () => window.WebOS?.storage?.estimate?.() || Promise.resolve(null),
+                    persist: () => window.WebOS?.storage?.persist?.() || Promise.resolve(false),
+                    openPrivateRoot: () => window.WebOS.storage.openPrivateRoot()
+                });
+                this.processes = Object.freeze({
+                    register: info => window.WebOS?.processes?.register?.({...info, detail: "App: " + this.appId}),
+                    list: () => window.WebOS?.processes?.list?.() || [],
+                    subscribe: fn => window.WebOS?.processes?.subscribe?.(fn) || (()=>{})
+                });
+                this.network = Object.freeze({
+                    isOnline: () => navigator.onLine,
+                    onChange: fn => {
+                        if(typeof fn!=="function") throw new TypeError("Network listener must be a function.");
+                        const online=()=>fn({online:true}),offline=()=>fn({online:false});
+                        window.addEventListener("online",online);window.addEventListener("offline",offline);
+                        return ()=>{window.removeEventListener("online",online);window.removeEventListener("offline",offline);};
+                    }
                 });
             }
             fs() {
@@ -219,7 +245,7 @@
     }
 
     function exportManifest() {
-        return {format:"webos-app-registry-manifest",version:1,generatedAt:new Date().toISOString(),apps:all().map(app=>({id:app.id,name:app.name||app.id,description:app.description||"",icon:app.icon||"▣",dock:!!app.dock,version:String(app.version||"1.0.0"),runtimeType:app.runtimeType||"js",entry:app.entry||""}))};
+        return {format:"webos-app-registry-manifest",version:1,generatedAt:new Date().toISOString(),apps:all().map(app=>({id:app.id,name:app.name||app.id,description:app.description||"",icon:app.icon||"▣",dock:!!app.dock,version:String(app.version||"1.0.0"),runtimeType:app.runtimeType||"js",entry:app.entry||"",permissions:Array.isArray(app.permissions)?app.permissions:[]}))};
     }
     function downloadManifest() {
         const data=exportManifest(),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})),anchor=document.createElement("a");
@@ -228,7 +254,7 @@
     function validateManifest(data) {
         if(!data||data.format!=="webos-app-registry-manifest"||data.version!==1||!Array.isArray(data.apps))throw new TypeError("Unsupported WebOS app registry manifest.");
         if(data.apps.length>500)throw new RangeError("Manifest contains too many app records.");const ids=new Set();
-        return data.apps.map(app=>{const id=String(app?.id||"").trim();if(!/^[a-z0-9][a-z0-9._-]{1,63}$/i.test(id)||ids.has(id))throw new TypeError("Invalid or duplicate app ID: "+id);ids.add(id);return{id,name:String(app.name||id).slice(0,80),description:String(app.description||"").slice(0,500),icon:String(app.icon||"▣").slice(0,8),dock:!!app.dock,version:String(app.version||"1.0.0"),runtimeType:String(app.runtimeType||"js"),entry:String(app.entry||"")};});
+        return data.apps.map(app=>{const id=String(app?.id||"").trim();if(!/^[a-z0-9][a-z0-9._-]{1,63}$/i.test(id)||ids.has(id))throw new TypeError("Invalid or duplicate app ID: "+id);ids.add(id);return{id,name:String(app.name||id).slice(0,80),description:String(app.description||"").slice(0,500),icon:String(app.icon||"▣").slice(0,8),dock:!!app.dock,version:String(app.version||"1.0.0"),runtimeType:String(app.runtimeType||"js"),entry:String(app.entry||""),permissions:Array.isArray(app.permissions)?app.permissions.map(x=>String(x).slice(0,80)).slice(0,32):[]};});
     }
 
     function render() {
