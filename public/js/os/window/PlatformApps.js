@@ -140,6 +140,99 @@
     return win||null;
   };
 
+
+  window.openMobilePreview = function() {
+    if(typeof closeLauncher==="function")closeLauncher();
+    const root=shell("Mobile Preview & Test Suite","Preview the actual WebOS mobile edition at common device sizes and run browser-side smoke checks.");
+    root.classList.add("webos-mobile-preview");
+    const toolbar=make("div","wmp-toolbar");
+    const viewport=make("div","wmp-viewport");
+    const frame=document.createElement("iframe");
+    frame.className="wmp-device-frame";frame.title="WebOS mobile edition preview";frame.src="/mobile.html?developerPreview=1";
+    frame.setAttribute("allow","fullscreen");frame.setAttribute("loading","eager");
+    const deviceBar=make("div","wmp-device-bar");
+    const select=document.createElement("select");select.setAttribute("aria-label","Preview device size");
+    [["phone-small","Small phone · 360 × 740",360,740],["phone","Phone · 390 × 844",390,844],["phone-large","Large phone · 430 × 932",430,932],["tablet","Tablet · 768 × 1024",768,1024],["landscape","Phone landscape · 844 × 390",844,390]].forEach(([id,label,w,h])=>{const option=document.createElement("option");option.value=id;option.textContent=label;option.dataset.width=w;option.dataset.height=h;select.append(option);});
+    const size=make("span","wmp-size","390 × 844");
+    const reload=button("↻ Reload preview",()=>loadPreview());
+    const run=button("Run tests",()=>runTests());
+    deviceBar.append(select,size,reload,run);
+    const testPanel=make("section","wmp-tests");
+    const testHeader=make("div","wmp-test-header");
+    const testTitle=make("strong","","Mobile smoke tests");
+    const testSummary=make("span","wmp-test-summary","Not run");
+    const results=make("div","wmp-test-results");
+    testHeader.append(testTitle,testSummary);testPanel.append(testHeader,results);
+    const status=make("p","wmp-status","Loading mobile edition…");
+    root.append(deviceBar,viewport,status,testPanel);
+    viewport.append(frame);
+    let loadToken=0;
+    function setDevice(){
+      const option=select.selectedOptions[0],w=Number(option.dataset.width),h=Number(option.dataset.height);
+      frame.style.width=w+"px";frame.style.height=h+"px";size.textContent=w+" × "+h;
+      viewport.style.setProperty("--device-width",w+"px");viewport.style.setProperty("--device-height",h+"px");
+    }
+    function mobileDocument(){
+      try{
+        const home=frame.contentDocument;
+        const inner=home?.getElementById("system-frame");
+        return inner?.contentDocument||null;
+      }catch(_){return null;}
+    }
+    function loadPreview(){
+      const token=++loadToken;status.textContent="Loading mobile edition…";testSummary.textContent="Not run";results.replaceChildren();
+      frame.onload=()=>{
+        if(token!==loadToken)return;
+        const home=frame.contentDocument;
+        if(!home){status.textContent="Preview could not be inspected. Check same-origin access.";return;}
+        const enter=home.getElementById("launch-os");
+        const inner=home.getElementById("system-frame");
+        if(enter&&inner){
+          inner.addEventListener("load",()=>{if(token===loadToken)status.textContent="Mobile workspace loaded.";},{once:true});
+          enter.click();
+          status.textContent="Opening the mobile workspace…";
+        }else status.textContent="Mobile entry page loaded; workspace launch control was not found.";
+      };
+      frame.src="/mobile.html?developerPreview=1&reload="+Date.now();
+    }
+    function addResult(label,state,detail){
+      const row=make("article","wmp-test-row "+state);
+      const icon=make("span","wmp-test-icon",state==="pass"?"✓":state==="fail"?"×":"!");
+      const body=make("div","wmp-test-copy");
+      body.append(make("strong","",label),make("small","",detail));
+      row.append(icon,body);results.append(row);
+    }
+    function runTests(){
+      results.replaceChildren();const doc=mobileDocument(),checks=[];
+      if(!doc){addResult("Mobile workspace","fail","The mobile shell has not loaded or is not same-origin.");testSummary.textContent="1 failed";return;}
+      const body=doc.body,html=doc.documentElement;
+      checks.push(["Mobile mode flag",body.dataset.webosMode==="mobile",body.dataset.webosMode||"Expected data-webos-mode=mobile"]);
+      const viewportMeta=doc.querySelector('meta[name="viewport"]');
+      checks.push(["Responsive viewport",!!viewportMeta&&/width=device-width/.test(viewportMeta.content),viewportMeta?.content||"Viewport meta tag missing"]);
+      const mobileCss=[...doc.styleSheets].some(sheet=>{try{return sheet.href?.includes("mobile_shell.css");}catch(_){return false;}});
+      checks.push(["Mobile stylesheet",mobileCss,mobileCss?"mobile_shell.css is linked":"mobile_shell.css was not found"]);
+      checks.push(["Window workspace",!!doc.getElementById("window-workspace"),"Checks for the mobile window host"]);
+      checks.push(["App registry",!!doc.defaultView.WebOSAppRegistry,"Checks the shared app registry"]);
+      checks.push(["WebOS core API",!!doc.defaultView.WebOS,"Checks core runtime initialization"]);
+      checks.push(["Workspace service",!!doc.defaultView.WebOSWorkspaces,"Checks virtual desktop service availability"]);
+      const mobileRules=doc.querySelectorAll(".mobile-app-window").length;
+      checks.push(["Mobile window mode",body.dataset.webosMode==="mobile"&&doc.querySelectorAll(".resize-handle").length>0,"Mobile mode should suppress desktop drag/resize handlers at window creation"]);
+      const unsupported=doc.defaultView.matchMedia?.("(pointer: coarse)").matches;
+      checks.push(["Viewport emulation",html.clientWidth===Number(select.selectedOptions[0].dataset.width), "Rendered width "+html.clientWidth+" px; "+(unsupported?"coarse pointer":"desktop pointer emulation")]);
+      let pass=0,fail=0;
+      checks.forEach(([label,ok,detail])=>{const state=ok?"pass":"fail";if(ok)pass++;else fail++;addResult(label,state,detail);});
+      testSummary.textContent=pass+" passed · "+fail+" failed";
+      status.textContent=fail?"Smoke tests finished with failures. Review the checks below.":"All mobile smoke tests passed.";
+    }
+    select.addEventListener("change",()=>{setDevice();loadPreview();});
+    setDevice();root.querySelector(".wmp-toolbar")?.remove();
+    const win=createWindow("Mobile Preview & Test Suite",root);
+    // Keep device controls inside the window rather than relying on global launcher UI.
+    root.insertBefore(deviceBar,viewport);
+    reload.addEventListener("click",loadPreview);run.addEventListener("click",runTests);
+    loadPreview();return win||null;
+  };
+
   window.openNetworkManager = function() {
     if(typeof closeLauncher==="function")closeLauncher();
     const root=shell("Network Manager","Inspect connectivity and optional browser network hints. Wi-Fi names, passwords, and signal strength are not exposed to ordinary web apps.");

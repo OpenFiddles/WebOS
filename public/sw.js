@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "3.1.0";
+const VERSION = "3.2.0";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -10,7 +10,7 @@ const CORE_ASSETS = [
   "/js/os/desktop/Permissions.js", "/js/os/desktop/AppStorage.js", "/js/os/desktop/Core.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
   "/js/os/desktop/WASMRuntime.js", "/js/os/desktop/Notifications.js",
   "/js/os/desktop/Appearance.js", "/js/os/desktop/Branding.js", "/js/os/desktop/DesktopInteractions.js", "/js/os/window/Launcher.js",
-  "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js", "/js/os/desktop/Workspaces.js", "/js/os/window/PlatformApps.js", "/js/os/window/CoreApps.js", "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js",
+  "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js", "/js/os/desktop/Workspaces.js", "/js/os/window/PlatformApps.js", "/js/os/window/MobilePreview.js", "/js/os/window/CoreApps.js", "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js",
   "/js/os/window/Documentation.js", "/js/os/window/AnimationStudio.js",
   "/js/os/mobile/mobile-runtime.js",
   "/css/display/regular_theme.css", "/css/display/wasm_runtime.css",
