@@ -77,6 +77,39 @@
     return win||null;
   };
 
+  window.openWorkspaceManager = function() {
+    if(typeof closeLauncher==="function")closeLauncher();
+    const root=shell("Workspace Manager","Organize separate virtual desktops. Apps remain open when you switch workspaces.");
+    root.classList.add("webos-workspace-app");
+    const actions=make("div","webos-workspace-actions");
+    const list=make("div","wpa-list");
+    const out=output(root);
+    const render=()=>{
+      list.replaceChildren();
+      const items=window.WebOSWorkspaces?.list?.()||[];
+      items.forEach(item=>{
+        const row=make("article","webos-workspace-item"),body=make("div","");
+        body.append(make("strong","",item.name+(item.active?" · Current":"")),make("small","",item.windows+" open window(s)"));
+        const open=button(item.active?"Current":"Switch",()=>{window.WebOSWorkspaces.switchTo(item.id);render();});
+        open.disabled=item.active;
+        const rename=button("Rename",()=>{const name=prompt("Workspace name",item.name);if(name!==null){window.WebOSWorkspaces.rename(item.id,name);render();}});
+        row.append(body,open,rename);
+        if(items.length>1&&!item.active)row.append(button("Remove",()=>{
+          const destination=items.find(x=>x.id!==item.id&&x.id===window.WebOSWorkspaces.activeId())||items.find(x=>x.id!==item.id);
+          if(destination&&confirm("Move this desktop's windows to "+destination.name+" and remove "+item.name+"?")){window.WebOSWorkspaces.remove(item.id,destination.id);render();}
+        }));
+        list.append(row);
+      });
+    };
+    actions.append(button("＋ New desktop",()=>{try{const item=window.WebOSWorkspaces.create();window.WebOSWorkspaces.switchTo(item.id);render();}catch(error){report(out,error.message);}}));
+    actions.append(button("Refresh",render));
+    root.append(actions,list,out);
+    const win=createWindow("Workspace Manager",root);
+    const changed=()=>render();window.addEventListener("webos:workspace-change",changed);
+    if(win){const observer=new MutationObserver(()=>{if(!win.isConnected){window.removeEventListener("webos:workspace-change",changed);observer.disconnect();}});observer.observe(document.body,{childList:true,subtree:true});}
+    render();return win||null;
+  };
+
   window.openStorageManager = function() {
     if(typeof closeLauncher==="function")closeLauncher();
     const root=shell("Storage Manager","Inspect this site's storage estimate and request browser-managed persistence.");

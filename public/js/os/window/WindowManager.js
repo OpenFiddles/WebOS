@@ -56,6 +56,9 @@ function createWindow(title, content) {
         return null;
     }
 
+    // Attach the new window to the currently active virtual desktop.
+    win.dataset.workspaceId = window.WebOSWorkspaces?.activeId?.() || "workspace-1";
+
     // Assign a unique runtime system tracking ID
     win.id = "Window_" + Date.now() + "_" + (typeof windowCount !== "undefined" ? windowCount++ : 0);
 
@@ -105,6 +108,7 @@ function createWindow(title, content) {
     taskButton.className = "TaskButton";
     taskButton.type = "button";
     taskButton.dataset.windowId = win.id;
+    taskButton.dataset.workspaceId = win.dataset.workspaceId;
     taskButton.textContent = title;
     taskButton.title = title;
     taskButton.addEventListener("click", () => {

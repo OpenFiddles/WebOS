@@ -169,7 +169,8 @@
         ["hardware","Hardware Manager","Inspect and connect browser-supported devices","🔌","openHardwareManager",false],
         ["taskmanager","Task Manager","View running WebOS windows and tasks","📋","openTaskManager",false],
         ["storage","Storage Manager","Inspect browser storage and persistence","💾","openStorageManager",false],
-        ["network","Network Manager","Inspect connectivity and browser network hints","🌐","openNetworkManager",false]
+        ["network","Network Manager","Inspect connectivity and browser network hints","🌐","openNetworkManager",false],
+        ["workspaces","Workspace Manager","Create and organize virtual desktops","▦","openWorkspaceManager",false]
     ];
     const systemAppIds = new Set([...builtInApps.map(app => app[0]), "alpine", "docs", "animations"]);
     function isBuiltin(id) { return systemAppIds.has(String(id)); }

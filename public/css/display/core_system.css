@@ -18,3 +18,12 @@
 .wpa-state[data-state="suspended"]{color:#e5b071}
 .wpa-state[data-state="running"]{color:#69d6a0}
 .wpa-state[data-state="closing"]{color:#d58a8a}
+
+/* Virtual desktop visibility */
+.window-shell.is-workspace-hidden,.TaskButton.is-workspace-hidden{display:none!important}
+.webos-workspace-app{display:grid;gap:12px;padding:16px;overflow:auto;height:100%}
+.webos-workspace-item{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line,#ffffff24);border-radius:10px;background:var(--surface,#ffffff0b)}
+.webos-workspace-item>div{flex:1;min-width:0}.webos-workspace-item strong,.webos-workspace-item small{display:block}
+.webos-workspace-item small{font-size:11px;color:var(--muted-text,#aab6ca)}
+.webos-workspace-item button{border:1px solid var(--line,#ffffff24);border-radius:8px;background:var(--surface,#ffffff12);color:inherit;padding:7px 10px}
+.webos-workspace-actions{display:flex;gap:8px;flex-wrap:wrap}
