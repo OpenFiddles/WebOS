@@ -19,7 +19,8 @@
         if (!segments.length) continue;
         const folder = options.destination || "/Downloads";
         const path = window.WebOSFileSystem.normalize(folder + "/" + segments.join("/"));
-        if (file.type.startsWith("text/") || ["application/json","application/xml","application/javascript"].includes(file.type)) await window.WebOSFileSystem.putText(path, await file.text());\n        else await window.WebOSFileSystem.putBinary(path, file, file.type || "application/octet-stream");
+        if (file.type.startsWith("text/") || ["application/json","application/xml","application/javascript"].includes(file.type)) await window.WebOSFileSystem.putText(path, await file.text());
+        else await window.WebOSFileSystem.putBinary(path, file, file.type || "application/octet-stream");
         imported++;
       } catch(error) { failed.push((file.name||"file")+": "+error.message); }
     }
