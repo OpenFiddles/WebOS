@@ -463,7 +463,19 @@ function openSettings() {
         <div class="AppPanel" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 500px;">
             <!-- SYSTEM PREFERENCES SECTION -->
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 1rem;">
-                <h2>Better Settings</h2>
+                <h2>Better Settings</h2><section class="settings-section webos-identity-settings">
+ <h2>System Identity</h2><p>Give this installation its own name and visual identity. These settings stay on this device.</p>
+ <div class="setting-field"><label for="os-brand-name">Operating system name</label><input id="os-brand-name" maxlength="32" placeholder="WebOS"></div>
+ <div class="setting-field"><label for="os-brand-subtitle">System subtitle</label><input id="os-brand-subtitle" maxlength="64" placeholder="A browser-based desktop environment"></div>
+ <div class="setting-field"><label for="os-brand-logo">Brand icon / emoji</label><input id="os-brand-logo" maxlength="8" placeholder="🖥️"></div>
+ <div class="setting-field"><label for="os-brand-version">Display version label</label><input id="os-brand-version" maxlength="24" placeholder="1.0"></div>
+ <small>Changing the display version does not change the actual WebOS build or update channel.</small>
+ <div class="setting-field"><label>Accent color presets</label><div class="webos-accent-swatches" role="group" aria-label="Accent color presets">
+ <button type="button" data-accent="#53b5ff" title="Ocean" aria-label="Ocean accent" style="--swatch:#53b5ff"></button><button type="button" data-accent="#8b5cf6" title="Violet" aria-label="Violet accent" style="--swatch:#8b5cf6"></button><button type="button" data-accent="#ec4899" title="Pink" aria-label="Pink accent" style="--swatch:#ec4899"></button><button type="button" data-accent="#f97316" title="Orange" aria-label="Orange accent" style="--swatch:#f97316"></button><button type="button" data-accent="#f5b942" title="Amber" aria-label="Amber accent" style="--swatch:#f5b942"></button><button type="button" data-accent="#22c55e" title="Green" aria-label="Green accent" style="--swatch:#22c55e"></button><button type="button" data-accent="#14b8a6" title="Teal" aria-label="Teal accent" style="--swatch:#14b8a6"></button><button type="button" data-accent="#06b6d4" title="Cyan" aria-label="Cyan accent" style="--swatch:#06b6d4"></button><button type="button" data-accent="#ef4444" title="Red" aria-label="Red accent" style="--swatch:#ef4444"></button><button type="button" data-accent="#a3e635" title="Lime" aria-label="Lime accent" style="--swatch:#a3e635"></button><button type="button" data-accent="#e879f9" title="Orchid" aria-label="Orchid accent" style="--swatch:#e879f9"></button><button type="button" data-accent="#e5e7eb" title="Silver" aria-label="Silver accent" style="--swatch:#e5e7eb"></button><button type="button" data-accent="#64748b" title="Slate" aria-label="Slate accent" style="--swatch:#64748b"></button><button type="button" data-accent="#ffffff" title="White" aria-label="White accent" style="--swatch:#ffffff"></button>
+ </div></div>
+ <div class="setting-field"><label for="os-brand-accent-hex">Custom accent (hex)</label><input id="os-brand-accent-hex" maxlength="7" placeholder="#53B5FF"></div>
+</section>
+
                 
                 <div class="setting-field"><label for="desktop-style-choice">Desktop environment</label><select id="desktop-style-choice"><option value="webos">WebOS · Modern</option><option value="macos">macOS-inspired</option><option value="windows">Windows-inspired</option><option value="chromeos">ChromeOS-inspired</option><option value="linux">Linux workstation</option><option value="floating">Floating dock · minimal desktop</option><option value="classic">Classic desktop</option><option value="minimal">Minimal workspace</option><option value="tablet">Tablet workspace</option></select><small>Changes the menu bar, taskbar, dock, desktop spacing and window chrome.</small></div>
                 <div class="setting-field"><label for="window-style-choice">Window appearance</label><select id="window-style-choice"><option value="auto">Match desktop preset</option><option value="glass">Liquid glass</option><option value="flat">Flat panels</option><option value="compact">Compact classic</option></select></div>
@@ -511,7 +523,12 @@ function openSettings() {
                 </div>
                 <div class="setting-field"><label for="ambient-animation-choice">Animated desktop atmosphere</label><select id="ambient-animation-choice"><option value="none">Off</option><option value="aurora">Aurora drift</option><option value="stars">Starfield</option><option value="mesh">Moving mesh</option><option value="waves">Soft waves</option><option value="rain">Rainfall</option></select><small>Ambient motion behind desktop icons and windows. Reduced motion disables the effects.</small></div>
                 <div class="setting-field liquid-glass-setting"><label><input id="liquid-glass-choice" type="checkbox"> Experimental Liquid Glass</label><small>Layered backdrop blur, spectral highlights and supported SVG displacement effects. Rendering varies by browser and GPU.</small></div>
-                <button type="button" id="reset-appearance">Restore appearance defaults</button>
+                <div class="setting-field webos-refraction-controls"><label><input id="glass-refraction-choice" type="checkbox"> Experimental glass refraction</label>
+ <small>Subtle SVG displacement on the glass highlight layer. It does not distort window content. High values may affect performance.</small>
+ <label for="glass-refraction-strength">Refraction strength <output id="glass-refraction-strength-value">3</output></label><input id="glass-refraction-strength" type="range" min="0" max="8" value="3">
+ <label for="glass-highlight-choice">Glass highlight intensity <output id="glass-highlight-choice-value">45%</output></label><input id="glass-highlight-choice" type="range" min="0" max="100" value="45">
+ <label for="glass-blur-choice">Glass blur <output id="glass-blur-choice-value">24px</output></label><input id="glass-blur-choice" type="range" min="0" max="40" value="24">
+</div><button type="button" id="reset-appearance">Restore appearance defaults</button>
             </section>
 
             <hr style="border: 0; border-top: 1px solid rgba(128,128,128,0.2); margin: 0.5rem 0;" />
@@ -905,6 +922,22 @@ function openSettings() {
         document.body.style.removeProperty("background-size");
         document.body.style.removeProperty("background-position");
     }
+
+    // System identity, palette and glass rendering controls.
+    const brandName=win.querySelector("#os-brand-name"),brandSubtitle=win.querySelector("#os-brand-subtitle"),brandLogo=win.querySelector("#os-brand-logo"),brandVersion=win.querySelector("#os-brand-version"),brandHex=win.querySelector("#os-brand-accent-hex");
+    if(brandName)brandName.value=localStorage.getItem("webos-brand-name")||"WebOS";
+    if(brandSubtitle)brandSubtitle.value=localStorage.getItem("webos-brand-subtitle")||"A browser-based desktop environment";
+    if(brandLogo)brandLogo.value=localStorage.getItem("webos-brand-logo")||"🖥️";
+    if(brandVersion)brandVersion.value=localStorage.getItem("webos-brand-version")||"";
+    if(brandHex)brandHex.value=localStorage.getItem("webos-accent")||"#53b5ff";
+    const applyBrand=()=>{localStorage.setItem("webos-brand-name",(brandName?.value||"WebOS").trim().slice(0,32)||"WebOS");localStorage.setItem("webos-brand-subtitle",(brandSubtitle?.value||"").trim().slice(0,64));localStorage.setItem("webos-brand-logo",(brandLogo?.value||"🖥️").trim().slice(0,8)||"🖥️");localStorage.setItem("webos-brand-version",(brandVersion?.value||"").trim().slice(0,24));window.WebOSBranding?.apply();status.textContent="System identity saved on this device.";};
+    [brandName,brandSubtitle,brandLogo,brandVersion].forEach(el=>el?.addEventListener("change",applyBrand));
+    win.querySelectorAll("[data-accent]").forEach(button=>button.addEventListener("click",()=>{const value=button.dataset.accent;if(!/^#[0-9a-f]{6}$/i.test(value))return;accentChoice.value=value;if(brandHex)brandHex.value=value;localStorage.setItem("webos-accent",value);document.documentElement.style.setProperty("--accent",value);document.body.style.setProperty("--accent",value);window.WebOSAppearance?.apply();status.textContent="Accent color updated."; }));
+    brandHex?.addEventListener("change",()=>{const value=brandHex.value.trim();if(!/^#[0-9a-f]{6}$/i.test(value)){status.textContent="Enter a valid six-digit hex color, e.g. #53B5FF.";return;}accentChoice.value=value;localStorage.setItem("webos-accent",value);document.documentElement.style.setProperty("--accent",value);document.body.style.setProperty("--accent",value);window.WebOSAppearance?.apply();});
+    const refraction=win.querySelector("#glass-refraction-choice"),refractionStrength=win.querySelector("#glass-refraction-strength"),glassHighlight=win.querySelector("#glass-highlight-choice"),glassBlur=win.querySelector("#glass-blur-choice");
+    if(refraction){refraction.checked=localStorage.getItem("webos-glass-refraction")==="true";refractionStrength.value=localStorage.getItem("webos-glass-refraction-strength")||"3";glassHighlight.value=localStorage.getItem("webos-glass-highlight")||"45";glassBlur.value=localStorage.getItem("webos-glass-blur")||"24";}
+    const applyGlass=()=>{const enabled=!!refraction?.checked,strength=Math.max(0,Math.min(8,Number(refractionStrength?.value)||0)),highlight=Math.max(0,Math.min(100,Number(glassHighlight?.value)||0)),blur=Math.max(0,Math.min(40,Number(glassBlur?.value)||0));localStorage.setItem("webos-glass-refraction",String(enabled));localStorage.setItem("webos-glass-refraction-strength",String(strength));localStorage.setItem("webos-glass-highlight",String(highlight));localStorage.setItem("webos-glass-blur",String(blur));document.body.dataset.glassRefraction=String(enabled);document.documentElement.style.setProperty("--webos-glass-strength",String(strength));document.documentElement.style.setProperty("--webos-glass-highlight",String(highlight/100));document.documentElement.style.setProperty("--webos-glass-blur",blur+"px");const filter=document.querySelector("#webos-glass-refraction feDisplacementMap");if(filter)filter.setAttribute("scale",String(strength));for(const [id,val] of [["glass-refraction-strength-value",strength],["glass-highlight-choice-value",highlight+"%"],["glass-blur-choice-value",blur+"px"]]){const out=win.querySelector("#"+id);if(out)out.textContent=val;}};
+    [refraction,refractionStrength,glassHighlight,glassBlur].forEach(el=>el?.addEventListener("input",applyGlass));applyGlass();
 
     // 5. System Configuration Event Handlers
     fullscreenChoice.addEventListener("change", async () => {

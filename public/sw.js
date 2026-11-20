@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "1.18";
+const VERSION = "1.19";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -9,7 +9,7 @@ const CORE_ASSETS = [
   "/js/os/desktop/app-registry.js", "/js/os/desktop/filesystem.js",
   "/js/os/desktop/Permissions.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
   "/js/os/desktop/WASMRuntime.js", "/js/os/desktop/Notifications.js",
-  "/js/os/desktop/Appearance.js", "/js/os/desktop/DesktopInteractions.js", "/js/os/window/Launcher.js",
+  "/js/os/desktop/Appearance.js", "/js/os/desktop/Branding.js", "/js/os/desktop/DesktopInteractions.js", "/js/os/window/Launcher.js",
   "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js", "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js",
   "/js/os/window/Documentation.js", "/js/os/window/AnimationStudio.js",
   "/js/os/mobile/mobile-runtime.js",

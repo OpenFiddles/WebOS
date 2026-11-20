@@ -75,3 +75,20 @@ body[data-desktop-style="tablet"] #dock .DockIcon{width:52px;height:52px;flex-ba
 body[data-desktop-style="tablet"] #window-workspace{inset:58px 0 82px}
 body[data-desktop-style="tablet"] .window-shell.glass{border-radius:18px}
 @media(max-width:680px){body[data-desktop-style="floating"] #window-workspace{inset:38px 0 0}body[data-desktop-style="classic"] #window-workspace{inset:42px 0 54px}body[data-desktop-style="tablet"] #window-workspace{inset:58px 0 82px}}
+
+/* User-defined WebOS identity and glass effects */
+.system-brand-icon{display:inline-grid;place-items:center;margin-right:7px;font-size:1.05em;line-height:1;vertical-align:middle}
+.webos-accent-swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(34px,1fr));gap:8px}
+.webos-accent-swatches button{width:34px;height:34px;padding:0;border:2px solid rgba(255,255,255,.5);border-radius:50%;background:var(--swatch);box-shadow:0 2px 8px #0003;cursor:pointer}
+.webos-accent-swatches button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.webos-identity-settings input[type=text]{width:100%;box-sizing:border-box}
+.webos-refraction-controls{display:grid;gap:8px}
+.webos-refraction-controls input[type=range]{width:100%;accent-color:var(--accent)}
+body[data-liquid-glass="true"] .window-shell.glass{background:rgba(19,29,46,.70)!important;backdrop-filter:blur(var(--webos-glass-blur,24px)) saturate(175%)!important;-webkit-backdrop-filter:blur(var(--webos-glass-blur,24px)) saturate(175%)!important;border-color:rgba(225,240,255,.24)!important;box-shadow:0 20px 56px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.15)!important}
+body[data-liquid-glass="true"] .window-shell.glass:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;background:linear-gradient(145deg,rgba(255,255,255,calc(var(--webos-glass-highlight,.45)*.20)),transparent 38%,rgba(110,175,255,calc(var(--webos-glass-highlight,.45)*.07)));opacity:1}
+body[data-liquid-glass="true"][data-glass-refraction="true"] .window-shell.glass:after{filter:url(#webos-glass-refraction);opacity:.9}
+.window-shell.glass>*{position:relative;z-index:1}
+.window-shell.glass>.resize-handle{z-index:5}
+body[data-reduced-motion="true"] .window-shell.glass:after{transition:none!important;animation:none!important}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){body[data-liquid-glass="true"] .window-shell.glass{background:rgba(20,30,48,.94)!important}}
+@media(max-width:680px){.webos-accent-swatches{grid-template-columns:repeat(7,minmax(30px,1fr))}}
