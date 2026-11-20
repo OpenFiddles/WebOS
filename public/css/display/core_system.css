@@ -13,3 +13,8 @@
 .wpa-list{display:grid;gap:8px}.wpa-row{display:flex;align-items:center;gap:12px;padding:11px;border:1px solid var(--line,#ffffff20);border-radius:10px;background:var(--surface,#ffffff08)}
 .wpa-row>div{flex:1;min-width:0}.wpa-row strong,.wpa-row small{display:block}.wpa-row small{color:var(--muted-text,#aab6ca);font-size:11px}
 .wpa-empty{padding:20px;text-align:center;color:var(--muted-text,#aab6ca);border:1px dashed var(--line,#ffffff30);border-radius:10px}
+
+/* WebOS Core 3.0 app-private storage and lifecycle labels */
+.wpa-state[data-state="suspended"]{color:#e5b071}
+.wpa-state[data-state="running"]{color:#69d6a0}
+.wpa-state[data-state="closing"]{color:#d58a8a}

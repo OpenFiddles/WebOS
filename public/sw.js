@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "2.1";
+const VERSION = "3.0";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -7,7 +7,7 @@ const CORE_ASSETS = [
   "/html/mobile/mobileLauncher.html", "/site.webmanifest",
   "/html/BootScreen_popcorn.html", "/html/DisplayManager_PopIT.html",
   "/js/os/desktop/app-registry.js", "/js/os/desktop/filesystem.js",
-  "/js/os/desktop/Permissions.js", "/js/os/desktop/Core.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
+  "/js/os/desktop/Permissions.js", "/js/os/desktop/AppStorage.js", "/js/os/desktop/Core.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
   "/js/os/desktop/WASMRuntime.js", "/js/os/desktop/Notifications.js",
   "/js/os/desktop/Appearance.js", "/js/os/desktop/Branding.js", "/js/os/desktop/DesktopInteractions.js", "/js/os/window/Launcher.js",
   "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js", "/js/os/window/PlatformApps.js", "/js/os/window/CoreApps.js", "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js",

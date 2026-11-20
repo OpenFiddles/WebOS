@@ -98,6 +98,14 @@
                     requestXR: async (mode, options) => { await this.require("hardware.xr"); return window.WebOS.hardware.requestXR(mode, options); }
                 });
                 this.storage = Object.freeze({
+                    app: Object.freeze({
+                        get: async key => { await this.require("storage.app"); return window.WebOSAppStorage.get(this.appId,key); },
+                        set: async (key,value) => { await this.require("storage.app"); return window.WebOSAppStorage.set(this.appId,key,value); },
+                        delete: async key => { await this.require("storage.app"); return window.WebOSAppStorage.delete(this.appId,key); },
+                        keys: async () => { await this.require("storage.app"); return window.WebOSAppStorage.keys(this.appId); },
+                        clear: async () => { await this.require("storage.app"); return window.WebOSAppStorage.clear(this.appId); },
+                        estimate: async () => { await this.require("storage.app"); return window.WebOSAppStorage.estimate(this.appId); }
+                    }),
                     estimate: () => window.WebOS?.storage?.estimate?.() || Promise.resolve(null),
                     persist: async () => { await this.require("storage.persist"); return window.WebOS?.storage?.persist?.() || false; },
                     openPrivateRoot: async () => { await this.require("storage.opfs"); return window.WebOS.storage.openPrivateRoot(); }

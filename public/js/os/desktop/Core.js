@@ -1,4 +1,4 @@
-/* WebOS Core 2.0: capability registry, hardware bridges and process supervisor. */
+/* WebOS Core 3.0: capability registry, hardware bridges and process lifecycle supervisor. */
 (() => {
   "use strict";
   const secure = window.isSecureContext === true;
@@ -61,25 +61,39 @@
   });
   const processManager=Object.freeze({register:registerTask,list:snapshot,subscribe});
   const system=Object.freeze({
-    version:"2.0.0",runtime:"browser",
+    version:"3.0.0",runtime:"browser",
     getInfo(){return {name:localStorage.getItem("webos-os-name")||"WebOS",version:"2.1.0",runtime:"browser",platform:navigator.userAgentData?.platform||navigator.platform||"Unavailable",browser:navigator.userAgentData?.brands?.map(x=>x.brand+" "+x.version).join(", ")||navigator.userAgent||"Unavailable",secureContext:secure,online:navigator.onLine,visibility:document.visibilityState};},
     capabilities
   });
-  window.WebOSCore=Object.freeze({version:"2.0.0",system,hardware,storage,processes:processManager,events});
+  window.WebOSCore=Object.freeze({version:"3.0.0",system,hardware,storage,processes:processManager,events});
   window.WebOS=window.WebOS||{};
-  Object.assign(window.WebOS,{version:"2.0.0",system,hardware,storage,processes:processManager,capabilities});
+  Object.assign(window.WebOS,{version:"3.0.0",system,hardware,storage,processes:processManager,capabilities});
   window.dispatchEvent(new CustomEvent("webos:core-ready",{detail:{version:"2.0.0"}}));
   const observed=new WeakMap();
   function scanWindows(){
     document.querySelectorAll("#window-workspace .window-shell").forEach(win=>{
-      if(observed.has(win))return;
-      const title=win.querySelector(".window-title-text")?.textContent||"WebOS app";
-      const task=registerTask({id:"window-"+(win.dataset.windowId||Math.random().toString(36).slice(2)),name:title,kind:"window"});
-      observed.set(win,task);
-      const observer=new MutationObserver(()=>{if(!win.isConnected){observer.disconnect();task.end();}});
-      observer.observe(document.getElementById("window-workspace")||document.body,{childList:true,subtree:true});
+      let task=observed.get(win);
+      if(!task){
+        const title=win.querySelector(".window-title-text")?.textContent||"WebOS app";
+        task=registerTask({id:"window-"+(win.id||("runtime-"+(++taskId))),name:title,kind:"window",detail:win.dataset.webosAppId||"WebOS window"});
+        observed.set(win,task);
+        const stateObserver=new MutationObserver(()=>updateWindowTask(win,task));
+        stateObserver.observe(win,{attributes:true,attributeFilter:["class"]});
+        task._observer=stateObserver;
+      }
+      updateWindowTask(win,task);
     });
+    for(const [win,task] of liveWindows){
+      if(!win.isConnected){task._observer?.disconnect();task.end();liveWindows.delete(win);}
+    }
+  }
+  const liveWindows=new Map();
+  function updateWindowTask(win,task){
+    liveWindows.set(win,task);
+    const state=win.classList.contains("is-closing")?"closing":win.classList.contains("is-minimized")?"suspended":"running";
+    task.update({state,detail:win.dataset.webosAppId||"WebOS window"});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",scanWindows,{once:true});else scanWindows();
-  new MutationObserver(scanWindows).observe(document.getElementById("window-workspace")||document.body,{childList:true,subtree:true});
+  const workspace=document.getElementById("window-workspace")||document.body;
+  new MutationObserver(scanWindows).observe(workspace,{childList:true,subtree:true});
 })();

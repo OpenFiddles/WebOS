@@ -64,6 +64,11 @@ WebOSAppRegistry.render();</code></pre><h2>Handler contract</h2><p>Handlers rece
 api.permissions.query(name)
 api.permissions.revoke(name)
 api.permissions.list()
+// Private, persistent app data (separate namespace per app)
+await api.storage.app.get("settings")
+await api.storage.app.set("settings", { theme: "dark" })
+await api.storage.app.keys()
+await api.storage.app.delete("settings")
 // Legacy convenience aliases:
 await api.requestPermission(name, reason)
 api.getPermissionState(name)
@@ -99,7 +104,7 @@ console.log(info.name, info.runtime, info.secureContext);</code></pre><p>Returns
   enableHighAccuracy: false, timeout: 10000
 });
 console.log(position.coords.latitude, position.coords.longitude);</code></pre><p>Requests WebOS approval first, then calls the host browser API. The browser may show its own native prompt. A secure context and browser support are required.</p><h2>Clipboard</h2><pre><code>const text = await api.clipboard.readText();
-await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li></ul>`],
+await api.clipboard.writeText("Copied from WebOS");</code></pre><p>Clipboard access is browser-dependent and may require a secure context, native permission and a user gesture.</p><h2>Permission identifiers</h2><ul><li><code>filesystem.read</code></li><li><code>filesystem.write</code></li><li><code>filesystem.delete</code></li><li><code>notifications</code></li><li><code>geolocation</code></li><li><code>clipboard.read</code></li><li><code>clipboard.write</code></li><li><code>storage.app</code></li><li><code>hardware.usb</code></li><li><code>hardware.serial</code></li><li><code>hardware.hid</code></li><li><code>hardware.bluetooth</code></li><li><code>hardware.gpu</code></li><li><code>hardware.xr</code></li><li><code>media.codecs</code></li></ul><p>App-private storage is an origin-local namespace, not a security boundary. Do not store secrets in client-side app storage.</p>`],
       permissions:["Permissions & security","ASK BEFORE ACCESS","Apps should request only the capabilities they need and explain why.",`<h2>Request access</h2><pre><code>await api.requestPermission(
   "geolocation",
   "Show nearby places on the map."

@@ -16,10 +16,17 @@
     "hardware.xr": ["Start an XR session", "Request an immersive session using the host browser."],
     "media.codecs": ["Use media codecs", "Inspect WebCodecs encoder or decoder support."],
     "storage.opfs": ["Access private app storage", "Open WebOS origin-private storage."],
-    "storage.persist": ["Keep WebOS storage persistent", "Ask the browser to protect site storage from automatic eviction."]
+    "storage.persist": ["Keep WebOS storage persistent", "Ask the browser to protect site storage from automatic eviction."],
+    "storage.app": ["Use private app storage", "Read and write this app’s separate persistent data namespace."]
   };
   const decisions = new Map();
+  const STORAGE_KEY = "webos-permission-decisions-v1";
   const key = (app, permission) => String(app) + ":" + permission;
+  try {
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+    Object.entries(saved).forEach(([id,state])=>{if((state==="granted"||state==="denied")&&id.length<180)decisions.set(id,state);});
+  } catch (_) {}
+  function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(Object.fromEntries(decisions)));}catch(error){console.warn("[WebOS Permissions] Could not persist decisions:",error);}}
   function query(app, permission) {
     if (!catalog[permission]) return "unavailable";
     return decisions.get(key(app, permission)) || "prompt";
@@ -60,6 +67,7 @@
         if (settled) return;
         settled = true;
         decisions.set(id, allowed ? "granted" : "denied");
+        persist();
         overlay.remove();
         if (allowed) resolve(true);
         else reject(new Error("Permission denied: " + permission));
@@ -70,9 +78,10 @@
       allow.focus();
     });
   }
-  function revoke(app, permission) { decisions.delete(key(app, permission)); return true; }
+  function revoke(app, permission) { const changed=decisions.delete(key(app, permission)); if(changed)persist(); return true; }
+  function reset(app){const prefix=String(app)+":";let changed=false;for(const id of [...decisions.keys()])if(id.startsWith(prefix)){decisions.delete(id);changed=true;}if(changed)persist();return changed;}
   function list(app) {
     return Object.keys(catalog).map(permission => ({ permission, label: catalog[permission][0], state: query(app, permission) }));
   }
-  window.WebOSPermissions = Object.freeze({ request, query, revoke, list, available: Object.freeze(Object.keys(catalog)) });
+  window.WebOSPermissions = Object.freeze({ request, query, revoke, reset, list, available: Object.freeze(Object.keys(catalog)) });
 })();
