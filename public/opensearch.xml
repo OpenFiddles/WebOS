@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<OpenSearchDescription xmlns="http://a9.com">
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
   <ShortName>WebOS</ShortName>
-  <Description>Search WebOS apps and documentation</Description>
-  <Url type="text/html" template="https://web-os-iota.vercel.app/{searchTerms}"/>
-  <Image width="32" height="32" type="image/png">https://web-os-iota.vercel.app/images/icon/1.png</Image>
+  <Description>Search WebOS apps, features, and documentation</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Url type="text/html" template="https://web-os-iota.vercel.app/search.html?q={searchTerms}"/>
+  <Image width="32" height="32" type="image/png">https://web-os-iota.vercel.app/images/icons/1.png</Image>
 </OpenSearchDescription>

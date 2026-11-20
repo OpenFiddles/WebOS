@@ -4,73 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#E25822">
-    <link rel="search" type="application/opensearchdescription+xml" title="WebOS" href="/opensearch.xml">
-
-    <title>WebOS</title>
-
-    <title>WebOS - Launch</title>
-    <meta name="description" content="A literal OS in the browser that is HTML native. So yeah! Cool, awesome!">
-    <link rel="canonical" href="https://web-os-iota.vercel.app/page/what_is.html">
+    <title>WebOS — Browser Desktop</title>
+    <meta name="description" content="A browser-based desktop environment by OpenFiddles.">
+    <link rel="canonical" href="https://web-os-iota.vercel.app/">
     <meta name="robots" content="index, follow">
-
+    <link rel="search" type="application/opensearchdescription+xml" title="WebOS" href="/opensearch.xml">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="alternate" type="application/json" title="OpenFiddles Funding" href="/.well-known/funding.json">
+    <link rel="icon" type="image/png" href="/images/icons/3.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/3.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="WebOS">
     <meta property="og:title" content="WebOS">
-    <meta property="og:description" content="A literal OS... In the browser!!">
+    <meta property="og:description" content="A browser-based desktop environment by OpenFiddles.">
     <meta property="og:url" content="https://web-os-iota.vercel.app/">
-    <meta property="og:image" content="/images/wiki/desktop1.png">
-    
+    <meta property="og:image" content="https://web-os-iota.vercel.app/images/wiki/desktop1.jpeg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="WebOS">
-    <meta name="twitter:description" content="A literal OS... in the browser! :3">
-    <meta name="twitter:image" content="/images/wiki/desktop2.png">
-
+    <meta name="twitter:description" content="A browser-based desktop environment by OpenFiddles.">
+    <meta name="twitter:image" content="https://web-os-iota.vercel.app/images/wiki/desktop1.jpeg">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WebOS">
-
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="icon" type="image/x-icon" href="/images/icons/3.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/icons/3.png">
-
     <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "WebOS",
-          "operatingSystem": "Web Browser",
-          "applicationCategory": "OperatingSystem",
-          "license": "https://gnu.org",
-          "author": {
-            "@type": "Organization",
-            "name": "OpenFiddles"
-          },
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          }
-        }
+    {
+      "@context":"https://schema.org",
+      "@type":"SoftwareApplication",
+      "name":"WebOS",
+      "operatingSystem":"Web Browser",
+      "applicationCategory":"UtilitiesApplication",
+      "license":"https://www.gnu.org/licenses/gpl-3.0.html",
+      "author":{"@type":"Organization","name":"OpenFiddles"},
+      "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}
+    }
     </script>
     <style>
-        * { box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
-        #os-entry { display: block; width: 100%; height: 100%; height: 100dvh; border: 0; background: #080d16; }
+      *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000}
+      #os-entry{display:block;width:100%;height:100%;height:100dvh;border:0;background:#080d16}
     </style>
 </head>
 <body>
     <iframe id="os-entry" title="WebOS" scrolling="no" allow="fullscreen"></iframe>
     <script>
-        (() => {
-            const frame = document.getElementById("os-entry");
-            const mobileUA = /Android|iPhone|iPad|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
-            const compactTouch = (navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches) &&
-                Math.min(window.innerWidth, window.screen?.width || window.innerWidth) <= 820;
-            const isMobile = mobileUA || compactTouch;
-            frame.src = isMobile ? "/html/mobile/mobileLauncher.html" : "/html/BootScreen_popcorn.html";
-            frame.title = isMobile ? "WebOS Mobile Launcher" : "WebOS desktop";
-        })();
+      (() => {
+        const frame=document.getElementById("os-entry");
+        const mobileUA=/Android|iPhone|iPad|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
+        const compactTouch=(navigator.maxTouchPoints>0||matchMedia("(pointer: coarse)").matches)&&Math.min(innerWidth,screen?.width||innerWidth)<=820;
+        frame.src=(mobileUA||compactTouch)?"/html/mobile/mobileLauncher.html":"/html/BootScreen_popcorn.html";
+        frame.title=(mobileUA||compactTouch)?"WebOS Mobile Launcher":"WebOS desktop";
+        let queued=[];
+        const deliver=()=>{if(!frame.contentWindow||!queued.length)return;frame.contentWindow.postMessage({type:"WEBOS_HOST_FILES",files:queued},"*");queued=[];};
+        frame.addEventListener("load",deliver);
+        if("launchQueue" in window && typeof window.launchQueue.setConsumer==="function"){
+          window.launchQueue.setConsumer(async params=>{
+            const files=[];
+            for(const handle of params.files||[]){try{files.push(await handle.getFile());}catch(error){console.warn("WebOS could not read a launched file",error);}}
+            if(files.length){queued.push(...files);deliver();}
+          });
+        }
+        const share=new URLSearchParams(location.search);
+        if(share.has("title")||share.has("text")||share.has("url")){
+          queued.push(new File([["Title: "+(share.get("title")||""),"",share.get("text")||"",share.get("url")||""].filter(Boolean).join("\n")],"Shared-content.txt",{type:"text/plain"}));
+          history.replaceState({}, "", "/");
+        }
+      })();
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
     <script defer src="/_vercel/speed-insights/script.js"></script>

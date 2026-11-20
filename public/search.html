@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#E25822"><title>Search WebOS</title><style>
+:root{color-scheme:dark;font:16px system-ui;background:#101722;color:#eef3fb}*{box-sizing:border-box}body{max-width:850px;margin:8vh auto;padding:24px}a{color:#ffb26e}input{width:100%;padding:14px;border-radius:12px;border:1px solid #526174;background:#1b2737;color:inherit;font:inherit}li{margin:12px 0}.muted{color:#aab6c6}
+</style></head><body><p class="muted">OPENFIDDLES / WEBOS</p><h1>Search WebOS</h1><form><input id="q" name="q" type="search" autofocus placeholder="Search apps, features, documentation…" aria-label="Search WebOS"></form><p id="summary" class="muted"></p><ul id="results"></ul><script>
+const pages=[
+["Desktop","/","The WebOS desktop environment, launcher, taskbar and windows."],
+["Files","/","Virtual filesystem, file manager, import, export and backups."],
+["Settings","/","Appearance, accent colors, desktop presets, window designer and preferences."],
+["App Creator","/","Create and manage WebOS applications."],
+["Hardware APIs","/","WebGPU, WebUSB, Web Serial, WebHID, Bluetooth, WebCodecs and WebXR capability APIs."],
+["Core API documentation","/page/doc/utac.html","WebOS API terms and platform capabilities."],
+["Acceptable Use Policy","/page/doc/aup.html","Acceptable use requirements."],
+["GNU license","/page/doc/gnu.html","WebOS license information."],
+["About WebOS","/page/what_is.html","What WebOS is and what it can do."],
+["About OpenFiddles","/page/doc/about_parent.html","The studio and its projects."]
+];
+const params=new URLSearchParams(location.search),q=(params.get("q")||"").trim().toLowerCase();
+document.getElementById("q").value=params.get("q")||"";
+const hits=pages.filter(x=>(x[0]+" "+x[2]).toLowerCase().includes(q));
+document.getElementById("summary").textContent=q?(hits.length+" result(s) for “"+q+"”"):"Search apps, features, and documentation.";
+const list=document.getElementById("results");
+for(const item of hits){const li=document.createElement("li"),a=document.createElement("a"),p=document.createElement("p");a.href=item[1];a.textContent=item[0];p.textContent=item[2];p.className="muted";li.append(a,p);list.append(li);}
+if(q&&!hits.length){const li=document.createElement("li");li.textContent="No matching WebOS pages found.";list.append(li);}
+</script></body></html>
