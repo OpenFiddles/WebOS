@@ -32,6 +32,8 @@ app.get("/api/cloud/config", (_req, res) => {
   return res.status(200).json({ configured:true, url, anonKey });
 });
 
+app.get("/api/media/config", (_req,res) => { res.set("Cache-Control","no-store"); res.json({workerUrl:process.env.MEDIA_WORKER_URL||""}); });
+
 app.get("/api/os-check", (_req, res) => {
   const configured = Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY));
   return res.status(200).json({ status:configured?"Cloud configuration present":"Local mode", configured });

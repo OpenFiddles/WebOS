@@ -77,5 +77,6 @@
   // WebOSFileSystem is intentionally frozen; do not Proxy it because that violates
   // JavaScript Proxy invariants for non-configurable methods such as ensureSeeded.
   // Preference auto-sync remains enabled; filesystem backups can be pushed manually.
-  window.WebOSCloud=Object.freeze({ready:init(),getStatus,signIn,signUp,signOut,sync});
+  async function getAccessToken(){const {data,error}=await requireClient().auth.getSession();if(error)throw error;return data.session?.access_token||null;}
+  window.WebOSCloud=Object.freeze({ready:init(),getStatus,signIn,signUp,signOut,sync,getAccessToken});
 })();

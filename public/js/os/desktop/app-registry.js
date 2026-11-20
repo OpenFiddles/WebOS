@@ -116,7 +116,11 @@
     const definitions = new Map();
     const builtInApps = [
         ["files","File Explorer","Browse, manage, and back up files","📁","openFiles",true],
-        ["notes","Notes","Write and organize notes","📝","openNotes",false],
+        ["notes","Notes Studio","Write, organize, and print notes","📝","openNotes",false],
+        ["camera","Camera","Capture photos using your device camera","📷","openCamera",false],
+        ["recorder","Audio Recorder","Record and save audio clips","🎙️","openAudioRecorder",false],
+        ["video","Video Player","Play videos and compress large files","🎬","openVideoPlayer",false],
+        ["print","Print Center","Preview and print text documents","🖨️","openPrint",false],
         ["settings","Settings","Personalize and configure WebOS","⚙️","openSettings",true],
         ["about","About WebOS","System information and credits","ℹ️","openAbout",false],
         ["calculator","Calculator","Everyday calculations","🧮","openCalculator",false],
