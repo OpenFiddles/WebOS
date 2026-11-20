@@ -2,7 +2,7 @@
 (() => {
   "use strict";
   const fsReady = () => window.WebOSFileSystem && typeof window.WebOSFileSystem.putBinary === "function";
-  const safeName = name => String(name || "Imported file").replace(/[\\/\\\u0000-\\u001f]/g, "_").replace(/^\\.+$/, "file").slice(0, 180) || "Imported file";
+  const safeName = name => { const value = Array.from(String(name || "Imported file"), ch => ch === "/" || ch === "\\" || ch.charCodeAt(0) < 32 ? "_" : ch).join(""); return (value && /^\\.+$/.test(value) ? "file" : value).slice(0,180) || "Imported file"; };
   const status = message => {
     let node = document.getElementById("webos-host-import-status");
     if (!node) { node = document.createElement("div"); node.id = "webos-host-import-status"; node.setAttribute("role","status"); Object.assign(node.style,{position:"fixed",right:"18px",bottom:"92px",zIndex:"99999",padding:"10px 14px",borderRadius:"12px",background:"rgba(12,20,32,.92)",color:"#fff",font:"13px system-ui",boxShadow:"0 8px 28px #0006",maxWidth:"min(360px,90vw)"}); document.body.append(node); }
