@@ -47,3 +47,10 @@
 .settings-search-global{position:relative!important;top:auto!important;margin:10px 0 14px}
 .settings-tab-content{min-width:0}
 @media(max-width:560px){.settings-tabs .settings-tab{flex-basis:auto!important;min-width:128px;padding:9px 12px;font-size:12px}}
+
+
+.settings-cloud-form{display:grid;grid-template-columns:1fr;gap:7px;max-width:560px}
+.settings-cloud-form label{font-size:13px;font-weight:600;opacity:.85}
+.settings-cloud-form input{width:100%;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:inherit;font:inherit}
+#settings-cloud-status{white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+#settings-cloud-push:disabled,#settings-cloud-pull:disabled,#settings-cloud-signin:disabled,#settings-cloud-signup:disabled{opacity:.48;cursor:not-allowed}

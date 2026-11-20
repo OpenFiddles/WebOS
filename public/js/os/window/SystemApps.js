@@ -616,6 +616,31 @@ function openSettings() {
                 <small>Built-in apps are protected from uninstall. App Manager exports registry metadata; app source and WASM binaries are managed by their respective creation tools.</small>
             </section>
 
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Account &amp; Cloud</h2>
+                <p>Sign in to sync your WebOS preferences and virtual files across devices. Local mode remains available if cloud services are unavailable.</p>
+                <div id="settings-cloud-status" class="settings-readout" role="status" aria-live="polite">Checking cloud configuration…</div>
+                <div class="settings-cloud-form">
+                    <label for="settings-cloud-email">Email</label>
+                    <input id="settings-cloud-email" type="email" autocomplete="username" placeholder="you@example.com">
+                    <label for="settings-cloud-password">Password</label>
+                    <input id="settings-cloud-password" type="password" autocomplete="current-password" placeholder="Account password">
+                    <label for="settings-cloud-display-name">Display name (for new accounts)</label>
+                    <input id="settings-cloud-display-name" type="text" maxlength="48" autocomplete="nickname" placeholder="Optional display name">
+                    <div class="settings-action-row">
+                        <button type="button" id="settings-cloud-signin">Sign in</button>
+                        <button type="button" id="settings-cloud-signup">Create account</button>
+                        <button type="button" id="settings-cloud-signout" hidden>Sign out</button>
+                    </div>
+                </div>
+                <div class="settings-action-row">
+                    <button type="button" id="settings-cloud-push">Back up to cloud</button>
+                    <button type="button" id="settings-cloud-pull">Restore from cloud</button>
+                </div>
+                <label class="setting-field"><input id="settings-cloud-auto" type="checkbox"> Automatically sync changes when signed in</label>
+                <small>Cloud backups include your WebOS virtual filesystem and supported preferences. Do not sync sensitive documents on shared devices. Supabase Row Level Security protects account records; this is not end-to-end encryption.</small>
+            </section>
+
             <!-- NOTIFICATION PREFERENCES -->
             <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
                 <h2>Notifications</h2>
@@ -717,7 +742,7 @@ function openSettings() {
                 "Visual CSS Inspector": "Window Design"
             })[heading] || heading;
         };
-        const categoryOrder = ["Personalization", "Window Design", "Apps & Applications", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
+        const categoryOrder = ["Personalization", "Window Design", "Apps & Applications", "Account & Cloud", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
         settingsSections.sort((a, b) => categoryOrder.indexOf(labelForSection(a)) - categoryOrder.indexOf(labelForSection(b)));
         settingsSections.forEach((section, index) => {
             const label = labelForSection(section);
@@ -1211,6 +1236,48 @@ function openSettings() {
     win.querySelector("#settings-open-app-manager")?.addEventListener("click",()=>{if(typeof window.WebOSAppRegistry?.launch==="function")window.WebOSAppRegistry.launch("appmanager");else window.openAppManager?.();});
     win.querySelector("#settings-refresh-apps")?.addEventListener("click",()=>refreshAppSummary());
     refreshAppSummary();
+
+    const cloudStatus=win.querySelector("#settings-cloud-status");
+    const cloudEmail=win.querySelector("#settings-cloud-email");
+    const cloudPassword=win.querySelector("#settings-cloud-password");
+    const cloudName=win.querySelector("#settings-cloud-display-name");
+    const cloudSignIn=win.querySelector("#settings-cloud-signin");
+    const cloudSignUp=win.querySelector("#settings-cloud-signup");
+    const cloudSignOut=win.querySelector("#settings-cloud-signout");
+    const cloudPush=win.querySelector("#settings-cloud-push");
+    const cloudPull=win.querySelector("#settings-cloud-pull");
+    const cloudAuto=win.querySelector("#settings-cloud-auto");
+    cloudAuto.checked=localStorage.getItem("webos-cloud-auto-sync")==="true";
+    const renderCloudState=()=>{
+        const state=window.WebOSCloud?.getStatus?.()||{mode:"starting",message:"Cloud service is starting…"};
+        cloudStatus.textContent=state.user?"Signed in as "+(state.user.email||"WebOS account")+" · "+state.message:state.message||"Local mode";
+        const signedIn=!!state.user;
+        cloudSignOut.hidden=!signedIn;
+        cloudSignIn.disabled=cloudSignUp.disabled=signedIn||state.mode!=="ready";
+        cloudPush.disabled=cloudPull.disabled=!signedIn||state.mode!=="ready";
+        cloudEmail.disabled=cloudPassword.disabled=signedIn;
+    };
+    const cloudAction=async action=>{
+        try{
+            cloudStatus.textContent="Working…";
+            const email=cloudEmail.value.trim(),password=cloudPassword.value;
+            if(action==="signin")await window.WebOSCloud.signIn(email,password);
+            else if(action==="signup")await window.WebOSCloud.signUp(email,password,cloudName.value.trim());
+            else if(action==="signout")await window.WebOSCloud.signOut();
+            else if(action==="push"){const result=await window.WebOSCloud.sync("push");cloudStatus.textContent="Cloud backup saved · "+result.bytes+" bytes.";}
+            else if(action==="pull"){if(!confirm("Restore your cloud backup? This replaces the current WebOS virtual files and synced preferences on this device."))return;const result=await window.WebOSCloud.sync("pull");cloudStatus.textContent="Cloud backup restored · "+result.files+" filesystem entries.";}
+        }catch(error){cloudStatus.textContent=(error?.message||"Cloud operation failed.")+" Local WebOS data remains available.";}
+        renderCloudState();
+    };
+    cloudSignIn.addEventListener("click",()=>cloudAction("signin"));
+    cloudSignUp.addEventListener("click",()=>cloudAction("signup"));
+    cloudSignOut.addEventListener("click",()=>cloudAction("signout"));
+    cloudPush.addEventListener("click",()=>cloudAction("push"));
+    cloudPull.addEventListener("click",()=>cloudAction("pull"));
+    cloudAuto.addEventListener("change",()=>localStorage.setItem("webos-cloud-auto-sync",String(cloudAuto.checked)));
+    window.addEventListener("webos:cloud-state",renderCloudState);
+    window.WebOSCloud?.ready?.then(renderCloudState);
+    renderCloudState();
     win.querySelectorAll("[data-dev-app]").forEach(button=>button.addEventListener("click",()=>window.WebOSAppRegistry?.launch?.(button.dataset.devApp)));
     const notifyErrors=win.querySelector("#settings-notify-errors"),notifyUpdates=win.querySelector("#settings-notify-updates");
     notifyErrors.checked=localStorage.getItem("webos-notify-errors")!=="false";
