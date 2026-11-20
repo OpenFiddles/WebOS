@@ -746,7 +746,8 @@ function openSettings() {
             tabBar.appendChild(button);
             pane.appendChild(section);
         });
-        settingsPanel.insertBefore(tabBar, settingsPanel.firstChild);
+        settingsPanel.insertBefore(pane, settingsPanel.firstChild);
+        settingsPanel.insertBefore(tabBar, pane);
         settingsPanel.insertBefore(settingsSearch, pane);
     }
 
