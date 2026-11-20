@@ -216,7 +216,14 @@
       checks.push(["WebOS core API",!!doc.defaultView.WebOS,"Checks core runtime initialization"]);
       checks.push(["Workspace service",!!doc.defaultView.WebOSWorkspaces,"Checks virtual desktop service availability"]);
       const mobileRules=doc.querySelectorAll(".mobile-app-window").length;
-      checks.push(["Mobile window mode",body.dataset.webosMode==="mobile"&&doc.querySelectorAll(".resize-handle").length>0,"Mobile mode should suppress desktop drag/resize handlers at window creation"]);
+      let mobileWindowCheck="Window manager unavailable";
+      if(typeof doc.defaultView.createWindow==="function"){
+        const probe=doc.defaultView.createWindow("Mobile Preview Test",doc.createElement("div"));
+        const handle=probe?.querySelector(".resize-handle");
+        mobileWindowCheck=handle?(handle.dataset.resizeBound!=="true"?"Mobile window skips desktop resize binding":"Desktop resize binding was unexpectedly attached"):"Resize handle template not found";
+        probe?.querySelector(".win-btn.close")?.click();
+      }
+      checks.push(["Mobile window behavior",mobileWindowCheck.startsWith("Mobile window skips"),mobileWindowCheck]);
       const unsupported=doc.defaultView.matchMedia?.("(pointer: coarse)").matches;
       checks.push(["Viewport emulation",html.clientWidth===Number(select.selectedOptions[0].dataset.width), "Rendered width "+html.clientWidth+" px; "+(unsupported?"coarse pointer":"desktop pointer emulation")]);
       let pass=0,fail=0;
@@ -229,7 +236,6 @@
     const win=createWindow("Mobile Preview & Test Suite",root);
     // Keep device controls inside the window rather than relying on global launcher UI.
     root.insertBefore(deviceBar,viewport);
-    reload.addEventListener("click",loadPreview);run.addEventListener("click",runTests);
     loadPreview();return win||null;
   };
 
