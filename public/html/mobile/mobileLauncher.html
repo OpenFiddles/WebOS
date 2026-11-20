@@ -93,20 +93,37 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
       <div class="resize-handle top" data-direction="n"></div><div class="resize-handle right" data-direction="e"></div><div class="resize-handle bottom" data-direction="s"></div><div class="resize-handle left" data-direction="w"></div><div class="resize-handle corner-se" data-direction="se"></div>
       <header class="window-titlebar"><div class="window-title-content"><img class="window-icon" src="" alt="" aria-hidden="true"><span class="window-title-text">Application</span></div><nav class="window-controls" aria-label="Application controls"><button class="win-btn minimize" type="button" aria-label="Minimize">−</button><button class="win-btn maximize" type="button" aria-label="Maximize">□</button><button class="win-btn close" type="button" aria-label="Close app">×</button></nav></header>
       <main class="window-body"></main>
+      <button class="mobile-window-resize-grip" type="button" aria-label="Drag upward to expand window" title="Drag to resize"><span></span></button>
     </div>
   </template>
   <main id="window-workspace" aria-label="Mobile application workspace"></main>
   <nav id="taskbar-apps" aria-hidden="true"></nav>
+  <!-- Shared WebOS runtime: mobile receives desktop app, storage, cloud, hardware and workspace services. -->
   <script src="../../js/os/window/Launcher.js"></script>
   <script src="../../js/os/desktop/filesystem.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+  <script src="../../js/os/desktop/CloudSync.js"></script>
   <script src="../../js/os/desktop/Permissions.js"></script>
+  <script src="../../js/os/desktop/AppStorage.js"></script>
+  <script src="../../js/os/desktop/Core.js"></script>
+  <script src="../../js/os/window/CoreApps.js"></script>
+  <script src="../../js/os/desktop/DeviceInfo.js"></script>
+  <script src="../../js/os/desktop/WASMRuntime.js"></script>
   <script src="../../js/os/desktop/app-registry.js"></script>
   <script src="../../js/os/window/WindowManager.js"></script>
-  <script src="../../js/os/desktop/Notifications.js"></script>
-  <script src="../../js/os/desktop/Appearance.js"></script>
+  <script src="../../js/boot/Popcorn.boot.js"></script>
   <script src="../../js/os/window/SystemApps.js"></script>
+  <script src="../../js/os/desktop/Workspaces.js"></script>
+  <script src="../../js/os/window/PlatformApps.js"></script>
+  <script src="../../js/os/window/NotesStudio.js"></script>
+  <script src="../../js/os/window/MediaApps.js"></script>
   <script src="../../js/os/window/Documentation.js"></script>
   <script src="../../js/os/window/AnimationStudio.js"></script>
+  <script src="../../js/os/desktop/Notifications.js"></script>
+  <script src="../../js/os/desktop/Appearance.js"></script>
+  <script src="../../js/os/desktop/Branding.js"></script>
+  <script src="../../js/os/desktop/SessionManager.js"></script>
+  <script src="../../js/os/desktop/HostFileBridge.js"></script>
   <script src="../../js/os/mobile/mobile-runtime.js"></script>
 </body>
 </html>

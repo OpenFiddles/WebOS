@@ -91,12 +91,9 @@ function createWindow(title, content) {
     win.style.left = (40 + Math.random() * 80) + "px";
     win.style.top = (80 + Math.random() * 80) + "px";
 
-    // Bind operational controllers safely
-    // Mobile uses a full-screen app surface rather than desktop drag/resize controls.
-    if (document.body.dataset.webosMode !== "mobile") {
-        if (typeof makeWindowDraggable === "function") makeWindowDraggable(win);
-        if (typeof makeWindowResizable === "function") makeWindowResizable(win);
-    }
+    // Desktop keeps freeform dragging; mobile gets its dedicated bottom-edge resize grip.
+    if (document.body.dataset.webosMode !== "mobile" && typeof makeWindowDraggable === "function") makeWindowDraggable(win);
+    if (typeof makeWindowResizable === "function") makeWindowResizable(win);
     if (typeof wireWindowButtons === "function") wireWindowButtons(win);
 
     // Mount inside workspace layer instead of the unconstrained body root
@@ -181,6 +178,37 @@ function makeWindowDraggable(win) {
 }
 
 function makeWindowResizable(win) {
+    if (document.body.dataset.webosMode === "mobile") {
+        const grip = win.querySelector(".mobile-window-resize-grip");
+        if (!grip || grip.dataset.resizeBound === "true") return;
+        grip.dataset.resizeBound = "true";
+        grip.addEventListener("pointerdown", event => {
+            if (event.button !== 0 || event.isPrimary === false) return;
+            const startY = event.clientY, startHeight = win.getBoundingClientRect().height;
+            const maxHeight = Math.max(320, window.innerHeight - 8);
+            const minHeight = Math.min(Math.max(320, window.innerHeight * 0.52), maxHeight);
+            const pointerId = event.pointerId;
+            event.preventDefault(); event.stopPropagation();
+            try { grip.setPointerCapture(pointerId); } catch (_) {}
+            const move = moveEvent => {
+                if (moveEvent.pointerId !== pointerId || !win.isConnected) return;
+                const nextHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + startY - moveEvent.clientY));
+                win.style.height = Math.round(nextHeight) + "px";
+                win.classList.toggle("mobile-window-expanded", nextHeight >= maxHeight - 24);
+            };
+            const finish = finishEvent => {
+                if (finishEvent && finishEvent.pointerId !== pointerId) return;
+                window.removeEventListener("pointermove", move, true);
+                window.removeEventListener("pointerup", finish, true);
+                window.removeEventListener("pointercancel", finish, true);
+                try { if (grip.hasPointerCapture(pointerId)) grip.releasePointerCapture(pointerId); } catch (_) {}
+            };
+            window.addEventListener("pointermove", move, true);
+            window.addEventListener("pointerup", finish, true);
+            window.addEventListener("pointercancel", finish, true);
+        });
+        return;
+    }
     const handles=win.querySelectorAll(".resize-handle");
     handles.forEach(handle=>{
         if(handle.dataset.resizeBound==="true")return;

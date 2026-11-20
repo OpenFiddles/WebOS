@@ -73,3 +73,23 @@ body[data-webos-mode="mobile"] #window-workspace > .window-shell { overscroll-be
   body[data-webos-mode="mobile"] .shell { padding-left:14px; padding-right:14px; }
   body[data-webos-mode="mobile"] .window-body { padding-left:10px; padding-right:10px; }
 }
+
+
+/* Mobile window sheets: resize affordance stays at the bottom edge. */
+body[data-webos-mode="mobile"] #window-workspace > .window-shell,
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-app-window {
+  inset: auto 0 0 !important; top: auto !important; width: 100vw !important; width: 100dvw !important;
+  height: min(88vh, 88dvh) !important; min-height: 52dvh !important; max-height: calc(100dvh - 8px) !important;
+  border-radius: 22px 22px 0 0 !important; overflow: hidden; box-shadow: 0 -14px 50px rgba(0,0,0,.28);
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-window-expanded { border-radius: 18px 18px 0 0 !important; }
+body[data-webos-mode="mobile"] .mobile-window-resize-grip {
+  display:flex; flex:0 0 24px; width:100%; height:24px; min-height:24px; align-items:center; justify-content:center;
+  border:0; padding:0; background:inherit; color:inherit; touch-action:none; cursor:ns-resize; z-index:5;
+}
+body[data-webos-mode="mobile"] .mobile-window-resize-grip span { display:block; width:42px; height:4px; border-radius:999px; background:currentColor; opacity:.42; }
+body[data-webos-mode="mobile"] .window-body { flex:1 1 auto; min-height:0; }
+body[data-webos-mode="mobile"] .window-controls .minimize,
+body[data-webos-mode="mobile"] .window-controls .maximize { display:inline-flex !important; }
+body[data-webos-mode="mobile"] .window-controls :is(.minimize,.maximize,.close) { width:38px; height:38px; }
+@media (max-height:620px) { body[data-webos-mode="mobile"] #window-workspace > .window-shell { height:84dvh !important; } }
