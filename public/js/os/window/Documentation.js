@@ -18,13 +18,17 @@ function openDocumentation() {
       '<button class="docs-nav-item" data-doc="architecture">◇ <span>Architecture</span></button>',
       '<button class="docs-nav-item" data-doc="api">⌘ <span>API reference</span></button>',
       '<button class="docs-nav-item" data-doc="permissions">♢ <span>Permissions</span></button>',
+      '<button class="docs-nav-item" data-doc="hardware">🔌 <span>Hardware APIs</span></button>',
+      '<button class="docs-nav-item" data-doc="processes">▤ <span>Processes</span></button>',
+      '<button class="docs-nav-item" data-doc="storageApi">💾 <span>Storage services</span></button>',
+      '<button class="docs-nav-item" data-doc="network">🌐 <span>Network services</span></button>'',
       '<button class="docs-nav-item" data-doc="examples">⌁ <span>Examples</span></button>',
       '<button class="docs-nav-item" data-doc="shortcuts">⌨ <span>Keyboard shortcuts</span></button>',
       '<button class="docs-nav-item" data-doc="troubleshooting">ⓘ <span>Troubleshooting</span></button>',
       '<button class="docs-nav-item" data-doc="updates">↻ <span>Updates & exports</span></button>',
       '</nav><div class="docs-sidebar-foot">OPENFIDDLES · WEBOS</div></aside>',
       '<main class="docs-main"><header class="docs-topbar"><span id="docs-breadcrumb">Documentation / Welcome</span><button id="docs-print" type="button">Print / Save PDF</button></header>',
-      '<article id="docs-content" class="docs-content"></article><footer class="docs-footer"><span>WebOS Documentation</span><span id="docs-result-count">15 topics</span></footer></main>'
+      '<article id="docs-content" class="docs-content"></article><footer class="docs-footer"><span>WebOS Documentation</span><span id="docs-result-count">19 topics</span></footer></main>'
     ].join("");
     const win = createWindow("WebOS Documentation", shell);
     if (!win) return null;

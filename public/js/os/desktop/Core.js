@@ -4,6 +4,8 @@
   const secure = window.isSecureContext === true;
   const checks = {
     webgpu: () => !!navigator.gpu,
+    bluetooth: () => !!navigator.bluetooth?.requestDevice,
+    midi: () => !!navigator.requestMIDIAccess,
     usb: () => !!navigator.usb?.requestDevice,
     serial: () => !!navigator.serial?.requestPort,
     hid: () => !!navigator.hid?.requestDevice,
@@ -18,14 +20,14 @@
   const descriptions = {
     webgpu:"GPU compute and rendering",usb:"USB device chooser",serial:"Serial device chooser",
     hid:"Human Interface Device chooser",webcodecs:"Hardware-assisted media codecs",
-    webxr:"Immersive XR sessions",opfs:"Origin Private File System",fileSystemAccess:"User-selected host files",
+    webxr:"Immersive XR sessions",bluetooth:"Bluetooth device chooser",midi:"MIDI device access",opfs:"Origin Private File System",fileSystemAccess:"User-selected host files",
     broadcastChannel:"Cross-tab messaging",serviceWorker:"Background caching and offline shell",
     sharedArrayBuffer:"Shared memory (requires cross-origin isolation)"
   };
   function capabilities() {
     return Object.entries(checks).map(([id, test]) => {
       let supported=false; try { supported=!!test(); } catch (_) {}
-      return {id,name:descriptions[id],supported,secureRequired:["webgpu","usb","serial","hid","webxr","opfs","fileSystemAccess"].includes(id),secureContext:secure};
+      return {id,name:descriptions[id],supported,secureRequired:["webgpu","usb","serial","hid","webxr","bluetooth","midi","opfs","fileSystemAccess"].includes(id),secureContext:secure};
     });
   }
   const events = new EventTarget();
@@ -46,9 +48,10 @@
     async requestUSB(filters=[]){if(!navigator.usb?.requestDevice)throw Error("WebUSB is unavailable.");return navigator.usb.requestDevice(filters?.length ? {filters} : {acceptAllDevices:true});},
     async requestSerial(options={}){if(!navigator.serial?.requestPort)throw Error("Web Serial is unavailable.");return navigator.serial.requestPort(options);},
     async requestHID(filters=[]){if(!navigator.hid?.requestDevice)throw Error("WebHID is unavailable.");return navigator.hid.requestDevice({filters});},
+    async requestBluetooth(options={acceptAllDevices:true,optionalServices:[]}){if(!navigator.bluetooth?.requestDevice)throw Error("Web Bluetooth is unavailable.");return navigator.bluetooth.requestDevice(options);},
     async requestGPU(){if(!navigator.gpu)throw Error("WebGPU is unavailable.");const adapter=await navigator.gpu.requestAdapter();if(!adapter)throw Error("No compatible GPU adapter.");return {adapter,device:await adapter.requestDevice()};},
     gpuInfo,
-    async requestXR(mode="immersive-vr",options={}){if(!navigator.xr)throw Error("WebXR is unavailable.");if(!await navigator.xr.isSessionSupported(mode))throw Error("This XR session mode is not supported.");return navigator.xr.requestSession(mode,options);},
+    async requestXR(mode="immersive-vr",options={}){if(!navigator.xr?.requestSession)throw Error("WebXR is unavailable.");/* Call immediately: requestSession may require the original user activation. */return navigator.xr.requestSession(mode,options);},
     async codecSupport(kind,config){const ctor=kind==="encode"?window.VideoEncoder:window.VideoDecoder;if(!ctor?.isConfigSupported)throw Error("WebCodecs is unavailable.");return ctor.isConfigSupported(config);}
   });
   const storage = Object.freeze({

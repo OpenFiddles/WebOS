@@ -1,1 +1,15 @@
 .core-manager{height:100%;overflow:auto;padding:20px;color:var(--text,#f4f7fb);font:inherit}.core-manager h2{margin:0 0 6px}.core-manager p,.core-note{opacity:.72}.core-toolbar,.core-device-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0}.core-manager button{border:1px solid var(--line,rgba(255,255,255,.18));background:var(--surface,rgba(255,255,255,.08));color:inherit;border-radius:9px;padding:9px 12px;cursor:pointer}.core-capabilities,.core-task-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}.core-capability,.core-task{display:grid;gap:5px;padding:12px;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:12px;background:var(--surface,rgba(255,255,255,.05))}.core-capability span[data-state=yes]{color:#63dba0}.core-capability span[data-state=no]{color:#e6ad73}.core-capability small,.core-task span{opacity:.68}.core-device-actions{display:block;margin-top:22px}.core-device-actions button{margin:4px 6px 4px 0}.core-device-actions pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;background:rgba(0,0,0,.18);border-radius:8px;min-height:40px}
+/* Core 2.1 platform utilities */
+.webos-platform-app{height:100%;min-height:0;overflow:auto;padding:18px;color:var(--text-color,var(--text,#f4f7fb));font:inherit}
+.webos-platform-app h2{margin:0 0 6px;font-size:21px}.webos-platform-app p{margin:5px 0 12px;color:var(--muted-text,#aab6ca);font-size:13px}
+.wpa-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.wpa-toolbar button,.wpa-action{border:1px solid var(--line,#ffffff24);border-radius:9px;padding:9px 12px;background:var(--surface,#ffffff0c);color:inherit;font:inherit;cursor:pointer}
+.wpa-toolbar button:disabled{opacity:.45;cursor:not-allowed}
+.wpa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.wpa-card{display:grid;gap:7px;min-width:0;padding:13px;border:1px solid var(--line,#ffffff20);border-radius:12px;background:var(--surface,#ffffff08)}
+.wpa-card strong{font-size:14px}.wpa-card small,.wpa-muted{color:var(--muted-text,#aab6ca);font-size:12px}
+.wpa-state{font-size:12px;font-weight:700}.wpa-state[data-ok=true]{color:#69d6a0}.wpa-state[data-ok=false]{color:#e5b071}
+.wpa-output{min-height:48px;max-height:220px;overflow:auto;padding:12px;border:1px solid var(--line,#ffffff20);border-radius:10px;background:#0002;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}
+.wpa-list{display:grid;gap:8px}.wpa-row{display:flex;align-items:center;gap:12px;padding:11px;border:1px solid var(--line,#ffffff20);border-radius:10px;background:var(--surface,#ffffff08)}
+.wpa-row>div{flex:1;min-width:0}.wpa-row strong,.wpa-row small{display:block}.wpa-row small{color:var(--muted-text,#aab6ca);font-size:11px}
+.wpa-empty{padding:20px;text-align:center;color:var(--muted-text,#aab6ca);border:1px dashed var(--line,#ffffff30);border-radius:10px}

@@ -7,7 +7,16 @@
     "notifications": ["Show WebOS notifications", "Display notifications in the WebOS desktop."],
     "geolocation": ["Access device location", "Request device location through the host browser."],
     "clipboard.read": ["Read clipboard text", "Read text from the system clipboard when permitted."],
-    "clipboard.write": ["Write clipboard text", "Copy text to the system clipboard when permitted."]
+    "clipboard.write": ["Write clipboard text", "Copy text to the system clipboard when permitted."],
+    "hardware.usb": ["Connect to USB devices", "Open the browser device chooser for a USB peripheral."],
+    "hardware.serial": ["Connect to serial devices", "Open the browser device chooser for a serial port."],
+    "hardware.hid": ["Connect to HID devices", "Open the browser device chooser for a supported HID peripheral."],
+    "hardware.bluetooth": ["Connect to Bluetooth devices", "Open the browser chooser for a nearby Bluetooth peripheral."],
+    "hardware.gpu": ["Use GPU compute and rendering", "Request a WebGPU adapter and device."],
+    "hardware.xr": ["Start an XR session", "Request an immersive session using the host browser."],
+    "media.codecs": ["Use media codecs", "Inspect WebCodecs encoder or decoder support."],
+    "storage.opfs": ["Access private app storage", "Open WebOS origin-private storage."],
+    "storage.persist": ["Keep WebOS storage persistent", "Ask the browser to protect site storage from automatic eviction."]
   };
   const decisions = new Map();
   const key = (app, permission) => String(app) + ":" + permission;

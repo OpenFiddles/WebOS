@@ -88,17 +88,19 @@
                 });
                 this.hardware = Object.freeze({
                     capabilities: () => window.WebOS?.hardware?.capabilities?.() || [],
-                    requestUSB: filters => { if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestUSB(filters); },
-                    requestSerial: options => { if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestSerial(options); },
-                    requestHID: filters => { if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestHID(filters); },
+                    requestUSB: async filters => { await this.require("hardware.usb"); if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestUSB(filters); },
+                    requestSerial: async options => { await this.require("hardware.serial"); if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestSerial(options); },
+                    requestHID: async filters => { await this.require("hardware.hid"); if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestHID(filters); },
+                    requestBluetooth: async options => { await this.require("hardware.bluetooth"); if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestBluetooth(options); },
+                    requestGPU: async () => { await this.require("hardware.gpu"); if(!window.WebOS?.hardware) throw new Error("Hardware service unavailable."); return window.WebOS.hardware.requestGPU(); },
                     gpuInfo: () => window.WebOS.hardware.gpuInfo(),
-                    codecSupport: (kind, config) => window.WebOS.hardware.codecSupport(kind, config),
-                    requestXR: (mode, options) => window.WebOS.hardware.requestXR(mode, options)
+                    codecSupport: async (kind, config) => { await this.require("media.codecs"); return window.WebOS.hardware.codecSupport(kind, config); },
+                    requestXR: async (mode, options) => { await this.require("hardware.xr"); return window.WebOS.hardware.requestXR(mode, options); }
                 });
                 this.storage = Object.freeze({
                     estimate: () => window.WebOS?.storage?.estimate?.() || Promise.resolve(null),
-                    persist: () => window.WebOS?.storage?.persist?.() || Promise.resolve(false),
-                    openPrivateRoot: () => window.WebOS.storage.openPrivateRoot()
+                    persist: async () => { await this.require("storage.persist"); return window.WebOS?.storage?.persist?.() || false; },
+                    openPrivateRoot: async () => { await this.require("storage.opfs"); return window.WebOS.storage.openPrivateRoot(); }
                 });
                 this.processes = Object.freeze({
                     register: info => window.WebOS?.processes?.register?.({...info, detail: "App: " + this.appId}),
@@ -157,7 +159,9 @@
         ["paint","Paint","Draw and export PNG images","🎨","openPaint",true],
         ["appmanager","App Manager","Review and uninstall installed apps","🗂️","openAppManager",false],
         ["hardware","Hardware Manager","Inspect and connect browser-supported devices","🔌","openHardwareManager",false],
-        ["taskmanager","Task Manager","View running WebOS windows and tasks","📋","openTaskManager",false]
+        ["taskmanager","Task Manager","View running WebOS windows and tasks","📋","openTaskManager",false],
+        ["storage","Storage Manager","Inspect browser storage and persistence","💾","openStorageManager",false],
+        ["network","Network Manager","Inspect connectivity and browser network hints","🌐","openNetworkManager",false]
     ];
     const systemAppIds = new Set([...builtInApps.map(app => app[0]), "alpine", "docs", "animations"]);
     function isBuiltin(id) { return systemAppIds.has(String(id)); }
