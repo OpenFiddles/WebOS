@@ -26,35 +26,33 @@
 <main class="auth-screen" id="auth-screen" aria-labelledby="auth-title" style="display: none;">
     <section class="auth-card">
         <h1 id="auth-title">Welcome to WebOS</h1>
-        <p class="auth-copy" id="auth-copy">Create a local account for this browser. Your password is hashed and never sent anywhere.</p>
+        <p class="auth-copy" id="auth-copy">Sign in or create a WebOS account to continue.</p>
         
         <form class="auth-form" id="auth-form">
             <label>Email<input id="auth-email" type="email" autocomplete="email" required></label>
             <label>Password<input id="auth-password" type="password" minlength="8" autocomplete="new-password" required></label>
-            <button type="submit" id="auth-submit">Create local account</button>
+            <button type="submit" id="auth-submit">Create account</button>
         </form>
         
         <div class="provider-row">
-            <button class="provider-button" type="button" data-provider="Google">Google</button>
-            <button class="provider-button" type="button" data-provider="Microsoft">Microsoft</button>
+            <button class="provider-button" type="button" data-provider="google">Continue with Google</button>
+            <button class="provider-button" type="button" data-provider="gitlab">Continue with GitLab</button>
         </div>
         
         <button class="auth-switch" type="button" id="auth-switch">Already have an account? Sign in</button>
-        <button class="auth-switch" type="button" id="auth-reset">Forgot the local password? Reset account</button>
+        <button class="auth-switch" type="button" id="auth-reset">Forgot password?</button>
+        <div id="turnstile-container" style="display:none;margin:12px auto;min-height:0"></div>
         <button class="guest-button" type="button" id="guest-button">Continue as guest</button>
         <p class="auth-status" id="auth-status" aria-live="polite"></p>
     </section>
 </main>
 
+<script src="../js/os/desktop/CloudSync.js"></script>
 <script>
     const boot = document.getElementById("boot");
     const status = document.getElementById("boot-status");
     const skipButton = document.getElementById("skip-boot");
     const progressFill = document.getElementById("loading-progress");
-    
-    let redirected = false;
-    let signingIn = false;
-    
     const authScreen = document.getElementById("auth-screen");
     const authForm = document.getElementById("auth-form");
     const authTitle = document.getElementById("auth-title");
@@ -62,128 +60,172 @@
     const authSubmit = document.getElementById("auth-submit");
     const authSwitch = document.getElementById("auth-switch");
     const authStatus = document.getElementById("auth-status");
+    const authEmail = document.getElementById("auth-email");
+    const authPassword = document.getElementById("auth-password");
+    const authReset = document.getElementById("auth-reset");
+    const guestButton = document.getElementById("guest-button");
+    const turnstileContainer = document.getElementById("turnstile-container");
+    let redirected = false;
+    let signingIn = false;
+    let captchaToken = null;
+    let captchaWidgetId = null;
+    let captchaLoader = null;
 
-    /**
-     * The hosted FlairOS environment loads only when the user opens its app.
-     * Boot should prepare the desktop, not download a large unused disk image.
-     */
-    async function warmDesktopAssets() {
-        status.textContent = "Preparing WebOS desktop...";
-        if (progressFill) progressFill.style.width = "70%";
-        await new Promise((resolve) => setTimeout(resolve, 350));
-        status.textContent = "Desktop services ready.";
-        if (progressFill) progressFill.style.width = "100%";
-        onBootComplete();
+    function showMessage(message,success=false){
+        authStatus.className=success?"auth-status success":"auth-status";
+        authStatus.textContent=message||"";
     }
-
-    /**
-     * Triggers clean system navigation gates safely once network assets settle down.
-     */
-    function onBootComplete() {
-        skipButton.disabled = false;
-        skipButton.textContent = "Continue to desktop";
-        
-        // FIX: Replaced race condition timeout with an instant validation gate check
-        if (sessionStorage.getItem("webos-session")) {
-            openDesktop();
-        } else {
-            showAuth();
+    function setBusy(busy){
+        authSubmit.disabled=busy;
+        guestButton.disabled=busy;
+        document.querySelectorAll("[data-provider]").forEach(button=>button.disabled=busy);
+        authReset.disabled=busy;
+    }
+    async function loadTurnstile(){
+        const siteKey=window.WebOSCloud?.getCaptchaSiteKey?.();
+        if(!siteKey){turnstileContainer.style.display="none";return;}
+        turnstileContainer.style.display="block";
+        if(!window.turnstile){
+            if(!captchaLoader){
+                captchaLoader=new Promise((resolve,reject)=>{
+                    const script=document.createElement("script");
+                    script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+                    script.async=true;script.defer=true;
+                    script.onload=resolve;script.onerror=()=>reject(new Error("Could not load the Turnstile security check."));
+                    document.head.appendChild(script);
+                });
+            }
+            await captchaLoader;
+        }
+        if(captchaWidgetId===null){
+            captchaWidgetId=window.turnstile.render(turnstileContainer,{
+                sitekey:siteKey,
+                theme:"auto",
+                callback:token=>{captchaToken=token;},
+                "expired-callback":()=>{captchaToken=null;},
+                "error-callback":()=>{captchaToken=null;showMessage("Security check failed to load. Please retry.");}
+            });
         }
     }
-
-    function showAuth() {
-        boot.style.display = "none";
-        authScreen.style.display = "block"; 
-        authScreen.classList.add("active");
-        document.getElementById("auth-email").focus();
-    }
-
-    function setAuthMode(signIn) {
-        signingIn = signIn;
-        authTitle.textContent = signIn ? "Sign in to WebOS" : "Welcome to WebOS";
-        authCopy.textContent = signIn
-            ? "Sign in to the local account saved in this browser."
-            : "Create a local account for this browser. Your password is hashed and never sent anywhere.";
-        authSubmit.textContent = signIn ? "Sign in" : "Create local account";
-        authSwitch.textContent = signIn ? "Need an account? Sign up" : "Already have an account? Sign in";
-        document.getElementById("auth-password").autocomplete = signIn ? "current-password" : "new-password";
-        authStatus.textContent = "";
-    }
-
-    async function passwordHash(email, password) {
-        const data = new TextEncoder().encode(email.trim().toLowerCase() + ":" + password);
-        const digest = await crypto.subtle.digest("SHA-256", data);
-        return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-    }
-
-    function openDesktop() {
-        if (redirected) return;
-        redirected = true;
-        status.textContent = "Opening desktop...";
-        setTimeout(() => {
-            window.location.href = "DisplayManager_PopIT.html";
-        }, 300);
-    }
-
-    function finishAuth(email) {
-        sessionStorage.setItem("webos-session", email);
-        authStatus.className = "auth-status success";
-        authStatus.textContent = "Signed in. Opening desktop...";
-        setTimeout(openDesktop, 350);
-    }
-
-    // Interactive event bindings
-    skipButton.addEventListener("click", showAuth);
-    
-    window.addEventListener("keydown", (event) => {
-        if (authScreen.style.display === "none" && !skipButton.disabled && (event.key === "Enter" || event.key === " ")) {
-            showAuth();
+    function consumeCaptcha(){
+        const token=captchaToken;
+        if(window.WebOSCloud?.getCaptchaSiteKey?.()&&!token)throw new Error("Complete the security check first.");
+        captchaToken=null;
+        if(captchaWidgetId!==null&&window.turnstile){
+            try{window.turnstile.reset(captchaWidgetId);}catch(_){}
         }
-    });
-    
-    authSwitch.addEventListener("click", () => setAuthMode(!signingIn));
-    
-    document.getElementById("auth-reset").addEventListener("click", () => {
-        if (!window.confirm("Remove the local WebOS account from this browser?")) return;
-        localStorage.removeItem("webos-account");
-        setAuthMode(false);
-        authStatus.textContent = "Local account removed. You can create a new one.";
-    });
-    
-    document.querySelectorAll("[data-provider]").forEach((button) => {
-        button.addEventListener("click", () => {
-            authStatus.className = "auth-status";
-            authStatus.textContent = button.dataset.provider + " sign-in needs an OAuth client ID and server callback. Use email/password for local mode.";
-        });
-    });
-    
-    document.getElementById("guest-button").addEventListener("click", () => {
-        finishAuth("guest_user");
-    });
-    
-    authForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const email = document.getElementById("auth-email").value.trim().toLowerCase();
-        const password = document.getElementById("auth-password").value;
-        const saved = JSON.parse(localStorage.getItem("webos-account") || "null");
-        
-        if (signingIn) {
-            if (!saved || saved.email !== email || saved.passwordHash !== await passwordHash(email, password)) {
-                authStatus.textContent = "Email or password is incorrect.";
+        return token;
+    }
+    async function warmDesktopAssets(){
+        status.textContent="Preparing WebOS services...";
+        if(progressFill)progressFill.style.width="70%";
+        await new Promise(resolve=>setTimeout(resolve,350));
+        status.textContent="Checking your WebOS account...";
+        if(progressFill)progressFill.style.width="100%";
+        await onBootComplete();
+    }
+    async function onBootComplete(){
+        skipButton.disabled=false;
+        skipButton.textContent="Continue";
+        try{
+            await window.WebOSCloud?.ready;
+            const cloud=window.WebOSCloud?.getStatus?.();
+            if(cloud?.mode==="ready"&&cloud.user){
+                sessionStorage.setItem("webos-session",cloud.user.email||cloud.user.id);
+                openDesktop();
                 return;
             }
-            finishAuth(email);
-            return;
+            showAuth();
+            if(cloud?.mode!=="ready"){
+                showMessage(cloud?.message||"WebOS account services are unavailable. Please retry shortly.");
+                setBusy(true);
+            }else{
+                await loadTurnstile().catch(error=>showMessage(error.message));
+            }
+        }catch(error){
+            showAuth();
+            showMessage(error?.message||"Could not initialize WebOS authentication.");
+            setBusy(true);
         }
-        if (saved) {
-            authStatus.textContent = "A local account already exists. Sign in instead.";
-            return;
-        }
-        localStorage.setItem("webos-account", JSON.stringify({ email, passwordHash: await passwordHash(email, password), createdAt: Date.now() }));
-        finishAuth(email);
+    }
+    function showAuth(){
+        boot.style.display="none";
+        authScreen.style.display="block";
+        authScreen.classList.add("active");
+        if(!authEmail.value)authEmail.focus();
+    }
+    function setAuthMode(signIn){
+        signingIn=signIn;
+        authTitle.textContent=signIn?"Sign in to WebOS":"Create your WebOS account";
+        authCopy.textContent=signIn?"Use your WebOS account credentials.":"Create an account to sync your WebOS settings and files.";
+        authSubmit.textContent=signIn?"Sign in":"Create account";
+        authSwitch.textContent=signIn?"Need an account? Sign up":"Already have an account? Sign in";
+        authPassword.autocomplete=signIn?"current-password":"new-password";
+        authReset.textContent="Forgot password?";
+        showMessage("");
+    }
+    function openDesktop(){
+        if(redirected)return;
+        redirected=true;
+        status.textContent="Opening WebOS...";
+        const mobileUA=/Android|iPhone|iPad|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
+        const compactTouch=(navigator.maxTouchPoints>0||matchMedia("(pointer: coarse)").matches)&&Math.min(innerWidth,screen?.width||innerWidth)<=820;
+        const destination=(mobileUA||compactTouch)?"mobile/mobileLauncher.html":"DisplayManager_PopIT.html";
+        setTimeout(()=>{window.location.href=destination;},250);
+    }
+    async function withAuthAction(action){
+        setBusy(true);
+        showMessage("Verifying...");
+        try{
+            await window.WebOSCloud?.ready;
+            await loadTurnstile();
+            const token=consumeCaptcha();
+            const result=await action(token);
+            return result;
+        }catch(error){
+            showMessage(error?.message||"Authentication failed.");
+            await loadTurnstile().catch(()=>{});
+            return null;
+        }finally{setBusy(false);}
+    }
+    document.getElementById("skip-boot").addEventListener("click",showAuth);
+    authSwitch.addEventListener("click",()=>setAuthMode(!signingIn));
+    authReset.addEventListener("click",()=>withAuthAction(async token=>{
+        await window.WebOSCloud.resetPassword(authEmail.value.trim().toLowerCase(),token);
+        showMessage("If that account exists, a password reset email has been sent.",true);
+        return true;
+    }));
+    document.querySelectorAll("[data-provider]").forEach(button=>{
+        button.addEventListener("click",()=>withAuthAction(token=>window.WebOSCloud.signInWithOAuth(button.dataset.provider,token)));
     });
-
-    // Start initialization on engine boot
+    guestButton.addEventListener("click",()=>withAuthAction(async token=>{
+        const result=await window.WebOSCloud.signInAsGuest(token);
+        finishAuth(result.user);
+        return result;
+    }));
+    authForm.addEventListener("submit",event=>{
+        event.preventDefault();
+        withAuthAction(async token=>{
+            const email=authEmail.value.trim().toLowerCase();
+            const password=authPassword.value;
+            const result=signingIn
+                ?await window.WebOSCloud.signIn(email,password,token)
+                :await window.WebOSCloud.signUp(email,password,"",token);
+            if(result.session&&result.user){finishAuth(result.user);}
+            else showMessage("Account created. Check your email to confirm it, then return here to sign in.",true);
+            return result;
+        });
+    });
+    function finishAuth(user){
+        sessionStorage.setItem("webos-session",user?.email||user?.id||"webos-user");
+        showMessage("Signed in. Opening WebOS...",true);
+        setTimeout(openDesktop,350);
+    }
+    window.addEventListener("keydown",event=>{
+        if(authScreen.style.display==="none"&&!skipButton.disabled&&(event.key==="Enter"||event.key===" ")){
+            showAuth();
+        }
+    });
     warmDesktopAssets();
 </script>
 

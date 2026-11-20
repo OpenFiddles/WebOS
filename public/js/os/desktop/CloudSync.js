@@ -3,7 +3,7 @@
     /(^|[-_])(lock|passcode|password|token|secret|credential)([-_]|$)/i.test(key) ||
     ["webos-current-user","webos-users-v1","webos-custom-wallpaper","webos-cloud-last-sync","webos-cloud-auto-sync"].includes(key) || key.startsWith("webos-profile-data-");
   const state={mode:"starting",message:"Checking cloud configuration…",user:null,lastSync:null,error:null};
-  let client=null,applyingCloud=false,autoTimer=null;
+  let client=null,applyingCloud=false,autoTimer=null,captchaSiteKey="";
   const publish=()=>{try{window.dispatchEvent(new CustomEvent("webos:cloud-state",{detail:{...state}}));}catch(_){}};
   const setState=patch=>{Object.assign(state,patch);publish();};
   const getStatus=()=>({...state,user:state.user?{id:state.user.id,email:state.user.email}:null});
@@ -38,6 +38,7 @@
       const response=await withTimeout(fetch("/api/cloud/config",{cache:"no-store",credentials:"same-origin"}),10000,"Cloud configuration request");
       if(!response.ok)throw new Error("Cloud configuration endpoint returned HTTP "+response.status+".");
       const config=await response.json();
+      captchaSiteKey=typeof config.turnstileSiteKey==="string"?config.turnstileSiteKey:"";
       if(!config.configured){setState({mode:"local",message:config.message||"Supabase is not configured. WebOS is running locally."});return;}
       await loadSupabase();
       client=window.supabase.createClient(config.url,config.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -46,18 +47,51 @@
       setState({mode:"ready",user:data.session?.user||null,message:data.session?.user?"Cloud account connected.":"Supabase is ready. Sign in to enable cloud data."});
     }catch(error){console.warn("[WebOS Cloud] Using local mode:",error?.message||error);setState({mode:"local",user:null,error:error?.message||String(error),message:"Cloud unavailable · local mode is active."});}
   }
-  async function signIn(email,password){
+  async function verifyTurnstile(captchaToken){
+    if(!captchaSiteKey)return null;
+    if(!captchaToken)throw new Error("Complete the security check first.");
+    const response=await fetch("/api/turnstile/verify",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({token:captchaToken})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.success)throw new Error(result.message||"Security verification failed. Please try again.");
+    return captchaToken;
+  }
+  async function signIn(email,password,captchaToken){
     if(!email||!password)throw new Error("Enter your email and password.");
-    const {data,error}=await requireClient().auth.signInWithPassword({email,password});if(error)throw error;
+    const token=await verifyTurnstile(captchaToken);
+    const {data,error}=await requireClient().auth.signInWithPassword({email,password,options:token?{captchaToken:token}:{}});
+    if(error)throw error;
     setState({mode:"ready",user:data.user,message:"Signed in. Cloud data is ready."});return data;
   }
-  async function signUp(email,password,displayName){
+  async function signUp(email,password,displayName,captchaToken){
     if(!email||!password)throw new Error("Enter an email and password.");
     if(password.length<8)throw new Error("Use a password with at least 8 characters.");
-    const {data,error}=await requireClient().auth.signUp({email,password,options:{data:displayName?{display_name:displayName}:{}}});if(error)throw error;
+    const token=await verifyTurnstile(captchaToken);
+    const options={data:displayName?{display_name:displayName}:{},...(token?{captchaToken:token}:{})};
+    const {data,error}=await requireClient().auth.signUp({email,password,options});if(error)throw error;
     if(data.session)setState({mode:"ready",user:data.user,message:"Account created and signed in."});
     else setState({mode:"ready",user:null,message:"Account created. Check your email to confirm the address, then sign in."});
     return data;
+  }
+  async function signInAsGuest(captchaToken){
+    const token=await verifyTurnstile(captchaToken);
+    const {data,error}=await requireClient().auth.signInAnonymously({options:token?{captchaToken:token}:{}});
+    if(error)throw error;
+    setState({mode:"ready",user:data.user,message:"Guest session ready."});return data;
+  }
+  async function signInWithOAuth(provider,captchaToken){
+    if(!["google","gitlab"].includes(provider))throw new Error("That sign-in provider is not supported.");
+    await verifyTurnstile(captchaToken);
+    const {data,error}=await requireClient().auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin+"/html/BootScreen_popcorn.html",skipBrowserRedirect:true}});
+    if(error)throw error;
+    if(!data?.url)throw new Error("Supabase did not return an OAuth sign-in URL.");
+    window.top.location.assign(data.url);
+    return data;
+  }
+  async function resetPassword(email,captchaToken){
+    if(!email)throw new Error("Enter your account email first.");
+    const token=await verifyTurnstile(captchaToken);
+    const {data,error}=await requireClient().auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/html/BootScreen_popcorn.html",...(token?{captchaToken:token}:{})});
+    if(error)throw error;return data;
   }
   async function signOut(){const {error}=await requireClient().auth.signOut();if(error)throw error;setState({mode:"ready",user:null,message:"Signed out. Local WebOS data remains on this device."});}
   async function makeSnapshot(){
@@ -103,5 +137,5 @@
   // JavaScript Proxy invariants for non-configurable methods such as ensureSeeded.
   // Preference auto-sync remains enabled; filesystem backups can be pushed manually.
   async function getAccessToken(){const {data,error}=await requireClient().auth.getSession();if(error)throw error;return data.session?.access_token||null;}
-  window.WebOSCloud=Object.freeze({ready:init(),getStatus,signIn,signUp,signOut,sync,getAccessToken});
+  window.WebOSCloud=Object.freeze({ready:init(),getStatus,getCaptchaSiteKey:()=>captchaSiteKey,signIn,signUp,signInAsGuest,signInWithOAuth,resetPassword,signOut,sync,getAccessToken});
 })();

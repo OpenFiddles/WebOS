@@ -42,7 +42,29 @@ app.get("/api/cloud/config", (_req, res) => {
   let validUrl = false;
   try { const parsed = new URL(url); validUrl = parsed.protocol === "https:" && parsed.hostname.endsWith(".supabase.co"); } catch (_) {}
   if (!validUrl || !publicKey) return res.status(200).json({ configured:false, message:"Cloud accounts are not configured. WebOS will continue in local mode." });
-  return res.status(200).json({ configured:true, url, anonKey:publicKey });
+  return res.status(200).json({ configured:true, url, anonKey:publicKey, turnstileSiteKey:process.env.TURNSTILE_SITE_KEY || "" });
+});
+
+app.post("/api/turnstile/verify", async (req,res) => {
+  res.set("Cache-Control","no-store");
+  const secret=process.env.TURNSTILE_SECRET_KEY || "";
+  const token=typeof req.body?.token==="string"?req.body.token:"";
+  if(!secret)return res.status(503).json({success:false,message:"Turnstile server verification is not configured."});
+  if(!token || token.length>4096)return res.status(400).json({success:false,message:"A valid security token is required."});
+  try{
+    const body=new URLSearchParams({secret,response:token});
+    const response=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
+    const result=await response.json();
+    const allowed=(process.env.TURNSTILE_ALLOWED_HOSTNAMES||"").split(",").map(value=>value.trim().toLowerCase()).filter(Boolean);
+    const hostname=String(result.hostname||"").toLowerCase();
+    if(!response.ok || !result.success || (allowed.length && !allowed.includes(hostname))){
+      return res.status(403).json({success:false,message:"Security verification failed. Please retry."});
+    }
+    return res.status(200).json({success:true});
+  }catch(error){
+    console.error("[WebOS Turnstile] Verification request failed:",error?.message||error);
+    return res.status(502).json({success:false,message:"Security verification is temporarily unavailable."});
+  }
 });
 
 app.get("/api/media/config", (_req,res) => { res.set("Cache-Control","no-store"); res.json({workerUrl:process.env.MEDIA_WORKER_URL||""}); });

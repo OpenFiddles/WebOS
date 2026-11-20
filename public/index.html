@@ -51,8 +51,8 @@
         const frame=document.getElementById("os-entry");
         const mobileUA=/Android|iPhone|iPad|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
         const compactTouch=(navigator.maxTouchPoints>0||matchMedia("(pointer: coarse)").matches)&&Math.min(innerWidth,screen?.width||innerWidth)<=820;
-        frame.src=(mobileUA||compactTouch)?"/html/mobile/mobileLauncher.html":"/html/BootScreen_popcorn.html";
-        frame.title=(mobileUA||compactTouch)?"WebOS Mobile Launcher":"WebOS desktop";
+        frame.src="/html/BootScreen_popcorn.html";
+        frame.title="WebOS boot and account gateway";
         let queued=[];
         const deliver=()=>{if(!frame.contentWindow||!queued.length)return;try{if(!frame.contentWindow.location.pathname.endsWith("/DisplayManager_PopIT.html"))return;}catch(_){return;}frame.contentWindow.postMessage({type:"WEBOS_HOST_FILES",files:queued},"*");queued=[];};
         frame.addEventListener("load",deliver);
