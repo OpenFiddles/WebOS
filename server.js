@@ -22,29 +22,19 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.get("/api/os-check", async (_req, res) => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+app.get("/api/cloud/config", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  const url = process.env.SUPABASE_URL || "";
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "";
+  let validUrl = false;
+  try { const parsed = new URL(url); validUrl = parsed.protocol === "https:" && parsed.hostname.endsWith(".supabase.co"); } catch (_) {}
+  if (!validUrl || !anonKey) return res.status(200).json({ configured:false, message:"Cloud accounts are not configured. WebOS will continue in local mode." });
+  return res.status(200).json({ configured:true, url, anonKey });
+});
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return res.status(503).json({
-      status: "Database Not Configured",
-      message: "Set SUPABASE_URL and SUPABASE_ANON_KEY to enable the database check."
-    });
-  }
-
-  try {
-    const { createClient } = require("@supabase/supabase-js");
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data, error } = await supabase.from("your_table").select("*").limit(1);
-    if (error) throw error;
-    return res.status(200).json({ status: "Kernel Database Active", payload: data });
-  } catch (error) {
-    return res.status(500).json({
-      status: "Database Error",
-      message: error && error.message ? error.message : "Unknown database error"
-    });
-  }
+app.get("/api/os-check", (_req, res) => {
+  const configured = Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY));
+  return res.status(200).json({ status:configured?"Cloud configuration present":"Local mode", configured });
 });
 
 app.get("*", (req, res, next) => {
