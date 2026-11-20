@@ -43,7 +43,7 @@
   async function gpuInfo(){if(!navigator.gpu)throw Error("WebGPU is unavailable.");const adapter=await navigator.gpu.requestAdapter();if(!adapter)throw Error("No compatible GPU adapter was found.");return {vendor:adapter.info?.vendor||"Unavailable",architecture:adapter.info?.architecture||"Unavailable",device:adapter.info?.device||"Unavailable",features:[...adapter.features],limits:{...adapter.limits}};}
   const hardware = Object.freeze({
     capabilities,
-    async requestUSB(filters=[]){if(!navigator.usb?.requestDevice)throw Error("WebUSB is unavailable.");return navigator.usb.requestDevice({filters});},
+    async requestUSB(filters=[]){if(!navigator.usb?.requestDevice)throw Error("WebUSB is unavailable.");return navigator.usb.requestDevice(filters?.length ? {filters} : {acceptAllDevices:true});},
     async requestSerial(options={}){if(!navigator.serial?.requestPort)throw Error("Web Serial is unavailable.");return navigator.serial.requestPort(options);},
     async requestHID(filters=[]){if(!navigator.hid?.requestDevice)throw Error("WebHID is unavailable.");return navigator.hid.requestDevice({filters});},
     async requestGPU(){if(!navigator.gpu)throw Error("WebGPU is unavailable.");const adapter=await navigator.gpu.requestAdapter();if(!adapter)throw Error("No compatible GPU adapter.");return {adapter,device:await adapter.requestDevice()};},

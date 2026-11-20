@@ -126,3 +126,8 @@ WebOS uses third-party packages listed in `package.json` and includes emulator-r
 ## License
 
 WebOS is distributed under the GNU General Public License, version 3 or (at your option) any later version. See [LICENSE](LICENSE).
+
+
+## Core 2.0 platform services
+
+WebOS Core 2.0 adds a versioned browser system API, hardware capability reporting, Hardware Manager, Task Manager, optional OPFS access, network online/offline events, and app-client access to supported services. See [Core 2.0 overview](CORE-2.0.md) and [developer API guide](docs/CORE-2.0-API.md). Hardware choosers remain user-initiated and subject to browser support and native permissions. This is not unrestricted host-OS access.
