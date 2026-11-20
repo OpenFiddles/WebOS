@@ -111,7 +111,7 @@
                     openPrivateRoot: async () => { await this.require("storage.opfs"); return window.WebOS.storage.openPrivateRoot(); }
                 });
                 this.processes = Object.freeze({
-                    register: info => window.WebOS?.processes?.register?.({...info, detail: "App: " + this.appId}),
+                    register: info => { const data = info && typeof info === "object" ? info : {}; return window.WebOS?.processes?.register?.({...data, id: this.appId + ":" + String(data.id || ("task-" + Date.now())), detail: "App: " + this.appId + (data.detail ? " · " + String(data.detail) : "")}); },
                     list: () => window.WebOS?.processes?.list?.() || [],
                     subscribe: fn => window.WebOS?.processes?.subscribe?.(fn) || (()=>{})
                 });

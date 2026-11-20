@@ -96,7 +96,7 @@ button.addEventListener("click", () => {
 const root = api.ui.createElement("section", {
   className: "my-app"
 }, [heading, button]);
-api.windows.create("My HTML App", root);</code></pre><p>The helper uses DOM creation and textContent instead of injecting HTML strings. It supports a limited safe attribute allowlist. Build richer interfaces with standard HTML, CSS classes and event listeners.</p><h2>Window namespace</h2><pre><code>const root = api.ui.createElement("main", {}, [
+api.windows.create("My HTML App", root);</code></pre><p>The helper uses DOM creation and textContent instead of injecting HTML strings. It supports a limited safe attribute allowlist. Build richer interfaces with standard HTML, CSS classes and event listeners.</p><h2>HTML app isolation</h2><p>HTML applications opened as URL-based windows run in a sandboxed iframe with a unique opaque origin. Scripts, forms, and downloads are allowed; same-origin access, popups, top-level navigation, and direct parent-page access are not granted. This reduces access to the WebOS page but means the full privileged app API is not automatically available inside the frame. A future explicit message-based bridge is required for approved capabilities. JavaScript apps registered directly in the main page are still cooperative and do not receive this iframe isolation.</p><h2>Window namespace</h2><pre><code>const root = api.ui.createElement("main", {}, [
   api.ui.createElement("p", { text: "A WebOS window" })
 ]);
 api.windows.create("Example", root);</code></pre><p>Window content must be a DOM Node. Raw HTML strings are intentionally not accepted by this helper.</p><h2>System information</h2><pre><code>const info = api.system.getInfo();
