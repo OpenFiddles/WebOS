@@ -129,7 +129,9 @@
         ["wasm","WASM Lab","Build and run WebAssembly projects","🧩","openWasmLab",false],
         ["appcreator","App Creator","Create JavaScript and WASM applications","🛠️","openAppCreator",true],
         ["paint","Paint","Draw and export PNG images","🎨","openPaint",true],
-        ["appmanager","App Manager","Review and uninstall installed apps","🗂️","openAppManager",false]
+        ["appmanager","App Manager","Review and uninstall installed apps","🗂️","openAppManager",false],
+        ["hardware","Hardware Manager","Inspect and connect browser-supported devices","🔌","openHardwareManager",false],
+        ["taskmanager","Task Manager","View running WebOS windows and tasks","📋","openTaskManager",false]
     ];
     const systemAppIds = new Set([...builtInApps.map(app => app[0]), "alpine", "docs", "animations"]);
     function isBuiltin(id) { return systemAppIds.has(String(id)); }

@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "1.19";
+const VERSION = "2.0";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -7,10 +7,10 @@ const CORE_ASSETS = [
   "/html/mobile/mobileLauncher.html", "/site.webmanifest",
   "/html/BootScreen_popcorn.html", "/html/DisplayManager_PopIT.html",
   "/js/os/desktop/app-registry.js", "/js/os/desktop/filesystem.js",
-  "/js/os/desktop/Permissions.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
+  "/js/os/desktop/Permissions.js", "/js/os/desktop/Core.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
   "/js/os/desktop/WASMRuntime.js", "/js/os/desktop/Notifications.js",
   "/js/os/desktop/Appearance.js", "/js/os/desktop/Branding.js", "/js/os/desktop/DesktopInteractions.js", "/js/os/window/Launcher.js",
-  "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js", "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js",
+  "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js", "/js/os/window/CoreApps.js", "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js",
   "/js/os/window/Documentation.js", "/js/os/window/AnimationStudio.js",
   "/js/os/mobile/mobile-runtime.js",
   "/css/display/regular_theme.css", "/css/display/wasm_runtime.css",
@@ -22,7 +22,7 @@ const CORE_ASSETS = [
   "/css/display/launcher.css", "/css/display/window.css", "/css/display/markdown_note.css",
   "/css/display/desktop.css", "/css/display/desktop_refresh.css", "/css/display/root.css",
   "/css/display/utility.css", "/css/display/motion_system.css", "/css/display/liquid_glass.css",
-  "/css/display/animation_studio.css",
+  "/css/display/animation_studio.css", "/css/display/core_system.css",
   "/html/Launcher_Popo.html", "/html/apps/emulator_debian/index.html",
   "/css/universal_css_native_stuff.css", "/js/app.js"
 ];
