@@ -130,156 +130,84 @@ function createWindow(title, content) {
 
 function makeWindowDraggable(win) {
     const titleBar = win.querySelector(".window-titlebar");
-    if (!titleBar) return;
-
+    if (!titleBar || titleBar.dataset.dragBound === "true") return;
+    titleBar.dataset.dragBound = "true";
     titleBar.addEventListener("pointerdown", (event) => {
-        if (event.button !== 0 || event.target.closest(".window-controls") ||
-            event.target.closest("button, input, select, textarea, a") ||
-            win.classList.contains("is-maximized")) return;
-
+        if (event.button !== 0 || event.target.closest(".window-controls,button,input,select,textarea,a") || win.classList.contains("is-maximized")) return;
         const workspace = document.getElementById("window-workspace") || win.parentElement;
         if (!workspace) return;
-
+        const bounds = workspace.getBoundingClientRect();
         const rect = win.getBoundingClientRect();
-        const offsetX = event.clientX - rect.left;
-        const offsetY = event.clientY - rect.top;
+        const offsetX = event.clientX - rect.left, offsetY = event.clientY - rect.top;
         const pointerId = event.pointerId;
-
         event.preventDefault();
-        titleBar.setPointerCapture(pointerId);
-
-        const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
-
-        const move = (moveEvent) => {
+        try { titleBar.setPointerCapture(pointerId); } catch (_) {}
+        const clamp = (value,min,max) => Math.min(Math.max(value,min),Math.max(min,max));
+        const move = moveEvent => {
             if (!win.isConnected || win.classList.contains("is-maximized")) return;
-            const bounds = workspace.getBoundingClientRect();
-            const width = Math.min(win.offsetWidth, bounds.width);
-            const height = Math.min(win.offsetHeight, bounds.height);
-            const maxLeft = Math.max(8, bounds.width - width - 8);
-            const maxTop = Math.max(8, bounds.height - height - 8);
-
-            // Keep the complete window inside the usable desktop workspace.
-            // The workspace already excludes the taskbar and dock, so windows
-            // cannot enlarge the page or disappear underneath either system bar.
-            const left = clamp(moveEvent.clientX - bounds.left - offsetX, 8, maxLeft);
-            const top = clamp(moveEvent.clientY - bounds.top - offsetY, 8, maxTop);
-            win.style.left = left + "px";
-            win.style.top = top + "px";
+            const current = workspace.getBoundingClientRect();
+            const width = Math.min(win.getBoundingClientRect().width, Math.max(1,current.width-16));
+            const height = Math.min(win.getBoundingClientRect().height, Math.max(1,current.height-16));
+            const left = clamp(moveEvent.clientX-current.left-offsetX,8,current.width-width-8);
+            const top = clamp(moveEvent.clientY-current.top-offsetY,8,current.height-height-8);
+            win.style.left=left+"px";win.style.top=top+"px";
         };
-
-        const finish = (finishEvent) => {
-            titleBar.removeEventListener("pointermove", move);
-            titleBar.removeEventListener("pointerup", finish);
-            titleBar.removeEventListener("pointercancel", finish);
-            if (titleBar.hasPointerCapture(pointerId)) titleBar.releasePointerCapture(pointerId);
-            if (!finishEvent || !win.isConnected || win.classList.contains("is-maximized")) return;
-
-            const bounds = workspace.getBoundingClientRect();
-            const edge = 14;
-            if (finishEvent.clientY <= bounds.top + edge) {
-                setWindowMaximized(win, true);
-            } else if (finishEvent.clientX <= bounds.left + edge) {
-                win.style.left = "8px";
-                win.style.top = "8px";
-                win.style.width = "calc(50% - 12px)";
-                win.style.height = "calc(100% - 16px)";
-            } else if (finishEvent.clientX >= bounds.right - edge) {
-                win.style.left = "calc(50% + 4px)";
-                win.style.top = "8px";
-                win.style.width = "calc(50% - 12px)";
-                win.style.height = "calc(100% - 16px)";
+        const finish = finishEvent => {
+            titleBar.removeEventListener("pointermove",move);
+            titleBar.removeEventListener("pointerup",finish);
+            titleBar.removeEventListener("pointercancel",finish);
+            try { if(titleBar.hasPointerCapture(pointerId))titleBar.releasePointerCapture(pointerId); } catch (_) {}
+            if(!finishEvent||!win.isConnected||win.classList.contains("is-maximized"))return;
+            const current=workspace.getBoundingClientRect(),edge=14;
+            if(finishEvent.clientY<=current.top+edge){setWindowMaximized(win,true);return;}
+            if(finishEvent.clientX<=current.left+edge||finishEvent.clientX>=current.right-edge){
+                const half=Math.max(260,Math.floor((current.width-24)/2));
+                win.style.width=Math.min(half,current.width-16)+"px";
+                win.style.height=Math.max(150,current.height-16)+"px";
+                win.style.left=(finishEvent.clientX<=current.left+edge?8:Math.max(8,current.width-half-8))+"px";
+                win.style.top="8px";
             }
         };
-
-        titleBar.addEventListener("pointermove", move);
-        titleBar.addEventListener("pointerup", finish);
-        titleBar.addEventListener("pointercancel", finish);
+        titleBar.addEventListener("pointermove",move);
+        titleBar.addEventListener("pointerup",finish);
+        titleBar.addEventListener("pointercancel",finish);
     });
 }
 
 function makeWindowResizable(win) {
-    // FIX: Select all lowercase resize handles defined in your HTML template
-    const handles = win.querySelectorAll(".resize-handle");
-    if (handles.length === 0) return; // Safeguard if an app window structure doesn't include handles
-
-    handles.forEach(handle => {
-        handle.addEventListener("pointerdown", (event) => {
-            if (win.classList.contains("is-maximized")) return;
-            event.preventDefault();
-            event.stopPropagation(); // Stops interaction bubbling up to window focus rules
-            
-            const direction = handle.getAttribute("data-direction");
-            
-            // Capture the exact starting geometry of the window
-            const startWidth = win.offsetWidth;
-            const startHeight = win.offsetHeight;
-            const startLeft = win.offsetLeft;
-            const startTop = win.offsetTop;
-            
-            // Capture the initial pointer position
-            const startX = event.clientX;
-            const startY = event.clientY;
-            
-            // Safety constraints
-            const minWidth = 260;
-            const minHeight = 150;
-            const topBoundary = 48; // Keeps window from sliding under your 48px taskbar
-
-            handle.setPointerCapture(event.pointerId);
-            
-            const resize = (resizeEvent) => {
-                // Calculate how far the mouse has moved since clicking
-                const deltaX = resizeEvent.clientX - startX;
-                const deltaY = resizeEvent.clientY - startY;
-                
-                let newWidth = startWidth;
-                let newHeight = startHeight;
-                let newLeft = startLeft;
-                let newTop = startTop;
-                
-                // --- HORIZONTAL RESIZING ---
-                // East (Right Edge)
-                if (direction.includes("e")) {
-                    newWidth = Math.max(minWidth, startWidth + deltaX);
-                }
-                // West (Left Edge) - Must shift 'left' position as width changes
-                if (direction.includes("w")) {
-                    const potentialWidth = startWidth - deltaX;
-                    if (potentialWidth >= minWidth) {
-                        newWidth = potentialWidth;
-                        newLeft = startLeft + deltaX;
-                    }
-                }
-                
-                // --- VERTICAL RESIZING ---
-                // South (Bottom Edge)
-                if (direction.includes("s")) {
-                    newHeight = Math.max(minHeight, startHeight + deltaY);
-                }
-                // North (Top Edge) - Must shift 'top' position as height changes
-                if (direction.includes("n")) {
-                    const potentialHeight = startHeight - deltaY;
-                    if (potentialHeight >= minHeight && (startTop + deltaY) >= topBoundary) {
-                        newHeight = potentialHeight;
-                        newTop = startTop + deltaY;
-                    }
-                }
-                
-                // Apply the updated calculations to your window style layout
-                win.style.width = newWidth + "px";
-                win.style.height = newHeight + "px";
-                win.style.left = newLeft + "px";
-                win.style.top = newTop + "px";
+    const handles=win.querySelectorAll(".resize-handle");
+    handles.forEach(handle=>{
+        if(handle.dataset.resizeBound==="true")return;
+        handle.dataset.resizeBound="true";
+        handle.addEventListener("pointerdown",event=>{
+            if(win.classList.contains("is-maximized")||event.button!==0)return;
+            event.preventDefault();event.stopPropagation();
+            const workspace=document.getElementById("window-workspace")||win.parentElement;
+            if(!workspace)return;
+            const bounds=workspace.getBoundingClientRect(),rect=win.getBoundingClientRect();
+            const direction=handle.getAttribute("data-direction")||"se",pointerId=event.pointerId;
+            const startLeft=rect.left-bounds.left,startTop=rect.top-bounds.top,startWidth=rect.width,startHeight=rect.height;
+            const minWidth=Math.min(260,Math.max(120,bounds.width-16)),minHeight=Math.min(150,Math.max(100,bounds.height-16));
+            try{handle.setPointerCapture(pointerId);}catch(_){}
+            const resize=moveEvent=>{
+                if(!win.isConnected||win.classList.contains("is-maximized"))return;
+                const current=workspace.getBoundingClientRect(),dx=moveEvent.clientX-event.clientX,dy=moveEvent.clientY-event.clientY;
+                let left=startLeft,top=startTop,width=startWidth,height=startHeight;
+                if(direction.includes("e"))width=Math.min(Math.max(minWidth,startWidth+dx),Math.max(minWidth,current.width-startLeft-8));
+                if(direction.includes("s"))height=Math.min(Math.max(minHeight,startHeight+dy),Math.max(minHeight,current.height-startTop-8));
+                if(direction.includes("w")){left=Math.min(Math.max(8,startLeft+dx),startLeft+startWidth-minWidth);width=startWidth-(left-startLeft);}
+                if(direction.includes("n")){top=Math.min(Math.max(8,startTop+dy),startTop+startHeight-minHeight);height=startHeight-(top-startTop);}
+                left=Math.max(8,Math.min(left,current.width- Math.min(width,current.width-16)-8));
+                top=Math.max(8,Math.min(top,current.height- Math.min(height,current.height-16)-8));
+                width=Math.min(width,Math.max(minWidth,current.width-left-8));
+                height=Math.min(height,Math.max(minHeight,current.height-top-8));
+                win.style.left=left+"px";win.style.top=top+"px";win.style.width=width+"px";win.style.height=height+"px";
             };
-            
-            const up = () => {
-                handle.removeEventListener("pointermove", resize);
-                handle.removeEventListener("pointerup", up);
-                handle.releasePointerCapture(event.pointerId);
+            const finish=()=>{
+                handle.removeEventListener("pointermove",resize);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
+                try{if(handle.hasPointerCapture(pointerId))handle.releasePointerCapture(pointerId);}catch(_){}
             };
-            
-            handle.addEventListener("pointermove", resize);
-            handle.addEventListener("pointerup", up);
+            handle.addEventListener("pointermove",resize);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
         });
     });
 }
