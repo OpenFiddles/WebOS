@@ -1,5 +1,5 @@
 // WebOS Notes Studio — multi-note Markdown editor with local-first autosave.
-function openNotes(){
+async function openNotes(){
  if(typeof closeLauncher==="function")closeLauncher();
  const html='<div class="webos-notes-studio"><aside class="webos-notes-sidebar"><button id="wn-new">＋ New note</button><input id="wn-search" type="search" placeholder="Search notes…" aria-label="Search notes"><div id="wn-list" class="webos-notes-list"></div><small id="wn-status" class="webos-media-status">Loading notes…</small></aside><section class="webos-notes-editor"><input id="wn-title" maxlength="100" aria-label="Note title" placeholder="Untitled note"><div class="webos-media-toolbar"><button data-format="h">Heading</button><button data-format="b"><b>B</b></button><button data-format="i"><i>I</i></button><button data-format="list">• List</button><button data-format="quote">Quote</button><button id="wn-save">Save</button><button id="wn-print">Print</button><button id="wn-export">Export .md</button><button id="wn-delete">Delete</button></div><textarea id="wn-body" spellcheck="true" placeholder="Start writing…"></textarea><small id="wn-count" class="webos-media-status">0 words</small></section></div>';
  const win=createWindow("Notes Studio",html);if(!win)return null;
