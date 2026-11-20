@@ -8,16 +8,41 @@
   const setState=patch=>{Object.assign(state,patch);publish();};
   const getStatus=()=>({...state,user:state.user?{id:state.user.id,email:state.user.email}:null});
   const requireClient=()=>{if(!client)throw new Error(state.message||"Cloud authentication is unavailable.");return client;};
+  function withTimeout(promise,ms,label){
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" timed out after "+Math.round(ms/1000)+" seconds.")),ms);})
+    ]).finally(()=>clearTimeout(timer));
+  }
+  async function loadSupabase(){
+    if(window.supabase?.createClient)return;
+    await new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      let settled=false;
+      const finish=(error)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        if(error){script.remove();reject(error);}else if(window.supabase?.createClient)resolve();
+        else reject(new Error("Supabase browser library loaded without createClient."));
+      };
+      const timer=setTimeout(()=>finish(new Error("Supabase browser library timed out after 10 seconds.")),10000);
+      script.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      script.crossOrigin="anonymous";
+      script.onload=()=>finish();
+      script.onerror=()=>finish(new Error("Supabase browser library could not load."));
+      document.head.appendChild(script);
+    });
+  }
   async function init(){
     try{
-      const response=await fetch("/api/cloud/config",{cache:"no-store",credentials:"same-origin"});
+      const response=await withTimeout(fetch("/api/cloud/config",{cache:"no-store",credentials:"same-origin"}),10000,"Cloud configuration request");
       if(!response.ok)throw new Error("Cloud configuration endpoint returned HTTP "+response.status+".");
       const config=await response.json();
       if(!config.configured){setState({mode:"local",message:config.message||"Supabase is not configured. WebOS is running locally."});return;}
-      if(!window.supabase?.createClient)throw new Error("Supabase browser library could not load.");
+      await loadSupabase();
       client=window.supabase.createClient(config.url,config.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
       client.auth.onAuthStateChange((_event,session)=>setState({mode:"ready",user:session?.user||null,message:session?.user?"Cloud account connected.":"Supabase is ready. Sign in to enable cloud data."}));
-      const {data,error}=await client.auth.getSession();if(error)throw error;
+      const {data,error}=await withTimeout(client.auth.getSession(),12000,"Supabase session check");if(error)throw error;
       setState({mode:"ready",user:data.session?.user||null,message:data.session?.user?"Cloud account connected.":"Supabase is ready. Sign in to enable cloud data."});
     }catch(error){console.warn("[WebOS Cloud] Using local mode:",error?.message||error);setState({mode:"local",user:null,error:error?.message||String(error),message:"Cloud unavailable · local mode is active."});}
   }
