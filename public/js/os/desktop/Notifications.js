@@ -15,12 +15,12 @@
   function desktopNotify(title,message){if(!("Notification"in window)||Notification.permission!=="granted")return false;new Notification(safe(title,"WebOS"),{body:safe(message,""),icon:""});return true;}
   if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", event => {
     const data=event.data||{};
-    if(data.type==="WEBOS_UPDATE_AVAILABLE"){
+    if(data.type==="WEBOS_UPDATE_AVAILABLE"&&localStorage.getItem("webos-notify-updates")!=="false"){
       const version=safe(data.data?.version,"new version");
       notify("WebOS updated","Version "+version+" is ready. Reload to use the latest desktop.",{icon:"↻",level:"success",source:"System Update",actionLabel:"Reload WebOS",onAction:()=>window.location.reload(),duration:12000});
     }
   });
   toggle?.addEventListener("click",open);document.addEventListener("pointerdown",e=>{if(panel&&!panel.contains(e.target)&&!toggle?.contains(e.target))close();});document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
   window.WebOSNotifications=Object.freeze({notify,open,close,all:()=>items.map(({onAction,...x})=>x),clear:()=>{items.length=0;unread=0;updateCount();render();},requestDesktopPermission,desktopNotify});
-  window.addEventListener("error",e=>{if(e.message)notify("Application error",e.message,{icon:"⚠️",level:"critical",source:"Runtime"});});window.addEventListener("unhandledrejection",e=>notify("Unhandled promise",e.reason?.message||String(e.reason),{icon:"⚠️",level:"warning",source:"Runtime"}));
+  window.addEventListener("error",e=>{if(e.message&&localStorage.getItem("webos-notify-errors")!=="false")notify("Application error",e.message,{icon:"⚠️",level:"critical",source:"Runtime"});});window.addEventListener("unhandledrejection",e=>{if(localStorage.getItem("webos-notify-errors")!=="false")notify("Unhandled promise",e.reason?.message||String(e.reason),{icon:"⚠️",level:"warning",source:"Runtime"});});
 })();

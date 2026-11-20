@@ -630,7 +630,7 @@ function openSettings() {
             <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
                 <h2>Privacy &amp; Security</h2>
                 <p>Review browser permissions and local session protections. WebOS runs inside your browser and does not replace your device's account security.</p>
-                <div class="settings-action-row"><button type="button" id="settings-check-permissions">Review browser permissions</button><button type="button" id="settings-clear-site-data">Clear WebOS site data…</button></div>
+                <div class="settings-action-row"><button type="button" id="settings-check-permissions">Review browser permissions</button><button type="button" id="settings-clear-site-data">Clear WebOS caches…</button></div>
                 <div id="settings-permissions" class="settings-readout" aria-live="polite">Permission status has not been checked.</div>
                 <small>The optional PIN/pattern lock is a convenience layer for this browser session, not disk encryption. Never store sensitive credentials in WebOS app storage.</small>
             </section>
@@ -1220,7 +1220,7 @@ function openSettings() {
         output.textContent=lines.join(" · ");
     });
     win.querySelector("#settings-clear-site-data")?.addEventListener("click",()=>{
-        if(!confirm("Clear WebOS cached site files and reload? Your browser's site storage and virtual files may be affected. Export a backup first."))return;
+        if(!confirm("Clear WebOS cached site files and unregister its service worker? Your virtual files and browser preferences are not intentionally deleted. Export a backup first."))return;
         Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith("WebOS-")).map(key=>caches.delete(key)))),navigator.serviceWorker?.getRegistrations?.().then(regs=>Promise.all(regs.map(reg=>reg.unregister())))])
           .then(()=>{win.querySelector("#settings-permissions").textContent="WebOS caches cleared. Reloading…";location.reload();})
           .catch(error=>{win.querySelector("#settings-permissions").textContent="Could not clear all site data: "+error.message;});
@@ -1248,20 +1248,20 @@ function openSettings() {
     const refreshUpdateInfo=async()=>{
         const keys=await caches.keys().catch(()=>[]),build=keys.filter(key=>key.startsWith("WebOS-v")).sort().pop()||"No WebOS cache";
         win.querySelector("#settings-build-version").textContent=build.replace("WebOS-","");
-        const registrations=await navigator.serviceWorker?.getRegistrations?.().catch(()=>[])||[];
+        const registrations=await Promise.resolve(navigator.serviceWorker?.getRegistrations?.()).catch(()=>[])||[];
         win.querySelector("#settings-sw-state").textContent=registrations.length?"Registered":"Not registered";
         updateStatus.textContent=registrations.length?"Service worker is registered. Use Check for updates to ask the browser to fetch a newer build.":"No service worker registration found for this page.";
     };
     win.querySelector("#settings-check-update")?.addEventListener("click",async()=>{
         updateStatus.textContent="Checking for a service worker update…";
-        try{const regs=await navigator.serviceWorker?.getRegistrations?.()||[];if(!regs.length){updateStatus.textContent="No service worker is registered.";return;}
+        try{const regs=await Promise.resolve(navigator.serviceWorker?.getRegistrations?.()).catch(()=>[])||[];if(!regs.length){updateStatus.textContent="No service worker is registered.";return;}
           await Promise.all(regs.map(reg=>reg.update()));updateStatus.textContent="Update check completed. If a new build is found, WebOS will activate it and show an update notification.";await refreshUpdateInfo();
         }catch(error){updateStatus.textContent="Update check failed: "+error.message;}
     });
     win.querySelector("#settings-reload-update")?.addEventListener("click",()=>location.reload());
     refreshUpdateInfo();
     const refreshStorage=async()=>{
-        const estimate=await navigator.storage?.estimate?.().catch(()=>null);
+        const estimate=await Promise.resolve(navigator.storage?.estimate?.()).catch(()=>null);
         const usage=estimate?.usage,quota=estimate?.quota;
         win.querySelector("#settings-storage-info").textContent=usage!=null&&quota?("Browser storage used: "+(usage/1048576).toFixed(1)+" MB of "+(quota/1048576).toFixed(0)+" MB estimated quota."):"Storage estimates are unavailable in this browser.";
     };
