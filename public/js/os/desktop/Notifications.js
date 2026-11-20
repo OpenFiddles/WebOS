@@ -13,6 +13,13 @@
   function notify(title,message,options={}){const item={id:crypto.randomUUID?.()||String(Date.now())+Math.random(),title:safe(title,"WebOS"),message:safe(message,""),icon:safe(options.icon,"●"),source:safe(options.source,"WebOS"),level:["info","success","warning","critical"].includes(options.level)?options.level:"info",time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),actionLabel:options.actionLabel||"",onAction:typeof options.onAction==="function"?options.onAction:null,duration:options.duration};items.unshift(item);if(items.length>60)items.length=60;unread++;updateCount();render();if(options.toast!==false)toast(item);window.dispatchEvent(new CustomEvent("webos:notification",{detail:{...item,onAction:undefined}}));return item;}
   async function requestDesktopPermission(){if(!("Notification"in window))return"unsupported";return Notification.requestPermission();}
   function desktopNotify(title,message){if(!("Notification"in window)||Notification.permission!=="granted")return false;new Notification(safe(title,"WebOS"),{body:safe(message,""),icon:""});return true;}
+  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", event => {
+    const data=event.data||{};
+    if(data.type==="WEBOS_UPDATE_AVAILABLE"){
+      const version=safe(data.data?.version,"new version");
+      notify("WebOS updated","Version "+version+" is ready. Reload to use the latest desktop.",{icon:"↻",level:"success",source:"System Update",actionLabel:"Reload WebOS",onAction:()=>window.location.reload(),duration:12000});
+    }
+  });
   toggle?.addEventListener("click",open);document.addEventListener("pointerdown",e=>{if(panel&&!panel.contains(e.target)&&!toggle?.contains(e.target))close();});document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
   window.WebOSNotifications=Object.freeze({notify,open,close,all:()=>items.map(({onAction,...x})=>x),clear:()=>{items.length=0;unread=0;updateCount();render();},requestDesktopPermission,desktopNotify});
   window.addEventListener("error",e=>{if(e.message)notify("Application error",e.message,{icon:"⚠️",level:"critical",source:"Runtime"});});window.addEventListener("unhandledrejection",e=>notify("Unhandled promise",e.reason?.message||String(e.reason),{icon:"⚠️",level:"warning",source:"Runtime"}));

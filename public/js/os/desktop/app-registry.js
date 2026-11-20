@@ -196,6 +196,19 @@
         }
     }
 
+    function exportManifest() {
+        return {format:"webos-app-registry-manifest",version:1,generatedAt:new Date().toISOString(),apps:all().map(app=>({id:app.id,name:app.name||app.id,description:app.description||"",icon:app.icon||"▣",dock:!!app.dock,version:String(app.version||"1.0.0"),runtimeType:app.runtimeType||"js",entry:app.entry||""}))};
+    }
+    function downloadManifest() {
+        const data=exportManifest(),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})),anchor=document.createElement("a");
+        anchor.href=url;anchor.download="webos-app-registry.json";anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1200);return data;
+    }
+    function validateManifest(data) {
+        if(!data||data.format!=="webos-app-registry-manifest"||data.version!==1||!Array.isArray(data.apps))throw new TypeError("Unsupported WebOS app registry manifest.");
+        if(data.apps.length>500)throw new RangeError("Manifest contains too many app records.");const ids=new Set();
+        return data.apps.map(app=>{const id=String(app?.id||"").trim();if(!/^[a-z0-9][a-z0-9._-]{1,63}$/i.test(id)||ids.has(id))throw new TypeError("Invalid or duplicate app ID: "+id);ids.add(id);return{id,name:String(app.name||id).slice(0,80),description:String(app.description||"").slice(0,500),icon:String(app.icon||"▣").slice(0,8),dock:!!app.dock,version:String(app.version||"1.0.0"),runtimeType:String(app.runtimeType||"js"),entry:String(app.entry||"")};});
+    }
+
     function render() {
         const grid = document.querySelector(".LauncherGrid") || document.getElementById("launcher-grid");
         const dock = document.getElementById("dock");
@@ -235,6 +248,6 @@
     }
 
 
-    window.WebOSAppRegistry = Object.freeze({ register, all, launch, render });
+    window.WebOSAppRegistry = Object.freeze({ register, all, launch, render, exportManifest, downloadManifest, validateManifest });
     if (window.WebOSWASM?.restoreApps) window.WebOSWASM.restoreApps().catch(error => console.warn("WASM app restore:", error));
 })();

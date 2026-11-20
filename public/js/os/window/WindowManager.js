@@ -72,6 +72,8 @@ function createWindow(title, content) {
             const iframe = document.createElement("iframe");
             iframe.src = content.trim();
             iframe.loading = "lazy";
+            iframe.className = "webos-html-app-frame";
+            iframe.title = String(title || "WebOS HTML application");
             bodyContainer.appendChild(iframe);
         } else if (content instanceof HTMLElement) {
             bodyContainer.appendChild(content);

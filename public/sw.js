@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "1.11";
+const VERSION = "1.12";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -61,8 +61,10 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter(key => key.startsWith(NAME + "-") && key !== CACHE_NAME).map(key => caches.delete(key)));
+    const previous = keys.filter(key => key.startsWith(NAME + "-") && key !== CACHE_NAME);
+    await Promise.all(previous.map(key => caches.delete(key)));
     await self.clients.claim();
+    if (previous.length) broadcastStatus("WEBOS_UPDATE_AVAILABLE", { version: VERSION });
   })());
 });
 

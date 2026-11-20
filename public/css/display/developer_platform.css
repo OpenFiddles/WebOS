@@ -1,3 +1,47 @@
 .webos-permission-overlay{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;padding:20px;background:rgba(5,10,22,.62);backdrop-filter:blur(12px)}.webos-permission-dialog{width:min(440px,100%);padding:24px;border:1px solid var(--glass-border,rgba(255,255,255,.2));border-radius:20px;background:var(--panel-bg,#171d2a);color:var(--text-color,#f5f7fb);box-shadow:0 24px 80px #0008;font:14px/1.5 system-ui,sans-serif}.webos-permission-dialog h2{margin:8px 0;font-size:21px}.webos-permission-dialog p{color:var(--muted-text,#aab3c4)}.webos-permission-app{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-color,#8ab4ff)}.webos-permission-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.webos-permission-actions button{border:1px solid #ffffff26;border-radius:10px;padding:10px 16px;background:#ffffff10;color:inherit;font:inherit;cursor:pointer}.webos-permission-actions button[data-allow]{background:var(--accent-color,#477fff);border-color:transparent;color:white}.docs-nav-item[data-doc=api],.docs-nav-item[data-doc=permissions],.docs-nav-item[data-doc=architecture],.docs-nav-item[data-doc=examples]{font-weight:600}.docs-content pre{overflow:auto;max-width:100%}.docs-content code{overflow-wrap:anywhere}
 /* App Creator WAT source workspace */
 .xip-wat-tool{display:grid;gap:10px;margin:14px 0;padding:14px;border:1px solid var(--glass-border,rgba(255,255,255,.16));border-radius:14px;background:var(--glass-bg,rgba(255,255,255,.035))}.xip-wat-tool .xip-editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.xip-wat-tool textarea{display:block;width:100%;min-height:190px;resize:vertical;padding:12px;border:1px solid var(--glass-border,rgba(255,255,255,.18));border-radius:10px;background:rgba(0,0,0,.2);color:var(--text-color,inherit);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}.xip-wat-tool .xip-actions{display:flex;gap:8px;flex-wrap:wrap}.xip-wat-tool p{margin:0;color:var(--muted-text,#aab3c4);font-size:12px}
+
+/* Documentation workspace: responsive API reference and examples. */
+.docs-window .window-body{padding:0!important;overflow:hidden!important}
+.docs-window .docs-app{display:grid;grid-template-columns:248px minmax(0,1fr);width:100%;height:100%;min-height:0;background:var(--panel-bg,#111827);color:var(--text-color,#edf3ff);font:14px/1.6 Inter,ui-sans-serif,system-ui,sans-serif;overflow:hidden}
+.docs-window .docs-sidebar{display:flex;flex-direction:column;min-height:0;padding:18px 12px;background:rgba(8,14,25,.72);border-right:1px solid var(--glass-border,rgba(255,255,255,.12));overflow:auto}
+.docs-window .docs-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.docs-window .docs-brand>span{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--accent,#53b5ff);color:#07111e;font-weight:900;font-size:19px}
+.docs-window .docs-brand b,.docs-window .docs-brand small{display:block}
+.docs-window .docs-brand small,.docs-window .docs-sidebar-foot{color:var(--muted-text,#9aa8bd);font-size:11px}
+.docs-window .docs-search-wrap{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:0 4px 14px;border:1px solid var(--glass-border,rgba(255,255,255,.14));border-radius:10px;background:#ffffff08}
+.docs-window .docs-search-wrap input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:inherit;font:inherit}
+.docs-window .docs-nav{display:grid;gap:4px}
+.docs-window .docs-nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:1px solid transparent;border-radius:9px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.docs-window .docs-nav-item:hover{background:#ffffff0b}
+.docs-window .docs-nav-item.active{background:color-mix(in srgb,var(--accent,#53b5ff) 17%,transparent);border-color:color-mix(in srgb,var(--accent,#53b5ff) 35%,transparent)}
+.docs-window .docs-sidebar-foot{margin-top:auto;padding:18px 8px 2px;letter-spacing:.12em}
+.docs-window .docs-main{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.docs-window .docs-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 22px;border-bottom:1px solid var(--glass-border,rgba(255,255,255,.1));color:var(--muted-text,#aab6ca);font-size:12px}
+.docs-window .docs-topbar button,.docs-window .docs-content button{border:1px solid var(--glass-border,rgba(255,255,255,.16));border-radius:9px;padding:7px 11px;background:#ffffff0b;color:inherit;font:inherit;cursor:pointer}
+.docs-window .docs-content{width:min(100%,940px);margin:0 auto;padding:28px clamp(18px,4vw,52px) 44px;overflow:auto;min-height:0;line-height:1.75}
+.docs-window .docs-content h1{margin:5px 0 8px;font-size:clamp(27px,4vw,38px);line-height:1.15;letter-spacing:-.035em}
+.docs-window .docs-content h2{margin:30px 0 9px;padding-bottom:7px;border-bottom:1px solid var(--glass-border,rgba(255,255,255,.12));font-size:19px}
+.docs-window .docs-eyebrow{color:var(--accent,#75c8ff);font-size:10px;font-weight:800;letter-spacing:.16em}
+.docs-window .docs-intro{max-width:720px;margin:0 0 24px;color:var(--muted-text,#aab6ca);font-size:15px}
+.docs-window .docs-content p{max-width:820px}
+.docs-window .docs-content pre{max-width:100%;margin:14px 0;padding:16px;overflow:auto;border:1px solid var(--glass-border,rgba(255,255,255,.12));border-radius:12px;background:#070d18;color:#dbeafe;font:12px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}
+.docs-window .docs-content pre code{white-space:pre;overflow-wrap:normal}
+.docs-window .docs-content code:not(pre code){padding:2px 5px;border-radius:5px;background:#ffffff12;color:#a9d9ff;font:.9em ui-monospace,monospace;overflow-wrap:anywhere}
+.docs-window .docs-content kbd{padding:3px 7px;border:1px solid #ffffff30;border-radius:6px;background:#ffffff10;font:11px ui-monospace,monospace}
+.docs-window .docs-callout{margin:20px 0;padding:14px 16px;border-left:3px solid var(--accent,#53b5ff);border-radius:8px;background:#ffffff08}
+.docs-window .docs-hero{padding:28px;margin:0 0 22px;border:1px solid var(--glass-border,rgba(255,255,255,.14));border-radius:18px;background:radial-gradient(circle at 85% 15%,color-mix(in srgb,var(--accent,#53b5ff) 28%,transparent),transparent 45%),linear-gradient(135deg,#182943,#0d1523)}
+.docs-window .docs-hero>span{font-size:10px;letter-spacing:.16em;color:#9fd8ff}
+.docs-window .docs-hero h1{font-size:clamp(30px,5vw,48px);margin:12px 0}
+.docs-window .docs-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.docs-window .docs-card{display:grid;gap:6px;text-align:left;padding:14px!important;border-radius:12px!important;background:#ffffff08!important}
+.docs-window .docs-card span{color:var(--muted-text,#aab6ca);font-size:12px}
+.docs-window .docs-shortcut-list{display:grid;gap:8px}
+.docs-window .docs-shortcut-list>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--glass-border,rgba(255,255,255,.1));border-radius:9px}
+.docs-window .docs-footer{display:flex;justify-content:space-between;padding:10px 22px;border-top:1px solid var(--glass-border,rgba(255,255,255,.1));color:var(--muted-text,#9aa8bd);font-size:11px}
+.docs-window .docs-content ul{padding-left:22px}
+@media(max-width:760px){.docs-window .docs-app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.docs-window .docs-sidebar{max-height:170px;padding:8px}.docs-window .docs-brand{padding:2px 6px 8px}.docs-window .docs-search-wrap{margin-bottom:8px}.docs-window .docs-nav{display:flex;overflow-x:auto;padding-bottom:5px}.docs-window .docs-nav-item{width:auto;white-space:nowrap;flex:0 0 auto;padding:7px 9px}.docs-window .docs-sidebar-foot{display:none}.docs-window .docs-topbar{padding:8px 12px}.docs-window .docs-content{padding:20px 15px 30px}}
+/* HTML app iframe inset: a consistent 5px margin from the window edges. */
+.window-body>iframe.webos-html-app-frame{display:block;width:calc(100% - 10px);height:calc(100% - 10px);margin:5px;border:0;border-radius:8px;background:#fff;box-sizing:border-box}
+.window-body:has(>iframe.webos-html-app-frame){overflow:hidden}
