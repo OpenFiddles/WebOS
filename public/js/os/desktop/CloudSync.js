@@ -1,7 +1,7 @@
 (() => {
   const EXCLUDED = key => !key || key.startsWith("sb-") ||
     /(^|[-_])(lock|passcode|password|token|secret|credential)([-_]|$)/i.test(key) ||
-    ["webos-current-user","webos-users-v1","webos-custom-wallpaper"].includes(key) || key.startsWith("webos-profile-data-");
+    ["webos-current-user","webos-users-v1","webos-custom-wallpaper","webos-cloud-last-sync","webos-cloud-auto-sync"].includes(key) || key.startsWith("webos-profile-data-");
   const state={mode:"starting",message:"Checking cloud configuration…",user:null,lastSync:null,error:null};
   let client=null,applyingCloud=false,autoTimer=null;
   const publish=()=>{try{window.dispatchEvent(new CustomEvent("webos:cloud-state",{detail:{...state}}));}catch(_){}};
