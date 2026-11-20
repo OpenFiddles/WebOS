@@ -1687,3 +1687,55 @@ return appWindow;`;
 
 function openPaint(){if(typeof closeLauncher==="function")closeLauncher();const html=`<section class="webos-paint"><header class="paint-toolbar"><label>Color <input id="paint-color" type="color" value="#202938"></label><label>Size <input id="paint-size" type="range" min="1" max="48" value="5"><output id="paint-size-label">5 px</output></label><label>Tool <select id="paint-tool"><option value="brush">Brush</option><option value="eraser">Eraser</option><option value="line">Line</option><option value="rect">Rectangle</option><option value="circle">Ellipse</option></select></label><button id="paint-undo" type="button">Undo</button><button id="paint-redo" type="button">Redo</button><button id="paint-clear" type="button">Clear</button><button id="paint-save" type="button">Export PNG</button><button id="paint-store" type="button">Save to Files</button></header><div class="paint-canvas-wrap"><canvas id="paint-canvas" width="1200" height="760"></canvas></div><footer id="paint-status">Ready · Draw with pointer or touch.</footer></section>`;const win=createWindow("Paint",html);if(!win)return null;const $=id=>win.querySelector("#"+id),c=$("paint-canvas"),x=c.getContext("2d"),undo=[],redo=[];x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);let down=false,start=null,last=null,base=null;const pos=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height};},snapshot=()=>{undo.push(c.toDataURL());if(undo.length>25)undo.shift();redo.length=0;},restore=url=>{const im=new Image();im.onload=()=>{x.clearRect(0,0,c.width,c.height);x.drawImage(im,0,0);};im.src=url;},shape=(a,b,t)=>{x.beginPath();if(t==="line"){x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);}else if(t==="rect")x.rect(a.x,a.y,b.x-a.x,b.y-a.y);else x.ellipse((a.x+b.x)/2,(a.y+b.y)/2,Math.abs(b.x-a.x)/2,Math.abs(b.y-a.y)/2,0,0,Math.PI*2);x.stroke();},style=()=>{x.strokeStyle=$("paint-tool").value==="eraser"?"#fff":$("paint-color").value;x.lineWidth=Number($("paint-size").value)*($("paint-tool").value==="eraser"?3:1);x.lineCap="round";x.lineJoin="round";};
 c.onpointerdown=e=>{down=true;c.setPointerCapture(e.pointerId);start=last=pos(e);snapshot();base=c.toDataURL();};c.onpointermove=e=>{if(!down)return;const p=pos(e),t=$("paint-tool").value;style();if(t==="brush"||t==="eraser"){x.beginPath();x.moveTo(last.x,last.y);x.lineTo(p.x,p.y);x.stroke();last=p;}else{const im=new Image();im.onload=()=>{if(!down)return;x.clearRect(0,0,c.width,c.height);x.drawImage(im,0,0);style();shape(start,p,t);};im.src=base;}};const finish=()=>{down=false;start=last=base=null;};c.onpointerup=finish;c.onpointercancel=finish;$("paint-size").oninput=e=>$("paint-size-label").textContent=e.target.value+" px";$("paint-undo").onclick=()=>{if(undo.length){redo.push(c.toDataURL());restore(undo.pop());}};$("paint-redo").onclick=()=>{if(redo.length){undo.push(c.toDataURL());restore(redo.pop());}};$("paint-clear").onclick=()=>{if(confirm("Clear the canvas?")){snapshot();x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);}};$("paint-save").onclick=()=>c.toBlob(blob=>{if(!blob)return;const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="webos-paint.png";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);$("paint-status").textContent="PNG exported.";});$("paint-store").onclick=()=>c.toBlob(async blob=>{if(!blob)return;try{await WebOSFileSystem.putBinary("/Pictures/Paint-"+Date.now()+".png",blob,"image/png");$("paint-status").textContent="Saved to Files → Pictures.";}catch(e){$("paint-status").textContent="Save failed: "+e.message;}});return win;}
+
+
+function openAppManager() {
+    if (typeof closeLauncher === "function") closeLauncher();
+    const root=document.createElement("section");
+    root.className="webos-app-manager";
+    root.innerHTML='<header class="wam-header"><div><h2>App Manager</h2><p>Review apps installed in this WebOS workspace.</p></div><button type="button" id="wam-refresh">Refresh</button></header><div class="wam-summary" id="wam-summary">Loading installed apps…</div><div class="wam-list" id="wam-list"></div><p class="wam-status" id="wam-status" role="status" aria-live="polite"></p>';
+    const win=createWindow("App Manager",root);
+    if(!win)return null;
+    const list=win.querySelector("#wam-list"),summary=win.querySelector("#wam-summary"),status=win.querySelector("#wam-status");
+    const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;};
+    async function renderApps(){
+        list.replaceChildren();
+        const apps=window.WebOSAppRegistry?.all?.()||[];
+        let wasmApps=[];
+        try{wasmApps=await window.WebOSWASM?.listApps?.()||[];}catch(_){}
+        const wasmIds=new Set(wasmApps.map(app=>app.id));
+        summary.textContent=apps.length+" registered apps · "+wasmIds.size+" stored WASM packages";
+        apps.sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id)));
+        for(const app of apps){
+            const row=make("article","wam-row"),icon=make("span","wam-icon",app.icon||"▣"),body=make("div","wam-info"),name=make("strong","",app.name||app.id),meta=make("small","",app.id+" · "+(app.builtin?"Built-in":wasmIds.has(app.id)?"WASM package":"Custom app"));
+            const description=make("p","",app.description||"No description provided.");
+            body.append(name,meta,description);row.append(icon,body);
+            if(app.builtin||window.WebOSAppRegistry?.isBuiltin?.(app.id)){
+                row.append(make("span","wam-protected","System app"));
+            }else{
+                const remove=make("button","wam-uninstall","Uninstall");
+                remove.type="button";
+                remove.addEventListener("click",async()=>{
+                    if(!confirm("Uninstall "+(app.name||app.id)+"? Its app package or generated app file will be removed. User-created documents are kept."))return;
+                    remove.disabled=true;status.textContent="Uninstalling "+(app.name||app.id)+"…";
+                    try{
+                        if(wasmIds.has(app.id)) await window.WebOSWASM.uninstallApp(app.id);
+                        else {
+                            await window.WebOSFileSystem?.remove?.("/Desktop/Apps/"+app.id+".js").catch(()=>{});
+                            window.WebOSAppRegistry.unregister(app.id);
+                        }
+                        status.textContent=(app.name||app.id)+" was uninstalled.";
+                        window.WebOSNotifications?.notify?.("App uninstalled",(app.name||app.id)+" was removed from WebOS.",{icon:"🗑️",level:"success",source:"App Manager"});
+                        await renderApps();
+                    }catch(error){remove.disabled=false;status.textContent="Uninstall failed: "+error.message;}
+                });
+                row.append(remove);
+            }
+            list.append(row);
+        }
+        if(!apps.length)list.append(make("p","wam-empty","No registered apps were found."));
+    }
+    win.querySelector("#wam-refresh").addEventListener("click",()=>renderApps().catch(error=>status.textContent=error.message));
+    renderApps().catch(error=>{summary.textContent="Could not load apps.";status.textContent=error.message;});
+    return win;
+}

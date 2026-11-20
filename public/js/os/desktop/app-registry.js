@@ -124,8 +124,11 @@
         ["monitor","System Monitor","Inspect system and runtime status","📊","openSystemMonitor",false],
         ["wasm","WASM Lab","Build and run WebAssembly projects","🧩","openWasmLab",false],
         ["appcreator","App Creator","Create JavaScript and WASM applications","🛠️","openAppCreator",true],
-        ["paint","Paint","Draw and export PNG images","🎨","openPaint",true]
+        ["paint","Paint","Draw and export PNG images","🎨","openPaint",true],
+        ["appmanager","App Manager","Review and uninstall installed apps","🗂️","openAppManager",false]
     ];
+    const systemAppIds = new Set([...builtInApps.map(app => app[0]), "alpine", "docs", "animations"]);
+    function isBuiltin(id) { return systemAppIds.has(String(id)); }
 
     function registerBuiltIns() {
         builtInApps.forEach(([id,name,description,icon,handler,dock]) => {
@@ -144,7 +147,20 @@
     }
 
     function all() {
-        return [...definitions.values()];
+        return [...definitions.values()].map(app => ({...app, builtin:isBuiltin(app.id)}));
+    }
+    function unregister(id) {
+        const appId=String(id);
+        if(isBuiltin(appId)) return false;
+        const definition=definitions.get(appId);
+        if(!definition) return false;
+        document.querySelectorAll("#window-workspace .window-shell[data-webos-app-id]").forEach(win=>{
+            if(win.dataset.webosAppId===appId) win.querySelector(".win-btn.close")?.click();
+        });
+        definitions.delete(appId);
+        if(typeof definition.handler==="string" && definition.handler.startsWith("WebOS_AppHandler_")) delete window[definition.handler];
+        render();
+        return true;
     }
 
     /**
@@ -248,6 +264,6 @@
     }
 
 
-    window.WebOSAppRegistry = Object.freeze({ register, all, launch, render, exportManifest, downloadManifest, validateManifest });
+    window.WebOSAppRegistry = Object.freeze({ register, all, launch, render, exportManifest, downloadManifest, validateManifest, unregister, isBuiltin });
     if (window.WebOSWASM?.restoreApps) window.WebOSWASM.restoreApps().catch(error => console.warn("WASM app restore:", error));
 })();

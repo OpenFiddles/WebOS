@@ -45,3 +45,18 @@
 /* HTML app iframe inset: a consistent 5px margin from the window edges. */
 .window-body>iframe.webos-html-app-frame{display:block;width:calc(100% - 10px);height:calc(100% - 10px);margin:5px;border:0;border-radius:8px;background:#fff;box-sizing:border-box}
 .window-body:has(>iframe.webos-html-app-frame){overflow:hidden}
+
+/* Installed application manager. */
+.webos-app-manager{display:grid;gap:14px;padding:16px;min-height:100%;color:var(--text-color,inherit)}
+.wam-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wam-header h2{margin:0;font-size:22px}.wam-header p{margin:4px 0;color:var(--muted-text,#9ba9bd);font-size:12px}
+.wam-header button,.wam-uninstall{padding:8px 12px;border:1px solid var(--glass-border,rgba(255,255,255,.18));border-radius:9px;background:#ffffff0b;color:inherit;cursor:pointer}
+.wam-summary{padding:10px 12px;border:1px solid var(--glass-border,rgba(255,255,255,.12));border-radius:10px;color:var(--muted-text,#aab6ca);font-size:12px}
+.wam-list{display:grid;gap:8px}
+.wam-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--glass-border,rgba(255,255,255,.12));border-radius:12px;background:#ffffff06}
+.wam-icon{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:11px;background:#ffffff12;font-size:22px}
+.wam-info{flex:1;min-width:0}.wam-info strong,.wam-info small{display:block}.wam-info small{color:var(--muted-text,#9ba9bd);font-size:11px}.wam-info p{margin:4px 0 0;color:var(--muted-text,#aab6ca);font-size:12px}
+.wam-protected{padding:5px 8px;border-radius:8px;background:#ffffff0c;color:var(--muted-text,#aab6ca);font-size:11px;white-space:nowrap}
+.wam-uninstall{border-color:#ef777755;color:#ffaaaa;white-space:nowrap}.wam-uninstall:disabled{opacity:.5;cursor:wait}
+.wam-status,.wam-empty{margin:0;color:var(--muted-text,#aab6ca);font-size:12px}
+@media(max-width:560px){.wam-row{align-items:flex-start;flex-wrap:wrap}.wam-info{min-width:calc(100% - 60px)}.wam-uninstall,.wam-protected{margin-left:54px}}
