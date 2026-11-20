@@ -586,6 +586,7 @@ function openSettings() {
                     <label for="css-full-editor">Custom CSS stylesheet</label>
                     <textarea id="css-full-editor" spellcheck="false" style="width:100%;min-height:150px;resize:vertical;font:12px/1.5 ui-monospace,monospace;" placeholder="/* Add CSS rules here */"></textarea>
                     <small style="opacity:.7;">Saved locally and injected into the desktop. @import and script-like CSS expressions are blocked.</small>
+                    <div class="settings-action-row"><button type="button" id="css-export-user">Export CSS</button><button type="button" id="css-import-user">Import CSS</button><input id="css-import-file" type="file" accept=".css,text/css" hidden></div>
                 </div>
                 <div class="inspector-actions" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.25rem;">
                     <button type="button" id="btn-save-css" disabled>Save Selected Styles</button>
@@ -1198,6 +1199,10 @@ function openSettings() {
         return probe;
     }
 
+    const cssImportFile=win.querySelector("#css-import-file");
+    win.querySelector("#css-export-user").onclick=()=>{const blob=new Blob([fullCssEditor.value],{type:"text/css"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="webos-custom.css";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+    win.querySelector("#css-import-user").onclick=()=>cssImportFile.click();
+    cssImportFile.onchange=async()=>{const file=cssImportFile.files?.[0];if(!file)return;if(file.size>250000){status.textContent="CSS import must be 250 KB or smaller.";cssImportFile.value="";return;}try{const value=await file.text();validateAndApplyCss(value);status.textContent="CSS imported, validated, and applied."; }catch(error){status.textContent="CSS import rejected: "+error.message;}finally{cssImportFile.value="";}};
     btnApplyCss.onclick = () => {
         try { validateAndApplyCss(fullCssEditor.value); }
         catch (error) { status.textContent = "CSS not applied: " + error.message; }
