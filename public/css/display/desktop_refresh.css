@@ -50,3 +50,28 @@ body[data-window-style="flat"] .window-shell.glass{background:#202633!important;
 .window-designer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.window-designer-grid label{display:flex;flex-direction:column;gap:5px;font-size:13px}.window-designer-grid output{opacity:.7}.window-designer-grid input[type="range"]{width:100%}.window-designer-grid input[type="color"]{width:100%;height:32px;border:0;background:transparent}
 #lock-setup-pattern{background:#ffffff0a;border-radius:16px}.settings-tab-panel[hidden]{display:none!important}
 @media(max-width:560px){.window-designer-grid{grid-template-columns:1fr}.webos-lock-card{padding:26px 16px}}
+
+/* Additional desktop environment presets. */
+body[data-desktop-style="floating"] #taskbar{height:38px;background:rgba(12,18,29,.55);border:0;box-shadow:none;backdrop-filter:blur(18px)}
+body[data-desktop-style="floating"] #window-workspace{inset:38px 0 0}
+body[data-desktop-style="floating"] #dock{left:50%;bottom:20px;transform:translateX(-50%);padding:10px 16px;border:1px solid #ffffff35;border-radius:24px;background:rgba(20,29,44,.64);backdrop-filter:blur(28px) saturate(160%);box-shadow:0 18px 48px #0006}
+body[data-desktop-style="floating"] #dock .DockIcon{width:48px;height:48px;flex-basis:48px;border-radius:15px}
+body[data-desktop-style="floating"] .window-shell.glass{border-radius:18px;box-shadow:0 22px 60px #0006}
+body[data-desktop-style="classic"] #taskbar{height:42px;background:#202a38;border-bottom:2px solid #718198}
+body[data-desktop-style="classic"] #dock{left:0;right:0;bottom:0;transform:none;justify-content:flex-start;border-radius:0;background:#202a38;border-top:1px solid #ffffff24}
+body[data-desktop-style="classic"] #window-workspace{inset:42px 0 54px}
+body[data-desktop-style="classic"] .window-shell.glass{border-radius:5px;background:#dfe5ed;color:#182333;border:1px solid #7d8ca0}
+body[data-desktop-style="classic"] .window-titlebar{height:32px;background:linear-gradient(#f5f7fa,#cbd4df);color:#172235}
+body[data-desktop-style="classic"] .window-body{background:#f7f9fc;color:#172235}
+body[data-desktop-style="minimal"] #taskbar{height:34px;background:rgba(8,12,19,.42);border:0;box-shadow:none;backdrop-filter:blur(16px)}
+body[data-desktop-style="minimal"] #taskbar-left .system-brand-text{display:none}
+body[data-desktop-style="minimal"] #dock{display:none}
+body[data-desktop-style="minimal"] .window-shell.glass{border-radius:10px;background:rgba(16,23,34,.94);border:1px solid #ffffff16;box-shadow:0 12px 34px #0004}
+body[data-desktop-style="minimal"] .window-titlebar{height:34px;background:rgba(255,255,255,.035)}
+body[data-desktop-style="tablet"] #taskbar{height:58px;padding-inline:16px}
+body[data-desktop-style="tablet"] #taskbar button{min-width:42px;min-height:42px}
+body[data-desktop-style="tablet"] #dock{left:50%;bottom:14px;transform:translateX(-50%);padding:12px 18px;border-radius:24px}
+body[data-desktop-style="tablet"] #dock .DockIcon{width:52px;height:52px;flex-basis:52px}
+body[data-desktop-style="tablet"] #window-workspace{inset:58px 0 82px}
+body[data-desktop-style="tablet"] .window-shell.glass{border-radius:18px}
+@media(max-width:680px){body[data-desktop-style="floating"] #window-workspace{inset:38px 0 0}body[data-desktop-style="classic"] #window-workspace{inset:42px 0 54px}body[data-desktop-style="tablet"] #window-workspace{inset:58px 0 82px}}
