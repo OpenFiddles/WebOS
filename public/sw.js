@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "3.0.1";
+const VERSION = "3.0.2";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
