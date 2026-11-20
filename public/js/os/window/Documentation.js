@@ -128,7 +128,7 @@ WebOSAppRegistry.register({
 WebOSAppRegistry.downloadManifest();</code></pre><p>The registry export contains app metadata, not executable JavaScript or private data. Export a complete app package from App Creator or WASM Lab.</p><h2>Full system backup</h2><p>Settings → Backup & Recovery exports the virtual filesystem and supported WebOS preferences. It does not include browser credentials, device files, or the host operating system.</p><h2>Notification API</h2><pre><code>WebOSNotifications.notify("Updated", "WebOS is ready.", {
   icon: "↻", level: "success",
   actionLabel: "Reload", onAction: () => location.reload()
-});</code></pre`,
+});</code></pre`],
     };
     function show(id) {
       const page=pages[id]; if(!page)return;
