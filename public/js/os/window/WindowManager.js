@@ -193,7 +193,7 @@ function makeWindowResizable(win) {
             const move = moveEvent => {
                 if (moveEvent.pointerId !== pointerId || !win.isConnected) return;
                 const nextHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + startY - moveEvent.clientY));
-                win.style.height = Math.round(nextHeight) + "px";
+                win.style.setProperty("height", Math.round(nextHeight) + "px", "important");
                 win.classList.toggle("mobile-window-expanded", nextHeight >= maxHeight - 24);
             };
             const finish = finishEvent => {
