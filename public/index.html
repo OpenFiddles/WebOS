@@ -54,7 +54,7 @@
         frame.src=(mobileUA||compactTouch)?"/html/mobile/mobileLauncher.html":"/html/BootScreen_popcorn.html";
         frame.title=(mobileUA||compactTouch)?"WebOS Mobile Launcher":"WebOS desktop";
         let queued=[];
-        const deliver=()=>{if(!frame.contentWindow||!queued.length)return;frame.contentWindow.postMessage({type:"WEBOS_HOST_FILES",files:queued},"*");queued=[];};
+        const deliver=()=>{if(!frame.contentWindow||!queued.length)return;try{if(!frame.contentWindow.location.pathname.endsWith("/DisplayManager_PopIT.html"))return;}catch(_){return;}frame.contentWindow.postMessage({type:"WEBOS_HOST_FILES",files:queued},"*");queued=[];};
         frame.addEventListener("load",deliver);
         if("launchQueue" in window && typeof window.launchQueue.setConsumer==="function"){
           window.launchQueue.setConsumer(async params=>{
