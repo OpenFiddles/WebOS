@@ -60,3 +60,17 @@
 .wam-uninstall{border-color:#ef777755;color:#ffaaaa;white-space:nowrap}.wam-uninstall:disabled{opacity:.5;cursor:wait}
 .wam-status,.wam-empty{margin:0;color:var(--muted-text,#aab6ca);font-size:12px}
 @media(max-width:560px){.wam-row{align-items:flex-start;flex-wrap:wrap}.wam-info{min-width:calc(100% - 60px)}.wam-uninstall,.wam-protected{margin-left:54px}}
+
+/* App Manager */
+.webos-app-manager{display:flex;flex-direction:column;gap:14px;min-width:0;color:inherit}
+.wam-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.wam-header h2{margin:0 0 4px}.wam-header p{margin:0;opacity:.7;font-size:13px}
+.wam-header-actions{display:flex;gap:7px;flex-wrap:wrap}
+.wam-summary{padding:11px 13px;border:1px solid var(--line,#ffffff24);border-radius:11px;background:var(--surface,#ffffff0d);font-size:13px}
+.wam-list{display:grid;gap:9px}
+.wam-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line,#ffffff24);border-radius:13px;background:var(--surface,#ffffff08);min-width:0}
+.wam-icon{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:11px;background:#ffffff12;font-size:22px}
+.wam-info{flex:1;min-width:0}.wam-info strong,.wam-info small{display:block}.wam-info small{opacity:.62;font-size:11px;margin-top:3px}.wam-info p{margin:5px 0 0;opacity:.78;font-size:12px}
+.wam-protected{font-size:11px;opacity:.7;padding:6px 8px;border:1px solid var(--line,#ffffff24);border-radius:8px}
+.wam-uninstall{border:1px solid #d85c6b66;border-radius:8px;padding:8px 10px;background:#d85c6b18;color:inherit;cursor:pointer}
+.wam-status{min-height:1.2em;font-size:12px;opacity:.8}.wam-empty{opacity:.7;text-align:center;padding:20px}

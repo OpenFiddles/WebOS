@@ -606,6 +606,69 @@ function openSettings() {
                 <p id="webos-backup-status" role="status" aria-live="polite">No backup operation running.</p>
             </section>
 
+
+            <!-- APP LIFECYCLE AND DISCOVERY -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Apps &amp; Applications</h2>
+                <p>Review installed applications, protect built-in system apps, and manage custom JavaScript and WebAssembly packages.</p>
+                <div class="settings-action-row"><button type="button" id="settings-open-app-manager">Open App Manager</button><button type="button" id="settings-refresh-apps">Refresh app catalog</button></div>
+                <div class="settings-info-grid"><article><strong id="settings-app-count">—</strong><small>Registered apps</small></article><article><strong id="settings-wasm-count">—</strong><small>WASM packages</small></article></div>
+                <small>Built-in apps are protected from uninstall. App Manager exports registry metadata; app source and WASM binaries are managed by their respective creation tools.</small>
+            </section>
+
+            <!-- NOTIFICATION PREFERENCES -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Notifications</h2>
+                <label class="setting-field"><input id="settings-notify-errors" type="checkbox" checked> Show application error notifications</label>
+                <label class="setting-field"><input id="settings-notify-updates" type="checkbox" checked> Notify when WebOS updates</label>
+                <div class="settings-action-row"><button type="button" id="settings-notification-permission">Enable browser notifications</button><button type="button" id="settings-test-notification">Send test notification</button></div>
+                <p id="settings-notification-status" role="status" aria-live="polite">In-app notifications are enabled.</p>
+                <small>Browser notifications require permission and may be unavailable in private browsing or unsupported browsers.</small>
+            </section>
+
+            <!-- PRIVACY AND PERMISSIONS -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Privacy &amp; Security</h2>
+                <p>Review browser permissions and local session protections. WebOS runs inside your browser and does not replace your device's account security.</p>
+                <div class="settings-action-row"><button type="button" id="settings-check-permissions">Review browser permissions</button><button type="button" id="settings-clear-site-data">Clear WebOS site data…</button></div>
+                <div id="settings-permissions" class="settings-readout" aria-live="polite">Permission status has not been checked.</div>
+                <small>The optional PIN/pattern lock is a convenience layer for this browser session, not disk encryption. Never store sensitive credentials in WebOS app storage.</small>
+            </section>
+
+            <!-- HOST DEVICE AND CAPABILITIES -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Devices</h2>
+                <p>Host information exposed by the browser. Some values are intentionally limited by browser privacy protections.</p>
+                <div id="settings-device-info" class="settings-readout">Loading browser capabilities…</div>
+                <div class="settings-action-row"><button type="button" id="settings-refresh-device">Refresh device information</button><button type="button" id="settings-fullscreen-toggle">Toggle fullscreen</button></div>
+            </section>
+
+            <!-- DEVELOPER CONTROLS -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Developer Settings</h2>
+                <p>Developer tools and documentation for building WebOS applications.</p>
+                <div class="settings-action-row"><button type="button" data-dev-app="docs">API Documentation</button><button type="button" data-dev-app="appcreator">App Creator</button><button type="button" data-dev-app="wasm">WASM Lab</button><button type="button" data-dev-app="animations">Animation Studio</button></div>
+                <label class="setting-field"><input id="settings-debug-mode" type="checkbox"> Enable verbose WebOS diagnostics</label>
+                <small>Diagnostics are local to this browser session. Avoid sharing logs that may contain personal content.</small>
+            </section>
+
+            <!-- UPDATE MANAGEMENT -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Updates</h2>
+                <div class="settings-info-grid"><article><strong id="settings-build-version">Checking…</strong><small>Cached service worker build</small></article><article><strong id="settings-sw-state">Checking…</strong><small>Service worker status</small></article></div>
+                <p id="settings-update-status" role="status" aria-live="polite">Checking update status…</p>
+                <div class="settings-action-row"><button type="button" id="settings-check-update">Check for updates</button><button type="button" id="settings-reload-update">Reload WebOS</button></div>
+                <small>Update checks ask the browser to check the registered service worker. A remote release feed and detailed release history are not currently configured.</small>
+            </section>
+
+            <!-- LOCAL PROFILE AND STORAGE MANAGEMENT -->
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Storage &amp; Profiles</h2>
+                <div id="settings-storage-info" class="settings-readout">Checking available browser storage…</div>
+                <div class="settings-action-row"><button type="button" id="settings-export-profile">Export appearance profile</button><button type="button" id="settings-import-profile-trigger">Import appearance profile</button><input id="settings-import-profile" type="file" accept="application/json,.json" hidden></div>
+                <small>Profiles include supported appearance and layout preferences, not lock credentials, personal data, or installed app source.</small>
+            </section>
+
             <!-- ACCESSIBILITY AND INTERFACE CONTROLS -->
             <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
                 <h2>Accessibility</h2>
@@ -617,7 +680,7 @@ function openSettings() {
 
             <!-- SYSTEM DATA MANAGEMENT SECTION -->
             <section class="settings-section" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <h2>System</h2><label for="settings-search">Search settings</label><input id="settings-search" type="search" placeholder="Find a setting…"><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="settings-export" type="button">Export settings</button><button id="settings-import-trigger" type="button">Import settings</button><input id="settings-import-file" type="file" accept="application/json" hidden></div>
+                <h2>System</h2><p>General system controls and preference import/export.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="settings-export" type="button">Export settings</button><button id="settings-import-trigger" type="button">Import settings</button><input id="settings-import-file" type="file" accept="application/json" hidden></div>
                 <label class="setting-field" style="display:flex;align-items:center;gap:.6rem;cursor:pointer;">
                     <input id="fullscreen-always-choice" type="checkbox">
                     <span><strong>Enable always Fullscreen</strong><br><small>Keep WebOS in fullscreen after your next interaction. Browser permission and user-gesture rules still apply.</small></span>
@@ -634,6 +697,10 @@ function openSettings() {
 
     // Turn the existing settings sections into a compact, keyboard-friendly tabbed control center.
     const settingsPanel = win.querySelector(".AppPanel");
+    const settingsSearch = document.createElement("input");
+    settingsSearch.id = "settings-search"; settingsSearch.type = "search"; settingsSearch.placeholder = "Search all settings…";
+    settingsSearch.setAttribute("aria-label","Search all settings"); settingsSearch.className = "settings-search-global";
+    settingsPanel.insertBefore(settingsSearch, settingsPanel.firstChild);
     const settingsSections = Array.from(settingsPanel.querySelectorAll(":scope > .settings-section"));
     settingsPanel.querySelectorAll(":scope > hr").forEach(rule => rule.remove());
     if (settingsSections.length) {
@@ -643,7 +710,7 @@ function openSettings() {
         tabBar.setAttribute("aria-label", "Settings categories");
         const pane = document.createElement("div");
         pane.className = "settings-tab-content";
-        const labels = ["Appearance", "Customization", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
+        const labels = ["Personalization", "Window Design", "Apps & Applications", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
         settingsSections.forEach((section, index) => {
             const id = "webos-settings-tab-" + index;
             const button = document.createElement("button");
@@ -672,7 +739,19 @@ function openSettings() {
         settingsPanel.insertBefore(pane, settingsPanel.firstChild);
         settingsPanel.insertBefore(tabBar, pane);
     }
-    const settingsSearch=win.querySelector("#settings-search");settingsSearch?.addEventListener("input",()=>{const q=settingsSearch.value.trim().toLowerCase();let first=-1;settingsSections.forEach((s,i)=>{const match=!q||s.textContent.toLowerCase().includes(q);s.hidden=!match;if(match&&first<0)first=i;});settingsPanel.querySelectorAll(".settings-tab").forEach((b,i)=>{b.hidden=!!q&&settingsSections[i]?.hidden;b.classList.toggle("active",i===first);});});
+
+    settingsSearch.addEventListener("input",()=>{
+        const q=settingsSearch.value.trim().toLowerCase();let first=-1;
+        settingsSections.forEach((section,index)=>{
+            const match=!q||section.textContent.toLowerCase().includes(q);
+            section.hidden=!match;if(match&&first<0)first=index;
+        });
+        settingsPanel.querySelectorAll(".settings-tab").forEach((button,index)=>{
+            button.hidden=!!q&&settingsSections[index]?.hidden;
+            button.classList.toggle("active",index===first);
+            button.setAttribute("aria-selected",String(index===first));
+        });
+    });
     const collectWebOSPreferences=()=>{const values={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("webos-")&&!/lock-config|current-user|profile-data/.test(k))values[k]=localStorage.getItem(k);}return values;};
     const downloadJSON=(data,name)=>{const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);};
     const exportPrefs=()=>downloadJSON({format:"webos-settings",version:1,values:collectWebOSPreferences()},"webos-settings-backup.json");
@@ -1110,6 +1189,97 @@ function openSettings() {
         if (isSpectating) stopSpectatingMode();
     });
 
+
+    // Additional control-center integrations.
+    const refreshAppSummary=async()=>{
+        const apps=window.WebOSAppRegistry?.all?.()||[];
+        let wasm=[];try{wasm=await window.WebOSWASM?.listApps?.()||[];}catch(_){}
+        const appCount=win.querySelector("#settings-app-count"),wasmCount=win.querySelector("#settings-wasm-count");
+        if(appCount)appCount.textContent=String(apps.length);if(wasmCount)wasmCount.textContent=String(wasm.length);
+    };
+    win.querySelector("#settings-open-app-manager")?.addEventListener("click",()=>window.WebOSAppRegistry?.launch?.("appmanager")||window.openAppManager?.());
+    win.querySelector("#settings-refresh-apps")?.addEventListener("click",()=>refreshAppSummary());
+    refreshAppSummary();
+    win.querySelectorAll("[data-dev-app]").forEach(button=>button.addEventListener("click",()=>window.WebOSAppRegistry?.launch?.(button.dataset.devApp)));
+    const notifyErrors=win.querySelector("#settings-notify-errors"),notifyUpdates=win.querySelector("#settings-notify-updates");
+    notifyErrors.checked=localStorage.getItem("webos-notify-errors")!=="false";
+    notifyUpdates.checked=localStorage.getItem("webos-notify-updates")!=="false";
+    notifyErrors.addEventListener("change",()=>localStorage.setItem("webos-notify-errors",String(notifyErrors.checked)));
+    notifyUpdates.addEventListener("change",()=>localStorage.setItem("webos-notify-updates",String(notifyUpdates.checked)));
+    win.querySelector("#settings-notification-permission")?.addEventListener("click",async()=>{
+        const result=await window.WebOSNotifications?.requestDesktopPermission?.()||"unsupported";
+        win.querySelector("#settings-notification-status").textContent="Browser notification permission: "+result+".";
+    });
+    win.querySelector("#settings-test-notification")?.addEventListener("click",()=>window.WebOSNotifications?.notify?.("WebOS notification test","Your in-app notification center is working.",{icon:"✓",source:"Settings"}));
+    win.querySelector("#settings-check-permissions")?.addEventListener("click",async()=>{
+        const output=win.querySelector("#settings-permissions");
+        const names=["camera","microphone","geolocation","notifications"];
+        const lines=[];
+        for(const name of names){try{const result=await navigator.permissions?.query?.({name});lines.push(name+": "+(result?.state||"not exposed"));}catch(_){lines.push(name+": not supported by this browser");}}
+        lines.push("Secure context: "+(window.isSecureContext?"yes":"no"));
+        output.textContent=lines.join(" · ");
+    });
+    win.querySelector("#settings-clear-site-data")?.addEventListener("click",()=>{
+        if(!confirm("Clear WebOS cached site files and reload? Your browser's site storage and virtual files may be affected. Export a backup first."))return;
+        Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith("WebOS-")).map(key=>caches.delete(key)))),navigator.serviceWorker?.getRegistrations?.().then(regs=>Promise.all(regs.map(reg=>reg.unregister())))])
+          .then(()=>{win.querySelector("#settings-permissions").textContent="WebOS caches cleared. Reloading…";location.reload();})
+          .catch(error=>{win.querySelector("#settings-permissions").textContent="Could not clear all site data: "+error.message;});
+    });
+    const refreshDeviceInfo=()=>{
+        const rows=[
+          ["Platform",navigator.userAgentData?.platform||navigator.platform||"Not exposed"],
+          ["Browser",navigator.userAgentData?.brands?.map(x=>x.brand+" "+x.version).join(", ")||"User-agent details limited"],
+          ["Screen",screen.width+" × "+screen.height+" · "+(window.devicePixelRatio||1)+"×"],
+          ["Touch points",String(navigator.maxTouchPoints||0)],
+          ["Language",navigator.language||"Unknown"],
+          ["Online status",navigator.onLine?"Online":"Offline"],
+          ["CPU threads",navigator.hardwareConcurrency?String(navigator.hardwareConcurrency):"Not exposed"],
+          ["Memory",navigator.deviceMemory?navigator.deviceMemory+" GB (approx.)":"Not exposed"],
+          ["Battery","Use the browser's device indicators; battery API is not universally available"],
+          ["Wi-Fi","Browser does not expose the Wi-Fi network name"]
+        ];
+        win.querySelector("#settings-device-info").textContent=rows.map(([k,v])=>k+": "+v).join(" · ");
+    };
+    win.querySelector("#settings-refresh-device")?.addEventListener("click",refreshDeviceInfo);refreshDeviceInfo();
+    win.querySelector("#settings-fullscreen-toggle")?.addEventListener("click",()=>{if(document.fullscreenElement)document.exitFullscreen?.();else window.WebOSFullscreen?.enter?.();});
+    win.querySelector("#settings-debug-mode")?.addEventListener("change",e=>localStorage.setItem("webos-debug-mode",String(e.target.checked)));
+    win.querySelector("#settings-debug-mode").checked=localStorage.getItem("webos-debug-mode")==="true";
+    const updateStatus=win.querySelector("#settings-update-status");
+    const refreshUpdateInfo=async()=>{
+        const keys=await caches.keys().catch(()=>[]),build=keys.filter(key=>key.startsWith("WebOS-v")).sort().pop()||"No WebOS cache";
+        win.querySelector("#settings-build-version").textContent=build.replace("WebOS-","");
+        const registrations=await navigator.serviceWorker?.getRegistrations?.().catch(()=>[])||[];
+        win.querySelector("#settings-sw-state").textContent=registrations.length?"Registered":"Not registered";
+        updateStatus.textContent=registrations.length?"Service worker is registered. Use Check for updates to ask the browser to fetch a newer build.":"No service worker registration found for this page.";
+    };
+    win.querySelector("#settings-check-update")?.addEventListener("click",async()=>{
+        updateStatus.textContent="Checking for a service worker update…";
+        try{const regs=await navigator.serviceWorker?.getRegistrations?.()||[];if(!regs.length){updateStatus.textContent="No service worker is registered.";return;}
+          await Promise.all(regs.map(reg=>reg.update()));updateStatus.textContent="Update check completed. If a new build is found, WebOS will activate it and show an update notification.";await refreshUpdateInfo();
+        }catch(error){updateStatus.textContent="Update check failed: "+error.message;}
+    });
+    win.querySelector("#settings-reload-update")?.addEventListener("click",()=>location.reload());
+    refreshUpdateInfo();
+    const refreshStorage=async()=>{
+        const estimate=await navigator.storage?.estimate?.().catch(()=>null);
+        const usage=estimate?.usage,quota=estimate?.quota;
+        win.querySelector("#settings-storage-info").textContent=usage!=null&&quota?("Browser storage used: "+(usage/1048576).toFixed(1)+" MB of "+(quota/1048576).toFixed(0)+" MB estimated quota."):"Storage estimates are unavailable in this browser.";
+    };
+    refreshStorage();
+    const profileKeys=["webos-theme","webos-accent","webos-wallpaper","webos-custom-wallpaper","webos-motion-style","webos-reduced-motion","webos-liquid-glass","webos-desktop-style","webos-window-style","webos-ambient-animation","webos-custom-css","webos-window-designer"];
+    win.querySelector("#settings-export-profile")?.addEventListener("click",()=>{
+        const values={};profileKeys.forEach(key=>{const value=localStorage.getItem(key);if(value!==null)values[key]=value;});
+        downloadJSON({format:"webos-appearance-profile",version:1,values},"webos-appearance-profile.json");
+    });
+    const profilePicker=win.querySelector("#settings-import-profile"),profileTrigger=win.querySelector("#settings-import-profile-trigger");
+    profileTrigger?.addEventListener("click",()=>profilePicker.click());
+    profilePicker?.addEventListener("change",async()=>{
+        const file=profilePicker.files?.[0];if(!file)return;
+        try{const data=JSON.parse(await file.text());if(data.format!=="webos-appearance-profile"||data.version!==1||!data.values||typeof data.values!=="object"||Array.isArray(data.values))throw new Error("Unsupported appearance profile.");
+          Object.entries(data.values).forEach(([key,value])=>{if(profileKeys.includes(key)&&typeof value==="string"&&value.length<3000000)localStorage.setItem(key,value);});
+          window.WebOSAppearance?.apply();status.textContent="Appearance profile imported. Some controls may need the Settings window reopened.";
+        }catch(error){status.textContent="Profile import failed: "+error.message;}finally{profilePicker.value="";}
+    });
     return win;
 }
 
@@ -1721,7 +1891,7 @@ function openAppManager() {
                     try{
                         if(wasmIds.has(app.id)) await window.WebOSWASM.uninstallApp(app.id);
                         else {
-                            await window.WebOSFileSystem?.remove?.("/Desktop/Apps/"+app.id+".js").catch(()=>{});
+                            if(window.WebOSFileSystem?.remove) await window.WebOSFileSystem.remove("/Desktop/Apps/"+app.id+".js").catch(()=>{});
                             window.WebOSAppRegistry.unregister(app.id);
                         }
                         status.textContent=(app.name||app.id)+" was uninstalled.";

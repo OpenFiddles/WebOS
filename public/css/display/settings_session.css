@@ -26,3 +26,15 @@
 .webos-session-card button.secondary{background:rgba(255,255,255,.08)}
 .webos-sleep-screen{background:#000!important;backdrop-filter:none}
 @media(prefers-reduced-motion:reduce){.settings-tab-panel{animation:none}}
+
+/* Expanded Settings Control Center */
+.settings-search-global{position:sticky;top:0;z-index:3;width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:inherit;margin-bottom:8px}
+.settings-tabs{flex-wrap:wrap;max-height:132px;overflow:auto}
+.settings-tab{flex:1 0 112px}
+.settings-action-row{display:flex;gap:8px;flex-wrap:wrap}
+.settings-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.settings-info-grid article{display:flex;flex-direction:column;gap:4px;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.settings-info-grid strong{font-size:20px;color:var(--accent)}
+.settings-info-grid small{opacity:.7}
+.settings-readout{padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+@media(max-width:560px){.settings-tab{flex:1 0 42%}.settings-action-row button{flex:1 1 130px}}
