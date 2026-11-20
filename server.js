@@ -14,6 +14,14 @@ const publicDirectory = path.join(__dirname, "public");
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(publicDirectory));
 
+// Public marketing pages live under /page; keep / serving the WebOS desktop.
+app.get("/page", (_req, res) => res.redirect(301, "/page/"));
+app.get("/page/*", (req, res, next) => {
+  const requested = path.join(publicDirectory, "page", req.params[0] || "index.html");
+  if (!requested.startsWith(path.join(publicDirectory, "page") + path.sep)) return res.status(400).send("Invalid page path");
+  res.sendFile(requested, err => { if (err) next(); });
+});
+
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     ok: true,

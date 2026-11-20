@@ -14,6 +14,14 @@
   ],
   "rewrites": [
     {
+      "source": "/page",
+      "destination": "/server.js"
+    },
+    {
+      "source": "/page/(.*)",
+      "destination": "/server.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/server.js"
     },
