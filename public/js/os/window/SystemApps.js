@@ -508,7 +508,7 @@ function openSettings() {
                         <option value="midnight">Midnight</option>
                         <option value="ember">Ember</option>
                         <option value="ocean">Ocean glow</option>
-                        <option value="sakura">Sakura</option><option value="forest">Forest</option><option value="graphite">Graphite</option><option value="sunset">Sunset sky</option>
+                        <option value="sakura">Sakura bloom</option><option value="forest">Forest canopy</option><option value="graphite">Graphite</option><option value="sunset">Sunset sky</option><option value="desert">Desert dunes</option><option value="alpine">Alpine peaks</option><option value="nebula">Deep-space nebula</option><option value="coral">Coral reef</option><option value="monochrome">Monochrome waves</option><option value="sunrise">Golden sunrise</option><option value="prism">Prismatic gradient</option>
                         <option value="custom">Custom image</option>
                     </select>
                     <input id="wallpaper-file" type="file" accept="image/*">

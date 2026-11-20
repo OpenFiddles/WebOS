@@ -186,38 +186,43 @@ function makeWindowResizable(win) {
         if(handle.dataset.resizeBound==="true")return;
         handle.dataset.resizeBound="true";
         handle.addEventListener("pointerdown",event=>{
-            if(win.classList.contains("is-maximized")||event.button!==0)return;
-            event.preventDefault();event.stopPropagation();
+            if(win.classList.contains("is-maximized")||event.button!==0||event.isPrimary===false)return;
             const workspace=document.getElementById("window-workspace")||win.parentElement;
             if(!workspace)return;
             const bounds=workspace.getBoundingClientRect(),rect=win.getBoundingClientRect();
             const direction=handle.getAttribute("data-direction")||"se",pointerId=event.pointerId;
             const startLeft=rect.left-bounds.left,startTop=rect.top-bounds.top,startWidth=rect.width,startHeight=rect.height;
             const minWidth=Math.min(260,Math.max(120,bounds.width-16)),minHeight=Math.min(150,Math.max(100,bounds.height-16));
+            event.preventDefault();event.stopPropagation();
             try{handle.setPointerCapture(pointerId);}catch(_){}
             const resize=moveEvent=>{
-                if(!win.isConnected||win.classList.contains("is-maximized"))return;
+                if(moveEvent.pointerId!==pointerId||!win.isConnected||win.classList.contains("is-maximized"))return;
                 const current=workspace.getBoundingClientRect(),dx=moveEvent.clientX-event.clientX,dy=moveEvent.clientY-event.clientY;
                 let left=startLeft,top=startTop,width=startWidth,height=startHeight;
                 if(direction.includes("e"))width=Math.min(Math.max(minWidth,startWidth+dx),Math.max(minWidth,current.width-startLeft-8));
                 if(direction.includes("s"))height=Math.min(Math.max(minHeight,startHeight+dy),Math.max(minHeight,current.height-startTop-8));
                 if(direction.includes("w")){left=Math.min(Math.max(8,startLeft+dx),startLeft+startWidth-minWidth);width=startWidth-(left-startLeft);}
                 if(direction.includes("n")){top=Math.min(Math.max(8,startTop+dy),startTop+startHeight-minHeight);height=startHeight-(top-startTop);}
-                left=Math.max(8,Math.min(left,current.width- Math.min(width,current.width-16)-8));
-                top=Math.max(8,Math.min(top,current.height- Math.min(height,current.height-16)-8));
+                left=Math.max(8,Math.min(left,current.width-Math.min(width,current.width-16)-8));
+                top=Math.max(8,Math.min(top,current.height-Math.min(height,current.height-16)-8));
                 width=Math.min(width,Math.max(minWidth,current.width-left-8));
                 height=Math.min(height,Math.max(minHeight,current.height-top-8));
                 win.style.left=left+"px";win.style.top=top+"px";win.style.width=width+"px";win.style.height=height+"px";
             };
-            const finish=()=>{
-                handle.removeEventListener("pointermove",resize);handle.removeEventListener("pointerup",finish);handle.removeEventListener("pointercancel",finish);
+            const finish=finishEvent=>{
+                if(finishEvent&&finishEvent.pointerId!==pointerId)return;
+                window.removeEventListener("pointermove",resize,true);
+                window.removeEventListener("pointerup",finish,true);
+                window.removeEventListener("pointercancel",finish,true);
                 try{if(handle.hasPointerCapture(pointerId))handle.releasePointerCapture(pointerId);}catch(_){}
             };
-            handle.addEventListener("pointermove",resize);handle.addEventListener("pointerup",finish);handle.addEventListener("pointercancel",finish);
+            // Capture on window as a fallback for browsers that retarget captured pointer events.
+            window.addEventListener("pointermove",resize,true);
+            window.addEventListener("pointerup",finish,true);
+            window.addEventListener("pointercancel",finish,true);
         });
     });
 }
-
 function wireWindowButtons(win) {
     const closeBtn = win.querySelector(".close");
     const minimizeBtn = win.querySelector(".minimize");

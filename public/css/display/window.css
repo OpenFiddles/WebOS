@@ -430,3 +430,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .window-shell, .window-shell.is-minimized, .window-shell.is-maximized { transition-duration:.01ms !important; } }
+
+/* Reliable resize hit targets: keep every handle inside the clipped window shell. */
+.window-shell:not(.is-maximized) .resize-handle{display:block!important;pointer-events:auto;touch-action:none;z-index:200;opacity:.0}
+.window-shell:not(.is-maximized):hover .resize-handle{opacity:1}
+.window-shell:not(.is-maximized) .resize-handle.top{top:0;left:12px;right:12px;height:9px;cursor:n-resize}
+.window-shell:not(.is-maximized) .resize-handle.bottom{bottom:0;left:12px;right:12px;height:9px;cursor:s-resize}
+.window-shell:not(.is-maximized) .resize-handle.left{left:0;top:12px;bottom:12px;width:9px;cursor:w-resize}
+.window-shell:not(.is-maximized) .resize-handle.right{right:0;top:12px;bottom:12px;width:9px;cursor:e-resize}
+.window-shell:not(.is-maximized) .resize-handle.corner-se{right:0;bottom:0;width:18px;height:18px;border-radius:0 0 12px 0;cursor:se-resize;opacity:.65;background:linear-gradient(135deg,transparent 48%,var(--accent) 50%,var(--accent) 62%,transparent 64%)}
+.window-shell:not(.is-maximized) .resize-handle:hover{opacity:1}
+@media(hover:none){.window-shell:not(.is-maximized) .resize-handle.corner-se{opacity:.8}}

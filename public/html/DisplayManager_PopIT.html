@@ -21,6 +21,7 @@
     <link rel="manifest" href="../site.webmanifest"/>
 </head>
 <body>
+<script>if(new URLSearchParams(location.search).get("mode")==="mobile")document.body.dataset.webosMode="mobile";</script>
 <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
  <filter id="webos-glass-refraction" x="-15%" y="-15%" width="130%" height="130%">
   <feTurbulence type="fractalNoise" baseFrequency="0.018 0.026" numOctaves="2" seed="8" result="glass-noise"/>

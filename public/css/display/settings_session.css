@@ -54,3 +54,15 @@
 .settings-cloud-form input{width:100%;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:inherit;font:inherit}
 #settings-cloud-status{white-space:normal;overflow-wrap:anywhere;line-height:1.5}
 #settings-cloud-push:disabled,#settings-cloud-pull:disabled,#settings-cloud-signin:disabled,#settings-cloud-signup:disabled{opacity:.48;cursor:not-allowed}
+
+/* Settings Control Center layout repair: full-width header, readable category rail. */
+.AppPanel:has(.settings-tabs){display:flex!important;flex-direction:column;align-items:stretch;gap:12px;width:100%;max-width:none!important;height:100%;min-height:0;overflow:auto;padding:clamp(12px,2vw,20px)}
+.AppPanel:has(.settings-tabs)> .settings-tabs{order:0;position:sticky;top:0;display:flex!important;flex:0 0 auto;align-items:center;flex-wrap:nowrap!important;gap:7px;width:100%;max-width:100%;min-height:48px;max-height:none!important;padding:6px;overflow-x:auto!important;overflow-y:hidden!important;border-radius:13px;scrollbar-width:thin;z-index:5}
+.AppPanel:has(.settings-tabs)> .settings-tabs .settings-tab{flex:0 0 auto!important;width:auto;min-width:max-content;max-width:none;min-height:36px;padding:9px 13px;border-radius:9px;font-size:12px;line-height:1.25;white-space:nowrap}
+.AppPanel:has(.settings-tabs)> .settings-search-global{order:1;position:relative!important;top:auto!important;flex:0 0 auto;width:100%;min-height:42px;margin:0;padding:11px 13px}
+.AppPanel:has(.settings-tabs)> .settings-tab-content{order:2;flex:1 1 auto;min-width:0;width:100%;overflow:visible}
+.AppPanel:has(.settings-tabs) .settings-tab-panel{width:100%;min-width:0;max-width:none;padding:4px 0 18px;gap:14px}
+.AppPanel:has(.settings-tabs) .setting-field{width:100%;min-width:0}
+.AppPanel:has(.settings-tabs) .setting-field>input:not([type=checkbox]):not([type=radio]),.AppPanel:has(.settings-tabs) .setting-field>select{width:100%;max-width:100%;min-height:42px}
+.AppPanel:has(.settings-tabs) .webos-accent-swatches{display:flex;flex-wrap:wrap;gap:9px}
+@media(max-width:560px){.AppPanel:has(.settings-tabs){padding:10px;gap:10px}.AppPanel:has(.settings-tabs)> .settings-tabs{min-height:44px}.AppPanel:has(.settings-tabs)> .settings-tabs .settings-tab{padding:9px 11px;font-size:12px}}
