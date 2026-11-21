@@ -41,9 +41,31 @@ jobs:
       - name: Install Capacitor Android tooling
         run: npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
-      - name: Create Android wrapper around WebOS
+      - name: Configure hosted WebOS Android wrapper
         run: |
-          npx cap init WebOS com.openfiddles.webos --web-dir public
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.openfiddles.webos",
+            "appName": "WebOS",
+            "webDir": "public",
+            "server": {
+              "url": "https://web-os-git-main-xistu.vercel.app",
+              "cleartext": false,
+              "allowNavigation": [
+                "web-os-git-main-xistu.vercel.app",
+                "*.supabase.co",
+                "*.google.com",
+                "*.github.com",
+                "*.gitlab.com",
+                "*.discord.com",
+                "challenges.cloudflare.com"
+              ]
+            },
+            "android": {
+              "allowMixedContent": false
+            }
+          }
+          EOF
           npx cap add android
           npx cap sync android
 
