@@ -127,10 +127,14 @@
 
   function renderApps(query) {
     const q = (query || "").trim().toLocaleLowerCase();
-    const matches = allApps().filter(app => (app.name + " " + (app.description || "") + " " + app.id).toLocaleLowerCase().includes(q));
-    $("favourites").replaceChildren(...matches.filter(app => favoriteIds.includes(app.id)).map((app,index) => buttonFor(app,index,true)));
+    const apps = allApps();
+    const matches = apps.filter(app => (app.name + " " + (app.description || "") + " " + app.id).toLocaleLowerCase().includes(q));
+    const favorites = apps.filter(app => favoriteIds.includes(app.id));
+    $("favourites").replaceChildren(...(favorites.length ? favorites.map((app,index) => buttonFor(app,index,true)) : [
+      Object.assign(document.createElement("div"), { className:"empty favorites-empty", textContent:"Pin apps from All apps to build your favourites." })
+    ]));
     $("dock").replaceChildren(...["files","notes","settings","paint"].map((id, index) => {
-      const app = allApps().find(item => item.id === id);
+      const app = apps.find(item => item.id === id);
       return app ? buttonFor(app, index, false) : document.createDocumentFragment();
     }));
     $("all-app-grid").replaceChildren(...(matches.length ? matches.map((app,index) => buttonFor(app,index,true)) : [
@@ -262,7 +266,7 @@
   $("close-all-apps")?.addEventListener("click", () => { const count = closeAllApps(); toast(count ? "Closed "+count+" app"+(count===1?"":"s") : "No apps to close."); });
   $("app-back").addEventListener("click", closeTopApp);
   $("app-home").addEventListener("click", goHome);
-  $("home-search").addEventListener("input", event => { renderApps(event.target.value); if (event.target.value) showOverlay("drawer"); });
+  $("home-search").addEventListener("input", event => { $("drawer-search").value = event.target.value; renderApps(event.target.value); if (event.target.value) showOverlay("drawer"); });
   $("drawer-search").addEventListener("input", event => renderApps(event.target.value));
   document.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", () => hideOverlay(button.dataset.close)));
   document.querySelectorAll("[data-toggle]").forEach(button => button.addEventListener("click", () => {
