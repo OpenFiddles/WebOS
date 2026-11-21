@@ -112,11 +112,13 @@
     function consumeCaptcha(){
         const token=captchaToken;
         if(window.WebOSCloud?.getCaptchaSiteKey?.()&&!token)throw new Error("Complete the security check first.");
+        return token;
+    }
+    function resetCaptcha(){
         captchaToken=null;
         if(captchaWidgetId!==null&&window.turnstile){
             try{window.turnstile.reset(captchaWidgetId);}catch(_){}
         }
-        return token;
     }
     async function warmDesktopAssets(){
         status.textContent="Preparing WebOS services...";
@@ -188,7 +190,11 @@
             showMessage(error?.message||"Authentication failed.");
             await loadTurnstile().catch(()=>{});
             return null;
-        }finally{setBusy(false);}
+        }finally{
+            resetCaptcha();
+            setBusy(false);
+            if(window.WebOSCloud?.getCaptchaSiteKey?.())await loadTurnstile().catch(()=>{});
+        }
     }
     document.getElementById("skip-boot").addEventListener("click",showAuth);
     authSwitch.addEventListener("click",()=>setAuthMode(!signingIn));
