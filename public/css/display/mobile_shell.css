@@ -150,10 +150,11 @@ body[data-webos-mode="mobile"] #install-app[hidden] { display:none !important; }
 
 
 /* Keep the mobile status strip reachable above active app sheets. */
-body[data-webos-mode="mobile"] .status { position:relative; z-index:35; }
+body[data-webos-mode="mobile"] .status { position:relative; z-index:29; }
 body[data-webos-mode="mobile"] .overlay { z-index:40; }
 body[data-webos-mode="mobile"] .window-controls .mobile-home {
   display:inline-flex; width:38px; height:38px; border-radius:50%; font-size:18px;
 }
 body[data-webos-mode="mobile"] .window-controls .mobile-home:hover { background:rgba(255,255,255,.12); }
 body[data-webos-mode="mobile"] .window-controls { gap:6px; }
+\nbody[data-webos-mode="mobile"] .window-controls .mobile-switcher { display:inline-flex; width:38px; height:38px; border-radius:50%; font-size:17px; }\n

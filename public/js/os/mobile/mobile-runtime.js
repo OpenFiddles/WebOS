@@ -183,6 +183,7 @@
           queueMicrotask(reconcileWindows);
         }, { once:true });
         win.addEventListener("pointerdown", () => activateWindow(win), { passive:true });
+        win.querySelector(".mobile-switcher")?.addEventListener("click", event => { event.stopPropagation(); showOverlay("quick-panel"); renderRunningApps(); });
         win.querySelector(".mobile-home")?.addEventListener("click", event => { event.stopPropagation(); goHome(); });
         activateWindow(win);
         renderRunningApps();
