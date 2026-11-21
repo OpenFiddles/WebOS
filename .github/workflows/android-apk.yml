@@ -56,10 +56,10 @@ jobs:
             "appName": "WebOS",
             "webDir": "public",
             "server": {
-              "url": "https://web-os-git-main-xistu.vercel.app",
+              "url": "https://web-os-iota.vercel.app",
               "cleartext": false,
               "allowNavigation": [
-                "web-os-git-main-xistu.vercel.app",
+                "web-os-iota.vercel.app",
                 "*.supabase.co",
                 "*.google.com",
                 "*.github.com",
