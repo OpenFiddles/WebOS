@@ -6,7 +6,7 @@
   let client=null,applyingCloud=false,autoTimer=null,captchaSiteKey="";
   const publish=()=>{try{window.dispatchEvent(new CustomEvent("webos:cloud-state",{detail:{...state}}));}catch(_){}};
   const setState=patch=>{Object.assign(state,patch);publish();};
-  const getStatus=()=>({...state,user:state.user?{id:state.user.id,email:state.user.email}:null});
+  const getStatus=()=>({...state,user:state.user?{id:state.user.id,email:state.user.email,is_anonymous:state.user.is_anonymous===true,created_at:state.user.created_at}:null});
   const requireClient=()=>{if(!client)throw new Error(state.message||"Cloud authentication is unavailable.");return client;};
   function withTimeout(promise,ms,label){
     let timer;
@@ -86,13 +86,9 @@
     if(!["google","gitlab","github","discord"].includes(provider))throw new Error("That authentication provider is not supported.");
     await verifyTurnstile(captchaToken);
     const auth=requireClient().auth;
-    const {data:sessionData,error:sessionError}=await auth.getSession();
-    if(sessionError)throw sessionError;
     const redirectTo=window.location.origin+"/html/BootScreen_popcorn.html?webos_linked="+encodeURIComponent(provider);
     const options={redirectTo,skipBrowserRedirect:true};
-    const result=sessionData.session
-      ?await auth.linkIdentity({provider,options})
-      :await auth.signInWithOAuth({provider,options}); 
+    const result=await auth.signInWithOAuth({provider,options}); 
     const {data,error}=result;
     if(error)throw error;
     if(!data?.url)throw new Error("Supabase did not return an OAuth sign-in URL.");
@@ -118,12 +114,18 @@
     if(error)throw error;
     return data;
   }
-  async function upgradeWithEmail(email,password){
-    if(!email||!password)throw new Error("Enter an email and password to upgrade this guest account.");
-    if(password.length<8)throw new Error("Use a password with at least 8 characters.");
-    const {data,error}=await requireClient().auth.updateUser({email,password});
+  async function addEmailToGuest(email){
+    if(!email)throw new Error("Enter an email address.");
+    const {data,error}=await requireClient().auth.updateUser({email});
     if(error)throw error;
-    setState({mode:"ready",user:data.user,message:"Account upgrade started. Confirm the email if Supabase requests it."});
+    setState({mode:"ready",user:data.user,message:"Check your email to confirm this address."});
+    return data;
+  }
+  async function setAccountPassword(password){
+    if(!password||password.length<8)throw new Error("Use a password with at least 8 characters.");
+    const {data,error}=await requireClient().auth.updateUser({password});
+    if(error)throw error;
+    setState({mode:"ready",user:data.user,message:"Password updated."});
     return data;
   }
   async function resetPassword(email,captchaToken){
@@ -176,5 +178,5 @@
   // JavaScript Proxy invariants for non-configurable methods such as ensureSeeded.
   // Preference auto-sync remains enabled; filesystem backups can be pushed manually.
   async function getAccessToken(){const {data,error}=await requireClient().auth.getSession();if(error)throw error;return data.session?.access_token||null;}
-  window.WebOSCloud=Object.freeze({ready:init(),getStatus,getCaptchaSiteKey:()=>captchaSiteKey,signIn,signUp,signInAsGuest,signInWithOAuth,getIdentities,linkIdentity,unlinkIdentity,upgradeWithEmail,resetPassword,signOut,sync,getAccessToken});
+  window.WebOSCloud=Object.freeze({ready:init(),getStatus,getCaptchaSiteKey:()=>captchaSiteKey,signIn,signUp,signInAsGuest,signInWithOAuth,getIdentities,linkIdentity,unlinkIdentity,addEmailToGuest,setAccountPassword,resetPassword,signOut,sync,getAccessToken});
 })();
