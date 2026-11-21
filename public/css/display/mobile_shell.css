@@ -249,3 +249,195 @@ body[data-webos-mode="mobile"] .mobile-about-card > button {
   flex-shrink:0; min-height:40px; padding:0 12px; border:1px solid rgba(255,255,255,.16);
   border-radius:12px; background:rgba(255,255,255,.1); color:inherit; font:inherit; font-size:12px;
 }
+
+
+/* --- Native mobile app surface: replace desktop window chrome completely. --- */
+body[data-webos-mode="mobile"] #window-workspace {
+  z-index: 50;
+  pointer-events: none;
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell,
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-app-window {
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  width:100dvw !important;
+  height:100vh !important;
+  height:100dvh !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:0 !important;
+  overflow:hidden !important;
+  border:0 !important;
+  border-radius:0 !important;
+  outline:0 !important;
+  background:#f6f7fb !important;
+  color:#172033 !important;
+  box-shadow:none !important;
+  transform:none;
+  animation:mobile-app-open 240ms cubic-bezier(.2,.75,.25,1) both;
+  z-index:60 !important;
+  pointer-events:auto !important;
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.is-minimized,
+body[data-webos-mode="mobile"] #window-workspace > .window-shell:not(.is-mobile-active) {
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.is-mobile-active {
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+}
+body[data-webos-mode="mobile"] .window-shell .resize-handle { display:none !important; }
+body[data-webos-mode="mobile"] .window-shell .window-titlebar {
+  position:relative !important;
+  inset:auto !important;
+  display:flex !important;
+  flex:0 0 58px !important;
+  width:100% !important;
+  height:58px !important;
+  min-height:58px !important;
+  max-height:58px !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:12px !important;
+  margin:0 !important;
+  padding:0 14px !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(24,38,60,.09) !important;
+  border-radius:0 !important;
+  background:#ffffff !important;
+  color:#172033 !important;
+  box-shadow:0 2px 10px rgba(25,38,60,.045) !important;
+  cursor:default !important;
+  touch-action:pan-y !important;
+  -webkit-user-select:none;
+  user-select:none;
+}
+body[data-webos-mode="mobile"] .window-title-content {
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  min-width:0 !important;
+  flex:1 1 auto !important;
+  overflow:hidden !important;
+}
+body[data-webos-mode="mobile"] .window-title-content .window-icon {
+  display:block !important;
+  width:30px !important;
+  height:30px !important;
+  flex:0 0 30px !important;
+  object-fit:contain !important;
+  border-radius:9px !important;
+}
+body[data-webos-mode="mobile"] .window-title-text {
+  display:block !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  color:#172033 !important;
+  font-size:15px !important;
+  font-weight:650 !important;
+  line-height:1.2 !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+body[data-webos-mode="mobile"] .window-controls {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:7px !important;
+  flex:0 0 auto !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+body[data-webos-mode="mobile"] .window-controls .mobile-switcher,
+body[data-webos-mode="mobile"] .window-controls .minimize,
+body[data-webos-mode="mobile"] .window-controls .maximize { display:none !important; }
+body[data-webos-mode="mobile"] .window-controls .mobile-home,
+body[data-webos-mode="mobile"] .window-controls .close {
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:38px !important;
+  height:38px !important;
+  min-width:38px !important;
+  min-height:38px !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:12px !important;
+  background:#f0f2f7 !important;
+  color:#34415a !important;
+  font-size:19px !important;
+  line-height:1 !important;
+  box-shadow:none !important;
+}
+body[data-webos-mode="mobile"] .window-controls .close {
+  background:#fff0ef !important;
+  color:#bd4545 !important;
+}
+body[data-webos-mode="mobile"] .window-body {
+  position:relative !important;
+  display:block !important;
+  flex:1 1 auto !important;
+  width:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:14px !important;
+  overflow:auto !important;
+  overscroll-behavior:contain !important;
+  -webkit-overflow-scrolling:touch !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:#f6f7fb !important;
+  color:#172033 !important;
+  box-shadow:none !important;
+}
+body[data-webos-mode="mobile"] .window-body > :first-child { margin-top:0; }
+body[data-webos-mode="mobile"] .window-body :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  min-height:44px !important;
+  border-radius:11px !important;
+  font-size:16px !important;
+}
+body[data-webos-mode="mobile"] .window-body :is(button,[role="button"]) {
+  min-height:42px;
+  border-radius:11px;
+  touch-action:manipulation;
+}
+body[data-webos-mode="mobile"] .window-body :is(img,video,canvas,iframe) { max-width:100%; }
+body[data-webos-mode="mobile"] .window-body > iframe { display:block; width:100%; height:100%; min-height:70dvh; border:0; }
+body[data-webos-mode="mobile"] .mobile-window-resize-grip {
+  display:none !important;
+}
+
+/* The home dock is only part of the home screen, never part of an open app. */
+body[data-webos-mode="mobile"] .dock-wrap {
+  transition:opacity 180ms ease, transform 220ms ease, visibility 220ms;
+  transform:translateY(0);
+  opacity:1;
+  visibility:visible;
+}
+body[data-webos-mode="mobile"][data-app-open="true"] .dock-wrap {
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(24px);
+  pointer-events:none;
+}
+body[data-webos-mode="mobile"][data-app-open="true"] .home-content {
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+body[data-webos-mode="mobile"] .dock-wrap .dock {
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+}
