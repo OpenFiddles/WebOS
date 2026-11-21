@@ -13,9 +13,11 @@ function focusWindow(win) {
         item.style.zIndex = String(layer);
         item.style.setProperty("--webos-window-layer", String(layer));
         if (mobile) {
+            const wasActive = item.classList.contains("is-mobile-active");
             item.classList.remove("is-mobile-active");
             item.inert = true;
             item.setAttribute("aria-hidden", "true");
+            if (wasActive) item.dispatchEvent(new CustomEvent("webos:window-deactivate"));
         }
     });
     const layer = BASE_WINDOW_LAYER + allWindows.length;
@@ -26,6 +28,7 @@ function focusWindow(win) {
         win.inert = false;
         win.setAttribute("aria-hidden", "false");
         document.body.dataset.appOpen = "true";
+        win.dispatchEvent(new CustomEvent("webos:window-activate"));
     }
     document.querySelectorAll(".TaskButton").forEach(button => {
         button.classList.toggle("active", button.dataset.windowId === win.id && !win.classList.contains("is-minimized"));
@@ -33,6 +36,20 @@ function focusWindow(win) {
 }
 function setWindowMaximized(win, maximize) {
     if (!win) return;
+    if (document.body.dataset.webosMode === "mobile") {
+        if (maximize && !win.classList.contains("mobile-window-expanded")) {
+            win.dataset.mobileRestoreHeight = win.style.getPropertyValue("height") || "";
+            win.classList.add("mobile-window-expanded");
+            win.style.setProperty("height", "calc(100dvh - 8px)", "important");
+        } else if (!maximize && win.classList.contains("mobile-window-expanded")) {
+            win.classList.remove("mobile-window-expanded");
+            const restoreHeight = win.dataset.mobileRestoreHeight || "";
+            if (restoreHeight) win.style.setProperty("height", restoreHeight, "important");
+            else win.style.removeProperty("height");
+            delete win.dataset.mobileRestoreHeight;
+        }
+        return;
+    }
     if (maximize && !win.classList.contains("is-maximized")) {
         win.dataset.restoreGeometry = JSON.stringify({left:win.style.left,top:win.style.top,width:win.style.width,height:win.style.height});
         win.classList.add("is-maximized");
@@ -48,7 +65,6 @@ function setWindowMaximized(win, maximize) {
     const anyMaximized = !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-minimized):not(.is-closing)");
     document.body.classList.toggle("webos-maximized-open", anyMaximized);
 }
-
 function createWindow(title, content) {
     const template = document.getElementById("WindowTemplate");
     if (!template) {
@@ -193,8 +209,9 @@ function makeWindowResizable(win) {
         grip.addEventListener("pointerdown", event => {
             if (event.button !== 0 || event.isPrimary === false) return;
             const startY = event.clientY, startHeight = win.getBoundingClientRect().height;
-            const maxHeight = Math.max(320, window.innerHeight - 8);
-            const minHeight = Math.min(Math.max(320, window.innerHeight * 0.52), maxHeight);
+            const viewportHeight = window.visualViewport?.height || window.innerHeight;
+            const maxHeight = Math.max(320, viewportHeight - 8);
+            const minHeight = Math.min(Math.max(320, viewportHeight * 0.52), maxHeight);
             const pointerId = event.pointerId;
             event.preventDefault(); event.stopPropagation();
             try { grip.setPointerCapture(pointerId); } catch (_) {}
@@ -280,6 +297,7 @@ function wireWindowButtons(win) {
                     .filter((item) => !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
                     .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
                 if (remaining.length) focusWindow(remaining[0]);
+                else if (document.body.dataset.webosMode === "mobile") delete document.body.dataset.appOpen;
             }, 190);
         });
     }
