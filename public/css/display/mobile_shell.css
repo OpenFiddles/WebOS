@@ -238,3 +238,14 @@ body[data-webos-mode="mobile"] .app-tile .app-pin {
 }
 body[data-webos-mode="mobile"] .app-tile .app-pin[aria-pressed="false"] { color:#c0cadb; opacity:.72; }
 body[data-webos-mode="mobile"] .app-tile .app-pin:focus-visible { outline:2px solid #c8d8ff; outline-offset:2px; }
+
+
+/* Share action in the mobile control center. */
+body[data-webos-mode="mobile"] .mobile-about-card {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+body[data-webos-mode="mobile"] .mobile-about-card p { margin:4px 0 0; }
+body[data-webos-mode="mobile"] .mobile-about-card > button {
+  flex-shrink:0; min-height:40px; padding:0 12px; border:1px solid rgba(255,255,255,.16);
+  border-radius:12px; background:rgba(255,255,255,.1); color:inherit; font:inherit; font-size:12px;
+}

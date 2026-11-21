@@ -378,6 +378,25 @@
     }
   }
   $("network-indicator")?.addEventListener("click",() => { showOverlay("quick-panel"); refreshSystemStatus(); });
+  $("share-webos")?.addEventListener("click",async () => {
+    const shareData = { title:"WebOS", text:"Explore WebOS — a community-built browser desktop.", url:window.location.origin };
+    try {
+      if (typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare(shareData))) {
+        await navigator.share(shareData);
+        toast("WebOS share sheet opened.");
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareData.url);
+        toast("WebOS link copied.");
+      } else {
+        toast("Sharing is not available in this browser.");
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.warn("[WebOS Mobile] Share failed:",error);
+        toast("Could not share WebOS from this browser.");
+      }
+    }
+  });
   $("refresh-system-status")?.addEventListener("click",refreshSystemStatus);
   $("quick-open")?.addEventListener("click",refreshSystemStatus);
   window.WebOSPlatform?.on?.("viewportchange",() => {
