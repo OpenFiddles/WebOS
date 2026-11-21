@@ -52,7 +52,7 @@
     const host = $("running-apps"), count = $("running-app-count");
     if (!host || !count) return;
     const running = [...windowsByApp].filter(([,win]) => win.isConnected && !win.classList.contains("is-closing"));
-    count.textContent = running.length + (running.length === 1 ? " open" : " open");
+    count.textContent = running.length + (running.length === 1 ? " app open" : " apps open");
     if (!running.length) {
       host.replaceChildren(Object.assign(document.createElement("p"), { className:"muted", textContent:"No apps are running." }));
       return;
@@ -183,6 +183,7 @@
           queueMicrotask(reconcileWindows);
         }, { once:true });
         win.addEventListener("pointerdown", () => activateWindow(win), { passive:true });
+        win.querySelector(".mobile-home")?.addEventListener("click", event => { event.stopPropagation(); goHome(); });
         activateWindow(win);
         renderRunningApps();
         return win;
