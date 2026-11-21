@@ -83,12 +83,52 @@
     setState({mode:"ready",user:data.user,message:"Guest session ready."});return data;
   }
   async function signInWithOAuth(provider,captchaToken){
-    if(!["google","gitlab"].includes(provider))throw new Error("That sign-in provider is not supported.");
+    if(!["google","gitlab","github","discord"].includes(provider))throw new Error("That authentication provider is not supported.");
     await verifyTurnstile(captchaToken);
-    const {data,error}=await requireClient().auth.signInWithOAuth({provider,options:{redirectTo:window.location.origin+"/html/BootScreen_popcorn.html",skipBrowserRedirect:true}});
+    const auth=requireClient().auth;
+    const {data:sessionData,error:sessionError}=await auth.getSession();
+    if(sessionError)throw sessionError;
+    const redirectTo=window.location.origin+"/html/BootScreen_popcorn.html?webos_linked="+encodeURIComponent(provider);
+    const options={redirectTo,skipBrowserRedirect:true};
+    const result=sessionData.session
+      ?await auth.linkIdentity({provider,options})
+      :await auth.signInWithOAuth({provider,options}); 
+    const {data,error}=result;
     if(error)throw error;
     if(!data?.url)throw new Error("Supabase did not return an OAuth sign-in URL.");
     window.top.location.assign(data.url);
+    return data;
+  }
+  async function getIdentities(){
+    const {data,error}=await requireClient().auth.getUserIdentities();
+    if(error)throw error;
+    return data?.identities||[];
+  }
+  async function linkIdentity(provider,captchaToken){
+    if(!["google","gitlab","github","discord"].includes(provider))throw new Error("That account provider is not supported.");
+    const token=await verifyTurnstile(captchaToken);
+    const {data,error}=await requireClient().auth.linkIdentity({provider,options:{
+      redirectTo:window.location.origin+"/html/BootScreen_popcorn.html?webos_linked="+encodeURIComponent(provider),
+      skipBrowserRedirect:true,
+      ...(token?{captchaToken:token}:{})
+    }});
+    if(error)throw error;
+    if(!data?.url)throw new Error("Supabase did not return an account-link URL.");
+    window.top.location.assign(data.url);
+    return data;
+  }
+  async function unlinkIdentity(identity){
+    if(!identity)throw new Error("Choose an account connection to remove.");
+    const {data,error}=await requireClient().auth.unlinkIdentity(identity);
+    if(error)throw error;
+    return data;
+  }
+  async function upgradeWithEmail(email,password){
+    if(!email||!password)throw new Error("Enter an email and password to upgrade this guest account.");
+    if(password.length<8)throw new Error("Use a password with at least 8 characters.");
+    const {data,error}=await requireClient().auth.updateUser({email,password});
+    if(error)throw error;
+    setState({mode:"ready",user:data.user,message:"Account upgrade started. Confirm the email if Supabase requests it."});
     return data;
   }
   async function resetPassword(email,captchaToken){
@@ -141,5 +181,5 @@
   // JavaScript Proxy invariants for non-configurable methods such as ensureSeeded.
   // Preference auto-sync remains enabled; filesystem backups can be pushed manually.
   async function getAccessToken(){const {data,error}=await requireClient().auth.getSession();if(error)throw error;return data.session?.access_token||null;}
-  window.WebOSCloud=Object.freeze({ready:init(),getStatus,getCaptchaSiteKey:()=>captchaSiteKey,signIn,signUp,signInAsGuest,signInWithOAuth,resetPassword,signOut,sync,getAccessToken});
+  window.WebOSCloud=Object.freeze({ready:init(),getStatus,getCaptchaSiteKey:()=>captchaSiteKey,signIn,signUp,signInAsGuest,signInWithOAuth,getIdentities,linkIdentity,unlinkIdentity,upgradeWithEmail,resetPassword,signOut,sync,getAccessToken});
 })();
