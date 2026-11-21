@@ -35,7 +35,27 @@
   let activeWindow = null;
   let activeAppId = null;
 
-  function buttonFor(app, index) {
+  const FAVORITES_KEY = "webos.mobile.favorites.v1";
+  const DEFAULT_FAVORITES = ["files","notes","settings"];
+  function loadFavorites() {
+    try {
+      const value = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "null");
+      if (Array.isArray(value)) return [...new Set(value.filter(id => typeof id === "string"))];
+    } catch (_) {}
+    return [...DEFAULT_FAVORITES];
+  }
+  let favoriteIds = loadFavorites();
+  function saveFavorites() {
+    try { localStorage.setItem(FAVORITES_KEY,JSON.stringify(favoriteIds)); }
+    catch (error) { console.warn("[WebOS Mobile] Could not save favourites:",error); }
+  }
+  function toggleFavorite(id) {
+    favoriteIds = favoriteIds.includes(id) ? favoriteIds.filter(item => item !== id) : [...favoriteIds,id];
+    saveFavorites();
+    renderApps($("drawer-search")?.value || "");
+    toast(favoriteIds.includes(id) ? "Added to favourites." : "Removed from favourites.");
+  }
+  function buttonFor(app, index, allowPin = false) {
     const button = document.createElement("button");
     button.className = "app"; button.type = "button";
     button.style.setProperty("--app-index", String(index));
@@ -46,7 +66,18 @@
     const name = document.createElement("span"); name.textContent = app.name;
     button.append(icon, name);
     button.addEventListener("click", () => openApp(app.id));
-    return button;
+    if (!allowPin) return button;
+    const tile = document.createElement("div");
+    tile.className = "app-tile";
+    const pin = document.createElement("button");
+    pin.type = "button";
+    pin.className = "app-pin";
+    pin.textContent = favoriteIds.includes(app.id) ? "★" : "☆";
+    pin.setAttribute("aria-label",(favoriteIds.includes(app.id)?"Remove ":"Add ")+app.name+" "+(favoriteIds.includes(app.id)?"from":"to")+" favourites");
+    pin.setAttribute("aria-pressed",String(favoriteIds.includes(app.id)));
+    pin.addEventListener("click",event => { event.stopPropagation(); toggleFavorite(app.id); });
+    tile.append(button,pin);
+    return tile;
   }
   function renderRunningApps() {
     const host = $("running-apps"), count = $("running-app-count"), closeAll = $("close-all-apps");
@@ -97,12 +128,12 @@
   function renderApps(query) {
     const q = (query || "").trim().toLocaleLowerCase();
     const matches = allApps().filter(app => (app.name + " " + (app.description || "") + " " + app.id).toLocaleLowerCase().includes(q));
-    $("favourites").replaceChildren(...matches.filter(app => ["files","notes","settings"].includes(app.id)).map(buttonFor));
+    $("favourites").replaceChildren(...matches.filter(app => favoriteIds.includes(app.id)).map((app,index) => buttonFor(app,index,true)));
     $("dock").replaceChildren(...["files","notes","settings","paint"].map((id, index) => {
       const app = allApps().find(item => item.id === id);
       return app ? buttonFor(app, index) : document.createDocumentFragment();
     }));
-    $("all-app-grid").replaceChildren(...(matches.length ? matches.map(buttonFor) : [
+    $("all-app-grid").replaceChildren(...(matches.length ? matches.map((app,index) => buttonFor(app,index,true)) : [
       Object.assign(document.createElement("div"), { className:"empty", textContent:"No apps found" })
     ]));
   }
@@ -401,6 +432,8 @@
   window.WebOSMobile = Object.freeze({
     openApp, closeTopApp, goHome, activateWindow, renderApps,
     apps:allApps,
+    favorites:() => [...favoriteIds],
+    toggleFavorite,
     runningApps:() => [...windowsByApp].filter(([,win]) => win.isConnected && !win.classList.contains("is-closing")).map(([id,win]) => ({ id, active:win === activeWindow, minimized:win.classList.contains("is-minimized") })),
     closeAllApps
   });

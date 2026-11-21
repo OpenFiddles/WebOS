@@ -226,3 +226,15 @@ body[data-webos-mode="mobile"] .update-banner-actions button {
   color:inherit; font:inherit; font-size:12px;
 }
 body[data-webos-mode="mobile"] #update-reload { background:#dbe7ff; color:#17233b; font-weight:650; }
+
+
+/* User-pinnable mobile launcher favourites. */
+body[data-webos-mode="mobile"] .app-tile { position:relative; min-width:0; display:flex; justify-content:center; }
+body[data-webos-mode="mobile"] .app-tile > .app { width:100%; }
+body[data-webos-mode="mobile"] .app-tile .app-pin {
+  position:absolute; top:1px; right:2px; z-index:2; width:27px; height:27px;
+  border:1px solid rgba(255,255,255,.16); border-radius:50%; background:rgba(20,27,42,.82);
+  color:#f6d98a; font-size:14px; line-height:1; padding:0;
+}
+body[data-webos-mode="mobile"] .app-tile .app-pin[aria-pressed="false"] { color:#c0cadb; opacity:.72; }
+body[data-webos-mode="mobile"] .app-tile .app-pin:focus-visible { outline:2px solid #c8d8ff; outline-offset:2px; }
