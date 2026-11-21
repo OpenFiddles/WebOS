@@ -11,6 +11,21 @@ const path = require("node:path");
 const app = express();
 const publicDirectory = path.join(__dirname, "public");
 
+// Allow the bundled Capacitor app (https://localhost) to call the hosted API.
+// Browser deployments remain same-origin; only the native app origins are added.
+const nativeAppOrigins = new Set(["https://localhost", "capacitor://localhost", "http://localhost"]);
+app.use("/api", (req, res, next) => {
+  const origin = req.get("Origin");
+  if (origin && nativeAppOrigins.has(origin)) {
+    res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(origin && nativeAppOrigins.has(origin) ? 204 : 403);
+  next();
+});
+
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(publicDirectory));
 
