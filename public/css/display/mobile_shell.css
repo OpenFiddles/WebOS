@@ -185,3 +185,13 @@ body[data-webos-mode="mobile"] .system-status-note { margin:10px 2px 0; color:#a
 @media (max-width:360px) {
   body[data-webos-mode="mobile"] .system-status-grid { grid-template-columns:1fr; }
 }
+
+
+/* Status bar indicators reflect browser-reported state rather than fake toggles. */
+body[data-webos-mode="mobile"] .status-right .network-indicator {
+  min-height:30px; padding:0 9px; border:1px solid rgba(255,255,255,.12); border-radius:999px;
+  background:rgba(255,255,255,.07); color:inherit; font:inherit; font-size:11px;
+}
+body[data-webos-mode="mobile"] .status-right .network-indicator.offline {
+  color:#ffd0a8; border-color:rgba(255,170,100,.35); background:rgba(190,100,40,.13);
+}

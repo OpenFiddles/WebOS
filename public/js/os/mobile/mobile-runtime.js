@@ -232,14 +232,32 @@
   }
   let touchStart = null;
   document.addEventListener("touchstart", event => {
-    if (event.changedTouches.length) touchStart = { x:event.changedTouches[0].clientX, y:event.changedTouches[0].clientY, target:event.target };
+    if (event.changedTouches.length) {
+      const touch = event.changedTouches[0];
+      touchStart = { x:touch.clientX, y:touch.clientY, target:event.target, at:Date.now() };
+    }
   }, { passive:true });
   document.addEventListener("touchend", event => {
     if (!touchStart || !event.changedTouches.length) return;
-    const touch = event.changedTouches[0], dy = touch.clientY - touchStart.y, dx = touch.clientX - touchStart.x;
-    const startedInHome = !touchStart.target.closest?.("#window-workspace,.overlay,.app-screen");
-    if (startedInHome && Math.abs(dy) > 70 && Math.abs(dy) > Math.abs(dx)) {
-      if (dy < 0 && touchStart.y > window.innerHeight - 110) showOverlay("drawer");
+    const touch = event.changedTouches[0];
+    const dy = touch.clientY - touchStart.y, dx = touch.clientX - touchStart.x;
+    const vertical = Math.abs(dy) > 85 && Math.abs(dy) > Math.abs(dx) * 1.2;
+    const startedInApp = !!touchStart.target.closest?.("#window-workspace > .window-shell");
+    const startedInOverlay = !!touchStart.target.closest?.(".overlay");
+    if (vertical && !startedInOverlay) {
+      if (dy < 0 && touchStart.y > window.innerHeight - 90) {
+        if (startedInApp) {
+          showOverlay("quick-panel");
+          renderRunningApps();
+          refreshSystemStatus();
+        } else if (!touchStart.target.closest?.(".app-screen")) {
+          showOverlay("drawer");
+        }
+      } else if (dy > 0 && touchStart.y < 36) {
+        showOverlay("quick-panel");
+        renderRunningApps();
+        refreshSystemStatus();
+      }
     }
     touchStart = null;
   }, { passive:true });
@@ -267,6 +285,12 @@
       const data = await api.getSnapshot();
       const c = data.connection;
       set("system-network", c.online ? "Online" : "Offline");
+      const networkButton = $("network-indicator");
+      if (networkButton) {
+        networkButton.textContent = c.online ? "● Online" : "● Offline";
+        networkButton.classList.toggle("offline", !c.online);
+        networkButton.setAttribute("aria-label","Network status: "+(c.online?"online":"offline")+". Open device status.");
+      }
       const networkDetails = [];
       if (c.effectiveType !== "unknown") networkDetails.push(c.effectiveType.toUpperCase());
       if (c.downlink != null) networkDetails.push(c.downlink + " Mbps");
@@ -276,6 +300,8 @@
       if (data.battery) {
         set("system-battery", data.battery.level + "%");
         set("system-battery-detail", data.battery.charging ? "Charging" : "Not charging");
+        const batteryButton = $("network-indicator");
+        if (batteryButton) batteryButton.title = "Online · Battery "+data.battery.level+"%";
       } else {
         set("system-battery","Not exposed");
         set("system-battery-detail","Battery information is blocked or unsupported");
@@ -295,6 +321,7 @@
       set("system-status-note","Some device details could not be read. Try refreshing.");
     }
   }
+  $("network-indicator")?.addEventListener("click",() => { showOverlay("quick-panel"); refreshSystemStatus(); });
   $("refresh-system-status")?.addEventListener("click",refreshSystemStatus);
   $("quick-open")?.addEventListener("click",refreshSystemStatus);
   window.WebOSPlatform?.on?.("viewportchange",() => {
