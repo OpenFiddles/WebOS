@@ -49,6 +49,7 @@
     </section>
 </main>
 
+<script src="../js/os/core/InterfaceMode.js"></script>
 <script src="../js/os/desktop/CloudSync.js"></script>
 <script>
     const boot = document.getElementById("boot");
@@ -172,9 +173,10 @@
         if(redirected)return;
         redirected=true;
         status.textContent="Opening WebOS...";
-        const mobileUA=/Android|iPhone|iPad|iPod|Mobile|IEMobile|Windows Phone/i.test(navigator.userAgent);
-        const compactTouch=(navigator.maxTouchPoints>0||matchMedia("(pointer: coarse)").matches)&&Math.min(innerWidth,screen?.width||innerWidth)<=820;
-        const destination=(mobileUA||compactTouch)?"mobile/mobileLauncher.html":"DisplayManager_PopIT.html";
+        const state=window.WebOSInterfaceMode?.apply("boot-complete")||{mode:"desktop",formFactor:"desktop",layout:"desktop"};
+        const destination=state.mode==="mobile"
+            ?"mobile/mobileLauncher.html"
+            :"DisplayManager_PopIT.html"+(state.layout==="hybrid"?"?mode=hybrid":"");
         setTimeout(()=>{window.location.href=destination;},250);
     }
     async function withAuthAction(action){

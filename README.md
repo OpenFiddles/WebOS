@@ -20,7 +20,7 @@ WebOS brings a desktop-style workspace to the web. It includes a window manager,
 - Window chrome presets and a live window designer for radius, blur, opacity, shadow, borders, and titlebar colors, plus custom CSS and reusable starter styles.
 - Local session lock options: PIN/passcode, 3×3 pattern, or convenience swipe screen; PIN and pattern verifiers are salted PBKDF2 hashes stored locally.
 - Animated desktop atmospheres (aurora, stars, mesh, waves, and rainfall), with reduced-motion support.
-- Responsive mobile entry point and a separate mobile shell.
+- Separate desktop and mobile interfaces selected by a shared automatic Interface Mode service. Phones open the touch-first mobile shell; tablets use the responsive hybrid desktop layout; laptops and desktops use the full desktop workspace. Manual overrides are available through `window.WebOSInterfaceMode.setPreference("auto" | "desktop" | "mobile")`.
 
 ### Built-in applications
 The app registry currently includes Files, Notes, Better Settings, System Monitor, Calculator, Calendar, Documentation, Animation Studio, App Creator, WASM Lab, and the FlairOS Emulator.
@@ -93,6 +93,7 @@ The built-in WebOS Browser and its server-side proxy have been removed. WebOS re
 │       ├── app.js            # Main application bootstrap
 │       ├── boot/             # Boot flow
 │       └── os/
+│           ├── core/         # Shared interface-mode selection
 │           ├── desktop/      # Filesystem, permissions, device info, WASM runtime
 │           ├── mobile/       # Mobile runtime
 │           └── window/       # Window manager and application modules
