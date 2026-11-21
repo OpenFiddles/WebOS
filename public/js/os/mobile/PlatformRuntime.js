@@ -137,6 +137,50 @@
       return { outcome: choice?.outcome || "unknown" };
     }
   });
+  const device = Object.freeze({
+    getConnection() {
+      const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      return Object.freeze({
+        online: navigator.onLine,
+        type: connection?.type || "unknown",
+        effectiveType: connection?.effectiveType || "unknown",
+        downlink: Number.isFinite(connection?.downlink) ? connection.downlink : null,
+        rtt: Number.isFinite(connection?.rtt) ? connection.rtt : null,
+        saveData: !!connection?.saveData
+      });
+    },
+    async getBattery() {
+      if (typeof navigator.getBattery !== "function") return null;
+      try {
+        const battery = await navigator.getBattery();
+        return Object.freeze({
+          level: Math.round(battery.level * 100),
+          charging: !!battery.charging,
+          chargingTime: Number.isFinite(battery.chargingTime) ? battery.chargingTime : null,
+          dischargingTime: Number.isFinite(battery.dischargingTime) ? battery.dischargingTime : null
+        });
+      } catch (_) { return null; }
+    },
+    async getStorage() {
+      if (!navigator.storage?.estimate) return null;
+      try {
+        const estimate = await navigator.storage.estimate();
+        const usage = Number(estimate.usage || 0), quota = Number(estimate.quota || 0);
+        return Object.freeze({ usage, quota, percent: quota > 0 ? Math.min(100, Math.round(usage / quota * 100)) : null });
+      } catch (_) { return null; }
+    },
+    async getSnapshot() {
+      const [battery, storage] = await Promise.all([this.getBattery(), this.getStorage()]);
+      const connection = this.getConnection();
+      const screen = getViewport();
+      return Object.freeze({
+        connection, battery, storage, screen,
+        formFactor: getFormFactor(),
+        install: getInstallState(),
+        timestamp: Date.now()
+      });
+    }
+  });
   const capabilities = Object.freeze({
     serviceWorker: "serviceWorker" in navigator,
     push: "PushManager" in window,
@@ -152,7 +196,7 @@
     runtime: "pwa",
     get formFactor() { return getFormFactor(); },
     get installState() { return getInstallState(); },
-    viewport, input, lifecycle, network, install, capabilities,
+    viewport, input, lifecycle, network, install, device, capabilities,
     on(type, callback) {
       if (typeof callback !== "function") throw new TypeError("Event callback must be a function.");
       events.addEventListener(type, callback);

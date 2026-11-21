@@ -157,4 +157,31 @@ body[data-webos-mode="mobile"] .window-controls .mobile-home {
 }
 body[data-webos-mode="mobile"] .window-controls .mobile-home:hover { background:rgba(255,255,255,.12); }
 body[data-webos-mode="mobile"] .window-controls { gap:6px; }
-\nbody[data-webos-mode="mobile"] .window-controls .mobile-switcher { display:inline-flex; width:38px; height:38px; border-radius:50%; font-size:17px; }\n
+
+body[data-webos-mode="mobile"] .window-controls .mobile-switcher { display:inline-flex; width:38px; height:38px; border-radius:50%; font-size:17px; }
+
+
+/* Real browser-reported device status in the mobile control center. */
+body[data-webos-mode="mobile"] .system-status { margin:14px 0 18px; }
+body[data-webos-mode="mobile"] .system-status-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+body[data-webos-mode="mobile"] .system-status-head button {
+  border:1px solid rgba(255,255,255,.16); border-radius:999px; background:rgba(255,255,255,.08);
+  color:inherit; padding:7px 12px; font:inherit; font-size:12px; min-height:34px;
+}
+body[data-webos-mode="mobile"] .system-status-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+body[data-webos-mode="mobile"] .system-stat {
+  display:flex; align-items:flex-start; gap:11px; min-width:0; min-height:92px; padding:13px;
+  border:1px solid rgba(255,255,255,.11); border-radius:17px; background:rgba(255,255,255,.055);
+}
+body[data-webos-mode="mobile"] .system-stat-icon {
+  display:grid; place-items:center; flex:0 0 32px; height:32px; border-radius:11px;
+  background:rgba(125,160,220,.16); font-size:17px;
+}
+body[data-webos-mode="mobile"] .system-stat > div { min-width:0; display:flex; flex-direction:column; gap:3px; }
+body[data-webos-mode="mobile"] .system-stat small { color:#aebbd0; font-size:11px; }
+body[data-webos-mode="mobile"] .system-stat strong { font-size:14px; overflow-wrap:anywhere; }
+body[data-webos-mode="mobile"] .system-stat p { margin:0; color:#aebbd0; font-size:10px; line-height:1.35; overflow-wrap:anywhere; }
+body[data-webos-mode="mobile"] .system-status-note { margin:10px 2px 0; color:#aebbd0; font-size:11px; line-height:1.45; }
+@media (max-width:360px) {
+  body[data-webos-mode="mobile"] .system-status-grid { grid-template-columns:1fr; }
+}

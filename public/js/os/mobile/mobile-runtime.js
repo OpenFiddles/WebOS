@@ -245,6 +245,65 @@
   }, { passive:true });
 
 
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return "Unavailable";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    const units = ["MB","GB","TB"];
+    let value = bytes / (1024 * 1024), unit = 0;
+    while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+    return value.toFixed(value >= 100 ? 0 : 1) + " " + units[unit];
+  }
+  async function refreshSystemStatus() {
+    const api = window.WebOSPlatform?.device;
+    const set = (id, value) => { const node = $(id); if (node) node.textContent = value; };
+    if (!api?.getSnapshot) {
+      set("system-network","Unavailable"); set("system-battery","Unavailable");
+      set("system-storage","Unavailable"); set("system-display","Unavailable");
+      return;
+    }
+    set("system-network","Checking…"); set("system-battery","Checking…");
+    set("system-storage","Checking…"); set("system-display","Checking…");
+    try {
+      const data = await api.getSnapshot();
+      const c = data.connection;
+      set("system-network", c.online ? "Online" : "Offline");
+      const networkDetails = [];
+      if (c.effectiveType !== "unknown") networkDetails.push(c.effectiveType.toUpperCase());
+      if (c.downlink != null) networkDetails.push(c.downlink + " Mbps");
+      if (c.rtt != null) networkDetails.push(c.rtt + " ms RTT");
+      if (c.saveData) networkDetails.push("Data saver");
+      set("system-network-detail", networkDetails.join(" · ") || (c.online ? "Network available; type not exposed" : "Cached features may still work"));
+      if (data.battery) {
+        set("system-battery", data.battery.level + "%");
+        set("system-battery-detail", data.battery.charging ? "Charging" : "Not charging");
+      } else {
+        set("system-battery","Not exposed");
+        set("system-battery-detail","Battery information is blocked or unsupported");
+      }
+      if (data.storage?.quota) {
+        set("system-storage",formatBytes(data.storage.usage) + " used");
+        set("system-storage-detail",formatBytes(data.storage.quota) + " available quota · " + (data.storage.percent ?? "—") + "% used");
+      } else {
+        set("system-storage","Not exposed");
+        set("system-storage-detail","Browser storage estimates are unavailable");
+      }
+      set("system-display",data.formFactor[0].toUpperCase()+data.formFactor.slice(1));
+      set("system-display-detail",data.screen.width+" × "+data.screen.height+" · "+(data.screen.orientation.startsWith("landscape")?"Landscape":"Portrait")+" · "+data.screen.pixelRatio+"×");
+      set("system-status-note","Updated "+new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit"}).format(new Date(data.timestamp))+". Values are browser-reported and may be approximate.");
+    } catch (error) {
+      console.warn("[WebOS Mobile] Device status refresh failed:",error);
+      set("system-status-note","Some device details could not be read. Try refreshing.");
+    }
+  }
+  $("refresh-system-status")?.addEventListener("click",refreshSystemStatus);
+  $("quick-open")?.addEventListener("click",refreshSystemStatus);
+  window.WebOSPlatform?.on?.("viewportchange",() => {
+    if ($("quick-panel")?.classList.contains("open")) refreshSystemStatus();
+  });
+  window.WebOSPlatform?.on?.("networkchange",() => {
+    if ($("quick-panel")?.classList.contains("open")) refreshSystemStatus();
+  });
+
   const installButton = $("install-app");
   if (installButton) {
     const syncInstallButton = () => { installButton.hidden = !window.WebOSPlatform?.installState?.canPrompt; };
@@ -264,6 +323,7 @@
 
   renderApps("");
   updateTime();
+  refreshSystemStatus();
   const clockTimer = setInterval(updateTime, 30000);
   window.addEventListener("pagehide", () => clearInterval(clockTimer), { once:true });
   window.WebOSMobile = Object.freeze({

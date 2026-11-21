@@ -72,12 +72,16 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
   </section>
   <section class="overlay" id="quick-panel" aria-label="Quick settings">
     <div class="overlay-head"><h2>Quick settings</h2><button class="round" data-close="quick-panel" aria-label="Close">×</button></div>
-    <div class="quick-grid">
-      <button class="quick active" data-toggle="Wi-Fi">◉ Wi-Fi<small>Connected</small></button>
-      <button class="quick active" data-toggle="Bluetooth">ᛒ Bluetooth<small>On</small></button>
-      <button class="quick" data-toggle="Do not disturb">☾ Do not disturb<small>Off</small></button>
-      <button class="quick" data-toggle="Battery saver">ϟ Battery saver<small>Off</small></button>
-    </div>
+    <section class="system-status" aria-label="Device status">
+      <div class="system-status-head"><strong>Device status</strong><button id="refresh-system-status" type="button">Refresh</button></div>
+      <div class="system-status-grid">
+        <article class="system-stat"><span class="system-stat-icon">⌁</span><div><small>Connection</small><strong id="system-network">Checking…</strong><p id="system-network-detail">Reading network status</p></div></article>
+        <article class="system-stat"><span class="system-stat-icon">ϟ</span><div><small>Battery</small><strong id="system-battery">Checking…</strong><p id="system-battery-detail">Reading battery status</p></div></article>
+        <article class="system-stat"><span class="system-stat-icon">▤</span><div><small>Site storage</small><strong id="system-storage">Checking…</strong><p id="system-storage-detail">Reading browser storage</p></div></article>
+        <article class="system-stat"><span class="system-stat-icon">▣</span><div><small>Display</small><strong id="system-display">Checking…</strong><p id="system-display-detail">Reading screen information</p></div></article>
+      </div>
+      <p class="system-status-note" id="system-status-note">Information exposed by this browser. WebOS cannot change Android Wi-Fi, Bluetooth, or battery-saver settings.</p>
+    </section>
     <section class="running-apps-section"><div class="section-head"><strong>Running apps</strong><span class="muted" id="running-app-count">0 open</span></div><div class="running-apps" id="running-apps"><p class="muted">No apps are running.</p></div></section>
     <div class="app-card" style="margin-top:16px"><strong>WebOS Mobile</strong><p class="muted">Quick toggles here are interface controls and do not change Android system settings.</p></div>
   </section>
