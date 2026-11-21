@@ -20,9 +20,10 @@
     <link rel="stylesheet" href="../css/display/desktop_refresh.css"/>
     <link rel="stylesheet" href="../css/display/core_system.css"/>
     <link rel="manifest" href="../site.webmanifest"/>
+    <script src="../js/os/core/InterfaceMode.js"></script>
 </head>
 <body>
-<script>if(new URLSearchParams(location.search).get("mode")==="mobile")document.body.dataset.webosMode="mobile";</script>
+<script>\n  (()=>{const params=new URLSearchParams(location.search);const state=window.WebOSInterfaceMode?.apply("desktop-shell")||{layout:"desktop",formFactor:"desktop"};document.body.dataset.webosMode=params.get("mode")==="hybrid"?"hybrid":state.layout;document.body.dataset.webosFormFactor=state.formFactor;})();\n</script>
 <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
  <filter id="webos-glass-refraction" x="-15%" y="-15%" width="130%" height="130%">
   <feTurbulence type="fractalNoise" baseFrequency="0.018 0.026" numOctaves="2" seed="8" result="glass-noise"/>
