@@ -441,3 +441,82 @@ body[data-webos-mode="mobile"][data-app-open="true"] .home-content {
 body[data-webos-mode="mobile"] .dock-wrap .dock {
   padding-bottom:max(8px,env(safe-area-inset-bottom));
 }
+
+
+/* Mobile sheet refinement: restore the resize grip and preserve app-owned surfaces. */
+body[data-webos-mode="mobile"] #window-workspace > .window-shell,
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-app-window {
+  inset:auto 0 0 !important;
+  top:auto !important;
+  width:100vw !important;
+  width:100dvw !important;
+  height:min(88vh,88dvh) !important;
+  min-height:52dvh !important;
+  max-height:calc(100dvh - 8px) !important;
+  box-sizing:border-box !important;
+  padding:env(safe-area-inset-top) 0 0 !important;
+  border:0 !important;
+  border-radius:22px 22px 0 0 !important;
+  overflow:hidden !important;
+  background:#f6f7fb !important;
+  color:#172033 !important;
+  box-shadow:0 -14px 48px rgba(0,0,0,.22) !important;
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-window-expanded {
+  border-radius:16px 16px 0 0 !important;
+}
+body[data-webos-mode="mobile"] .window-shell .window-titlebar {
+  flex:0 0 56px !important;
+  height:56px !important;
+  min-height:56px !important;
+  max-height:56px !important;
+}
+body[data-webos-mode="mobile"] .window-shell .window-body {
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  overflow:auto !important;
+  background:transparent !important;
+  color:inherit !important;
+}
+body[data-webos-mode="mobile"] .window-controls .mobile-switcher {
+  display:inline-flex !important;
+}
+body[data-webos-mode="mobile"] .window-controls .minimize,
+body[data-webos-mode="mobile"] .window-controls .maximize {
+  display:none !important;
+}
+body[data-webos-mode="mobile"] .mobile-window-resize-grip {
+  display:flex !important;
+  flex:0 0 calc(30px + env(safe-area-inset-bottom)) !important;
+  width:100% !important;
+  height:calc(30px + env(safe-area-inset-bottom)) !important;
+  min-height:calc(30px + env(safe-area-inset-bottom)) !important;
+  align-items:flex-start !important;
+  justify-content:center !important;
+  padding:7px 0 max(8px,env(safe-area-inset-bottom)) !important;
+  border:0 !important;
+  background:inherit !important;
+  color:inherit !important;
+  touch-action:none !important;
+  cursor:ns-resize !important;
+  z-index:8 !important;
+}
+body[data-webos-mode="mobile"] .mobile-window-resize-grip span {
+  display:block !important;
+  width:42px !important;
+  height:4px !important;
+  border-radius:999px !important;
+  background:currentColor !important;
+  opacity:.42 !important;
+}
+@media (max-height:620px) {
+  body[data-webos-mode="mobile"] #window-workspace > .window-shell {
+    height:84dvh !important;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  body[data-webos-mode="mobile"] #window-workspace > .window-shell {
+    animation:none !important;
+    transition:none !important;
+  }
+}
