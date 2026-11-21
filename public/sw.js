@@ -11,7 +11,7 @@ const CORE_ASSETS = [
   "/js/os/window/Launcher.js", "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js",
   "/js/os/desktop/Workspaces.js", "/js/os/window/PlatformApps.js", "/js/os/window/CoreApps.js",
   "/js/os/window/NotesStudio.js", "/js/os/window/MediaApps.js", "/js/os/window/Documentation.js",
-  "/js/os/window/AnimationStudio.js", "/js/os/mobile/mobile-runtime.js",
+  "/js/os/window/AnimationStudio.js", "/js/os/mobile/PlatformRuntime.js", "/js/os/mobile/mobile-runtime.js",
   "/css/display/regular_theme.css", "/css/display/wasm_runtime.css", "/css/display/appearance_bridge.css",
   "/css/display/settings_session.css", "/css/display/notifications.css", "/css/display/system_monitor.css",
   "/css/display/developer_platform.css", "/css/display/files_explorer.css", "/css/display/experience_motion.css",

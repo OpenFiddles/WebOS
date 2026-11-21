@@ -34,3 +34,24 @@ Registry manifests now preserve an optional `permissions` string array as metada
 
 ## Current platform boundary
 WebOS is still a browser desktop. Its process manager observes WebOS windows and explicitly registered tasks; it cannot terminate arbitrary host processes or promise CPU scheduling. Network APIs expose online/offline state only; they do not bypass CORS, origin policy, or browser networking restrictions.
+
+
+## Mobile PWA platform runtime
+
+The mobile PWA loads `/js/os/mobile/PlatformRuntime.js` after shared services.
+It exposes `window.WebOSPlatform` and `WebOS.platform` with browser-mediated
+capability detection rather than assuming native device privileges.
+
+- `formFactor`: phone, tablet, or desktop, recalculated on viewport changes.
+- `viewport.get()` and `viewport.getSafeAreaInsets()`: visual viewport, orientation,
+  scale, pixel ratio, and display cutout insets.
+- `input`: touch, hover, pointer precision, reduced-motion preference, and touch points.
+- `lifecycle`: page visibility state and subscription.
+- `network`: online state and subscription.
+- `install`: PWA install state and user-gesture install prompt when supported.
+- `capabilities`: service workers, notifications, sharing, file handling, File System
+  Access, and OPFS feature detection.
+
+Detection does not grant permissions or guarantee support. The runtime emits
+`webos:platform-ready` and `webos:platform:<event>` events. It is included in the
+mobile service-worker core cache.
