@@ -20,7 +20,7 @@ body[data-webos-mode="mobile"] #window-workspace > .window-shell.mobile-app-wind
   position: fixed !important; inset: 0 !important; width: 100vw !important; width: 100dvw !important;
   height: 100vh !important; height: 100dvh !important; min-width: 0 !important; min-height: 0 !important;
   max-width: none !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important;
-  z-index: 31 !important; display: flex; flex-direction: column; pointer-events: auto;
+  z-index: var(--webos-window-layer,31) !important; display: flex; flex-direction: column; pointer-events: auto;
   transform-origin: 50% 100%; animation: mobile-app-open 420ms cubic-bezier(.18,.9,.25,1) both;
   padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
 }
@@ -93,3 +93,29 @@ body[data-webos-mode="mobile"] .window-controls .minimize,
 body[data-webos-mode="mobile"] .window-controls .maximize { display:inline-flex !important; }
 body[data-webos-mode="mobile"] .window-controls :is(.minimize,.maximize,.close) { width:38px; height:38px; }
 @media (max-height:620px) { body[data-webos-mode="mobile"] #window-workspace > .window-shell { height:84dvh !important; } }
+
+
+/* Mobile app stack: preserve running app DOM and state while showing one sheet. */
+body[data-webos-mode="mobile"] #window-workspace > .window-shell:not(.is-mobile-active),
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.is-minimized {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transform: translateY(14px) scale(.985) !important;
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell.is-mobile-active {
+  visibility: visible !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+body[data-webos-mode="mobile"] #window-workspace > .window-shell {
+  transition: opacity 180ms ease, transform 220ms ease, visibility 180ms;
+}
+body[data-webos-mode="mobile"] .window-shell .window-body {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-webos-mode="mobile"] #window-workspace > .window-shell { transition: none !important; }
+}

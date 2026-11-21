@@ -3,26 +3,34 @@ let windowCount = 0;
 const BASE_WINDOW_LAYER = 20;
 
 function focusWindow(win) {
-    // 1. Gather all open windows except the one being focused
-    const allWindows = Array.from(document.querySelectorAll("[id^='Window_']"))
-        .filter(w => w !== win)
-        // Sort them by their current layer depth to preserve history
-        .sort((a, b) => (parseInt(a.style.zIndex) || BASE_WINDOW_LAYER) - (parseInt(b.style.zIndex) || BASE_WINDOW_LAYER));
-
-    // 2. Re-index remaining windows linearly starting from the base layer
-    allWindows.forEach((w, index) => {
-        w.style.zIndex = BASE_WINDOW_LAYER + index;
+    if (!win || !win.isConnected) return;
+    const mobile = document.body.dataset.webosMode === "mobile";
+    const allWindows = Array.from(document.querySelectorAll("#window-workspace > .window-shell"))
+        .filter(item => item !== win && !item.classList.contains("is-closing"))
+        .sort((a,b) => (parseInt(a.style.zIndex) || BASE_WINDOW_LAYER) - (parseInt(b.style.zIndex) || BASE_WINDOW_LAYER));
+    allWindows.forEach((item,index) => {
+        const layer = BASE_WINDOW_LAYER + index;
+        item.style.zIndex = String(layer);
+        item.style.setProperty("--webos-window-layer", String(layer));
+        if (mobile) {
+            item.classList.remove("is-mobile-active");
+            item.inert = true;
+            item.setAttribute("aria-hidden", "true");
+        }
     });
-
-    // 3. Place the focused window exactly on top of the stacked list
-    win.style.zIndex = BASE_WINDOW_LAYER + allWindows.length;
-
-    // 4. Update the taskbar buttons
-    document.querySelectorAll(".TaskButton").forEach((button) => {
+    const layer = BASE_WINDOW_LAYER + allWindows.length;
+    win.style.zIndex = String(layer);
+    win.style.setProperty("--webos-window-layer", String(layer));
+    if (mobile) {
+        win.classList.add("is-mobile-active");
+        win.inert = false;
+        win.setAttribute("aria-hidden", "false");
+        document.body.dataset.appOpen = "true";
+    }
+    document.querySelectorAll(".TaskButton").forEach(button => {
         button.classList.toggle("active", button.dataset.windowId === win.id && !win.classList.contains("is-minimized"));
     });
 }
-
 function setWindowMaximized(win, maximize) {
     if (!win) return;
     if (maximize && !win.classList.contains("is-maximized")) {
@@ -280,12 +288,16 @@ function wireWindowButtons(win) {
         minimizeBtn.addEventListener("click", (event) => {
             event.stopPropagation();
             win.classList.add("is-minimized");
+            win.classList.remove("is-mobile-active");
+            win.inert = true;
+            win.setAttribute("aria-hidden", "true");
             document.body.classList.toggle("webos-maximized-open", !!document.querySelector("#window-workspace > .window-shell.is-maximized:not(.is-minimized):not(.is-closing)"));
             document.querySelector(`.TaskButton[data-window-id="${win.id}"]`)?.classList.remove("active");
-            const remaining = Array.from(document.querySelectorAll("[id^='Window_']"))
-                .filter((item) => item !== win && !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
+            const remaining = Array.from(document.querySelectorAll("#window-workspace > .window-shell"))
+                .filter(item => item !== win && !item.classList.contains("is-minimized") && !item.classList.contains("is-closing"))
                 .sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
             if (remaining.length) focusWindow(remaining[0]);
+            else if (document.body.dataset.webosMode === "mobile") delete document.body.dataset.appOpen;
         });
     }
 
