@@ -1,2 +1,10 @@
-default:
-  image: node:latest
+stages:
+  - test
+
+mobile-pwa-engine-check:
+  stage: test
+  image: node:24-alpine
+  script:
+    - node --check public/js/os/mobile/PlatformRuntime.js
+    - node --check public/js/os/mobile/mobile-runtime.js
+    - node -e 'const fs=require("node:fs"); const launcher=fs.readFileSync("public/html/mobile/mobileLauncher.html","utf8"); const sw=fs.readFileSync("public/sw.js","utf8"); if(!launcher.includes("/js/os/mobile/PlatformRuntime.js")) throw new Error("Mobile launcher does not load PlatformRuntime.js"); if(!sw.includes("/js/os/mobile/PlatformRuntime.js")) throw new Error("Service worker does not precache PlatformRuntime.js"); console.log("Mobile PWA runtime wiring: OK");'
