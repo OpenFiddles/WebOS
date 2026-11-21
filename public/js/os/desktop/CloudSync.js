@@ -4,6 +4,12 @@
     ["webos-current-user","webos-users-v1","webos-custom-wallpaper","webos-cloud-last-sync","webos-cloud-auto-sync"].includes(key) || key.startsWith("webos-profile-data-");
   const state={mode:"starting",message:"Checking cloud configuration…",user:null,lastSync:null,error:null};
   let client=null,applyingCloud=false,autoTimer=null,captchaSiteKey="";
+  // Capacitor serves the bundled frontend from https://localhost. Its API stays on Vercel.
+  const API_BASE = location.hostname === "localhost" || location.hostname === "127.0.0.1"
+    ? "https://web-os-iota.vercel.app"
+    : "";
+  const apiUrl = path => API_BASE + path;
+
   const publish=()=>{try{window.dispatchEvent(new CustomEvent("webos:cloud-state",{detail:{...state}}));}catch(_){}};
   const setState=patch=>{Object.assign(state,patch);publish();};
   const getStatus=()=>({...state,user:state.user?{id:state.user.id,email:state.user.email,is_anonymous:state.user.is_anonymous===true,created_at:state.user.created_at}:null});
@@ -35,7 +41,7 @@
   }
   async function init(){
     try{
-      const response=await withTimeout(fetch("/api/cloud/config",{cache:"no-store",credentials:"same-origin"}),10000,"Cloud configuration request");
+      const response=await withTimeout(fetch(apiUrl("/api/cloud/config"),{cache:"no-store",credentials:"same-origin"}),10000,"Cloud configuration request");
       if(!response.ok)throw new Error("Cloud configuration endpoint returned HTTP "+response.status+".");
       const config=await response.json();
       captchaSiteKey=typeof config.turnstileSiteKey==="string"?config.turnstileSiteKey:"";
@@ -54,7 +60,7 @@
   async function verifyTurnstile(captchaToken){
     const token=requireCaptchaToken(captchaToken);
     if(!token)return null;
-    const response=await fetch("/api/turnstile/verify",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({token})});
+    const response=await fetch(apiUrl("/api/turnstile/verify"),{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",cache:"no-store",body:JSON.stringify({token})});
     const result=await response.json().catch(()=>({}));
     if(!response.ok||!result.success)throw new Error(result.message||"Security verification failed. Please try again.");
     return token;
