@@ -28,10 +28,11 @@
   }
 
   function detectFormFactor() {
-    const { width } = getViewport();
+    const { width, height } = getViewport();
     const { touch } = getCapabilities();
-    if (touch && width <= 600) return "phone";
-    if (touch && width <= 1100) return "tablet";
+    const shortSide = Math.min(Number(window.screen?.width || width), Number(window.screen?.height || height));
+    if (touch && shortSide <= 600) return "phone";
+    if (touch && shortSide <= 1100) return "tablet";
     return "desktop";
   }
 
