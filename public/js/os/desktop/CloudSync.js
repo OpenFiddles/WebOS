@@ -104,14 +104,9 @@
     if(error)throw error;
     return data?.identities||[];
   }
-  async function linkIdentity(provider,captchaToken){
+  async function linkIdentity(provider){
     if(!["google","gitlab","github","discord"].includes(provider))throw new Error("That account provider is not supported.");
-    const token=await verifyTurnstile(captchaToken);
-    const {data,error}=await requireClient().auth.linkIdentity({provider,options:{
-      redirectTo:window.location.origin+"/html/BootScreen_popcorn.html?webos_linked="+encodeURIComponent(provider),
-      skipBrowserRedirect:true,
-      ...(token?{captchaToken:token}:{})
-    }});
+    const {data,error}=await requireClient().auth.linkIdentity({provider,options:{redirectTo:window.location.origin+"/html/BootScreen_popcorn.html?webos_linked="+encodeURIComponent(provider),skipBrowserRedirect:true}});
     if(error)throw error;
     if(!data?.url)throw new Error("Supabase did not return an account-link URL.");
     window.top.location.assign(data.url);
