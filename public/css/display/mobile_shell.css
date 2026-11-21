@@ -209,3 +209,20 @@ body[data-webos-mode="mobile"] #close-all-apps {
   border:0; background:transparent; color:#ffb5ad; font:inherit; font-size:12px; padding:7px 4px;
 }
 body[data-webos-mode="mobile"] #close-all-apps[hidden] { display:none; }
+
+
+/* Non-blocking PWA update notice; user chooses when to reload. */
+body[data-webos-mode="mobile"] .update-banner {
+  position:fixed; z-index:90; left:12px; right:12px; bottom:calc(18px + env(safe-area-inset-bottom));
+  display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 14px;
+  border:1px solid rgba(255,255,255,.18); border-radius:18px; background:rgba(24,32,48,.96);
+  color:#f4f7ff; box-shadow:0 12px 38px rgba(0,0,0,.32); backdrop-filter:blur(20px);
+}
+body[data-webos-mode="mobile"] .update-banner[hidden] { display:none !important; }
+body[data-webos-mode="mobile"] .update-banner p { margin:3px 0 0; color:#bac7dc; font-size:11px; line-height:1.4; }
+body[data-webos-mode="mobile"] .update-banner-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+body[data-webos-mode="mobile"] .update-banner-actions button {
+  min-height:38px; padding:0 12px; border:0; border-radius:12px; background:rgba(255,255,255,.1);
+  color:inherit; font:inherit; font-size:12px;
+}
+body[data-webos-mode="mobile"] #update-reload { background:#dbe7ff; color:#17233b; font-weight:650; }

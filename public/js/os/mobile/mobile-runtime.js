@@ -352,6 +352,23 @@
     if ($("quick-panel")?.classList.contains("open")) refreshSystemStatus();
   });
 
+  const updateBanner = $("update-banner");
+  const showUpdateBanner = version => {
+    if (!updateBanner) return;
+    $("update-banner-detail").textContent = version ? "Version "+version+" is ready. Reload to apply it." : "A new version is ready. Reload to apply it.";
+    updateBanner.hidden = false;
+  };
+  $("update-reload")?.addEventListener("click",() => window.location.reload());
+  $("update-dismiss")?.addEventListener("click",() => { if (updateBanner) updateBanner.hidden = true; });
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message",event => {
+      if (event.data?.type === "WEBOS_UPDATE_AVAILABLE") showUpdateBanner(event.data.data?.version);
+      if (event.data?.type === "CACHE_ERROR" && event.data.data?.url) {
+        console.warn("[WebOS PWA] Asset was not cached:",event.data.data.url,event.data.data.error);
+      }
+    });
+  }
+
   const installButton = $("install-app");
   if (installButton) {
     const syncInstallButton = () => { installButton.hidden = !window.WebOSPlatform?.installState?.canPrompt; };
