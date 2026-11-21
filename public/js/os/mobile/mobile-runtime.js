@@ -131,7 +131,7 @@
     $("favourites").replaceChildren(...matches.filter(app => favoriteIds.includes(app.id)).map((app,index) => buttonFor(app,index,true)));
     $("dock").replaceChildren(...["files","notes","settings","paint"].map((id, index) => {
       const app = allApps().find(item => item.id === id);
-      return app ? buttonFor(app, index) : document.createDocumentFragment();
+      return app ? buttonFor(app, index, false) : document.createDocumentFragment();
     }));
     $("all-app-grid").replaceChildren(...(matches.length ? matches.map((app,index) => buttonFor(app,index,true)) : [
       Object.assign(document.createElement("div"), { className:"empty", textContent:"No apps found" })
