@@ -73,5 +73,35 @@
     <script defer src="/_vercel/insights/script.js"></script>
     <script defer src="/_vercel/speed-insights/script.js"></script>
     <script src="/js/app.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+      import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyD7W9wyyu__7uOxAJo6oKblzQaOXQKwQbs",
+        authDomain: "xistudio-449819.firebaseapp.com",
+        databaseURL: "https://xistudio-449819-default-rtdb.firebaseio.com",
+        projectId: "xistudio-449819",
+        storageBucket: "xistudio-449819.firebasestorage.app",
+        messagingSenderId: "966050595453",
+        appId: "1:966050595453:web:c79f1d36c8866b4fb3e714",
+        measurementId: "G-HBEV5YYCYK"
+      };
+
+      try {
+        const firebaseApp = initializeApp(firebaseConfig);
+        const analytics = await isSupported()
+          ? getAnalytics(firebaseApp)
+          : null;
+
+        // The desktop runs inside the same-origin iframe and can access this via window.top.
+        window.WebOSFirebase = Object.freeze({ app: firebaseApp, analytics });
+        window.dispatchEvent(new CustomEvent("webos:firebase-ready", {
+          detail: { analyticsAvailable: Boolean(analytics) }
+        }));
+      } catch (error) {
+        console.warn("[WebOS Firebase] Initialization unavailable:", error);
+      }
+    </script>
 </body>
 </html>
