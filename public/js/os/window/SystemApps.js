@@ -651,7 +651,7 @@ function openSettings() {
                         <button type="button" id="settings-cloud-signout" hidden>Sign out</button>
                     </div>
                 </div>
-                <div class="settings-section" style="display:flex;flex-direction:column;gap:.75rem;">
+                <div class="settings-subsection" style="display:flex;flex-direction:column;gap:.75rem;">
                     <h3>Connected sign-in accounts</h3>
                     <p>Connect providers to this WebOS identity. If you are signed in as a guest, connecting a provider upgrades this same account instead of creating a separate WebOS account.</p>
                     <div id="settings-account-identities" class="settings-readout" role="status" aria-live="polite">Loading connected accounts…</div>
