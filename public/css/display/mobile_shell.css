@@ -195,3 +195,17 @@ body[data-webos-mode="mobile"] .status-right .network-indicator {
 body[data-webos-mode="mobile"] .status-right .network-indicator.offline {
   color:#ffd0a8; border-color:rgba(255,170,100,.35); background:rgba(190,100,40,.13);
 }
+
+
+/* App switcher row actions. */
+body[data-webos-mode="mobile"] .running-app-row { display:flex; align-items:stretch; gap:7px; }
+body[data-webos-mode="mobile"] .running-app-row .running-app { flex:1; min-width:0; }
+body[data-webos-mode="mobile"] .running-app-close {
+  flex:0 0 48px; min-height:52px; border:1px solid rgba(255,255,255,.12);
+  border-radius:14px; background:rgba(255,110,110,.10); color:inherit; font-size:21px;
+}
+body[data-webos-mode="mobile"] .running-app-actions { display:flex; align-items:center; gap:10px; }
+body[data-webos-mode="mobile"] #close-all-apps {
+  border:0; background:transparent; color:#ffb5ad; font:inherit; font-size:12px; padding:7px 4px;
+}
+body[data-webos-mode="mobile"] #close-all-apps[hidden] { display:none; }

@@ -49,31 +49,51 @@
     return button;
   }
   function renderRunningApps() {
-    const host = $("running-apps"), count = $("running-app-count");
+    const host = $("running-apps"), count = $("running-app-count"), closeAll = $("close-all-apps");
     if (!host || !count) return;
     const running = [...windowsByApp].filter(([,win]) => win.isConnected && !win.classList.contains("is-closing"));
     count.textContent = running.length + (running.length === 1 ? " app open" : " apps open");
+    if (closeAll) closeAll.hidden = running.length === 0;
     if (!running.length) {
       host.replaceChildren(Object.assign(document.createElement("p"), { className:"muted", textContent:"No apps are running." }));
       return;
     }
     const nodes = running.map(([id,win]) => {
       const app = allApps().find(item => item.id === id);
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "running-app";
-      button.setAttribute("aria-current", String(win === activeWindow));
+      const row = document.createElement("div");
+      row.className = "running-app-row";
+      const focus = document.createElement("button");
+      focus.type = "button";
+      focus.className = "running-app";
+      focus.setAttribute("aria-current", String(win === activeWindow));
       const label = document.createElement("span");
       label.className = "running-app-name";
       label.textContent = (app?.icon || "◈") + "  " + (app?.name || win.querySelector(".window-title-text")?.textContent || id);
       const state = document.createElement("small");
       state.textContent = win === activeWindow ? "Open" : win.classList.contains("is-minimized") ? "Paused" : "Running";
-      button.append(label,state);
-      button.addEventListener("click", () => { activateWindow(win); hideOverlay("quick-panel"); });
-      return button;
+      focus.append(label,state);
+      focus.addEventListener("click", () => { activateWindow(win); hideOverlay("quick-panel"); });
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "running-app-close";
+      close.textContent = "×";
+      close.setAttribute("aria-label","Close "+(app?.name || id));
+      close.addEventListener("click", () => {
+        win.querySelector(".win-btn.close")?.click();
+        queueMicrotask(reconcileWindows);
+      });
+      row.append(focus,close);
+      return row;
     });
     host.replaceChildren(...nodes);
   }
+  function closeAllApps() {
+    const snapshot = [...windowsByApp.values()].filter(win => win.isConnected && !win.classList.contains("is-closing"));
+    snapshot.forEach(win => win.querySelector(".win-btn.close")?.click());
+    queueMicrotask(reconcileWindows);
+    return snapshot.length;
+  }
+
   function renderApps(query) {
     const q = (query || "").trim().toLocaleLowerCase();
     const matches = allApps().filter(app => (app.name + " " + (app.description || "") + " " + app.id).toLocaleLowerCase().includes(q));
@@ -208,6 +228,7 @@
   $("all-apps").addEventListener("click", () => { renderApps($("drawer-search").value); showOverlay("drawer"); $("drawer-search").focus(); });
   $("gesture").addEventListener("click", () => showOverlay("drawer"));
   $("quick-open").addEventListener("click", () => showOverlay("quick-panel"));
+  $("close-all-apps")?.addEventListener("click", () => { const count = closeAllApps(); toast(count ? "Closed "+count+" app"+(count===1?"":"s") : "No apps to close."); });
   $("app-back").addEventListener("click", closeTopApp);
   $("app-home").addEventListener("click", goHome);
   $("home-search").addEventListener("input", event => { renderApps(event.target.value); if (event.target.value) showOverlay("drawer"); });
@@ -345,7 +366,14 @@
     syncInstallButton();
   }
   window.WebOSPlatform?.on?.("networkchange", event => {
+    const indicator = $("network-indicator");
+    if (indicator) {
+      indicator.textContent = event.online ? "● Online" : "● Offline";
+      indicator.classList.toggle("offline",!event.online);
+      indicator.setAttribute("aria-label","Network status: "+(event.online?"online":"offline")+". Open device status.");
+    }
     toast(event.online ? "Connection restored." : "You are offline. Cached WebOS features remain available.");
+    if ($("quick-panel")?.classList.contains("open")) refreshSystemStatus();
   });
 
   renderApps("");
@@ -356,6 +384,7 @@
   window.WebOSMobile = Object.freeze({
     openApp, closeTopApp, goHome, activateWindow, renderApps,
     apps:allApps,
-    runningApps:() => [...windowsByApp].filter(([,win]) => win.isConnected && !win.classList.contains("is-closing")).map(([id,win]) => ({ id, active:win === activeWindow, minimized:win.classList.contains("is-minimized") }))
+    runningApps:() => [...windowsByApp].filter(([,win]) => win.isConnected && !win.classList.contains("is-closing")).map(([id,win]) => ({ id, active:win === activeWindow, minimized:win.classList.contains("is-minimized") })),
+    closeAllApps
   });
 })();
