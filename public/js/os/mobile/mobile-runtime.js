@@ -48,6 +48,32 @@
     button.addEventListener("click", () => openApp(app.id));
     return button;
   }
+  function renderRunningApps() {
+    const host = $("running-apps"), count = $("running-app-count");
+    if (!host || !count) return;
+    const running = [...windowsByApp].filter(([,win]) => win.isConnected && !win.classList.contains("is-closing"));
+    count.textContent = running.length + (running.length === 1 ? " open" : " open");
+    if (!running.length) {
+      host.replaceChildren(Object.assign(document.createElement("p"), { className:"muted", textContent:"No apps are running." }));
+      return;
+    }
+    const nodes = running.map(([id,win]) => {
+      const app = allApps().find(item => item.id === id);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "running-app";
+      button.setAttribute("aria-current", String(win === activeWindow));
+      const label = document.createElement("span");
+      label.className = "running-app-name";
+      label.textContent = (app?.icon || "◈") + "  " + (app?.name || win.querySelector(".window-title-text")?.textContent || id);
+      const state = document.createElement("small");
+      state.textContent = win === activeWindow ? "Open" : win.classList.contains("is-minimized") ? "Paused" : "Running";
+      button.append(label,state);
+      button.addEventListener("click", () => { activateWindow(win); hideOverlay("quick-panel"); });
+      return button;
+    });
+    host.replaceChildren(...nodes);
+  }
   function renderApps(query) {
     const q = (query || "").trim().toLocaleLowerCase();
     const matches = allApps().filter(app => (app.name + " " + (app.description || "") + " " + app.id).toLocaleLowerCase().includes(q));
@@ -102,6 +128,7 @@
     activeWindow = win;
     activeAppId = win.dataset.mobileAppId || win.dataset.webosAppId || null;
     document.body.dataset.appOpen = "true";
+    renderRunningApps();
     return true;
   }
   function goHome() {
@@ -110,6 +137,7 @@
     activeWindow = null; activeAppId = null;
     if (next) activateWindow(next);
     else delete document.body.dataset.appOpen;
+    renderRunningApps();
   }
   function reconcileWindows() {
     for (const [id, win] of windowsByApp) if (!win.isConnected || win.classList.contains("is-closing")) windowsByApp.delete(id);
@@ -117,6 +145,7 @@
     const next = topWindow();
     if (next) activateWindow(next);
     else { activeWindow = null; activeAppId = null; delete document.body.dataset.appOpen; }
+    renderRunningApps();
   }
   function findNewWindow(before, result) {
     if (result instanceof HTMLElement && result.matches(".window-shell")) return result;
@@ -155,6 +184,7 @@
         }, { once:true });
         win.addEventListener("pointerdown", () => activateWindow(win), { passive:true });
         activateWindow(win);
+        renderRunningApps();
         return win;
       } catch (error) {
         console.error("[WebOS Mobile] Failed to open " + app.name + ":", error);
@@ -211,6 +241,24 @@
     }
     touchStart = null;
   }, { passive:true });
+
+
+  const installButton = $("install-app");
+  if (installButton) {
+    const syncInstallButton = () => { installButton.hidden = !window.WebOSPlatform?.installState?.canPrompt; };
+    window.addEventListener("webos:platform:installavailable", syncInstallButton);
+    window.addEventListener("appinstalled", syncInstallButton);
+    installButton.addEventListener("click", async () => {
+      const result = await window.WebOSPlatform?.install?.prompt?.();
+      if (result?.outcome === "accepted") toast("WebOS installation started.");
+      else if (result?.outcome === "dismissed") toast("Installation was dismissed.");
+      syncInstallButton();
+    });
+    syncInstallButton();
+  }
+  window.WebOSPlatform?.on?.("networkchange", event => {
+    toast(event.online ? "Connection restored." : "You are offline. Cached WebOS features remain available.");
+  });
 
   renderApps("");
   updateTime();

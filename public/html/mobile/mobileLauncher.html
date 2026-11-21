@@ -56,7 +56,7 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
 <main class="shell" id="shell">
   <header class="status">
     <span id="clock">9:41</span>
-    <div class="status-right"><button id="quick-open" aria-label="Open quick settings">◉</button><span>▮▮</span><span>⌁</span><span>▰</span></div>
+    <div class="status-right"><button id="install-app" aria-label="Install WebOS" title="Install WebOS" hidden>⇩</button><button id="quick-open" aria-label="Open quick settings and running apps">◉</button><span>▮▮</span><span>⌁</span><span>▰</span></div>
   </header>
   <section class="home-content">
     <div class="greeting"><div><div class="eyebrow">OPENFIDDLES · WEBOS</div><h1 id="greeting">Good day.</h1></div><div class="date" id="date"></div></div>
@@ -78,7 +78,8 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
       <button class="quick" data-toggle="Do not disturb">☾ Do not disturb<small>Off</small></button>
       <button class="quick" data-toggle="Battery saver">ϟ Battery saver<small>Off</small></button>
     </div>
-    <div class="app-card" style="margin-top:16px"><strong>WebOS Mobile</strong><p class="muted">Your mobile environment. Quick toggles here are interface controls and do not change Android system settings.</p></div>
+    <section class="running-apps-section"><div class="section-head"><strong>Running apps</strong><span class="muted" id="running-app-count">0 open</span></div><div class="running-apps" id="running-apps"><p class="muted">No apps are running.</p></div></section>
+    <div class="app-card" style="margin-top:16px"><strong>WebOS Mobile</strong><p class="muted">Quick toggles here are interface controls and do not change Android system settings.</p></div>
   </section>
   <section class="app-screen" id="app-screen">
     <header class="app-bar"><button class="round" id="app-back" aria-label="Back">←</button><h2 id="app-title">App</h2><button class="round" id="app-home" aria-label="Home">⌂</button></header>

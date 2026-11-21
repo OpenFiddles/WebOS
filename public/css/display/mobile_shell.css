@@ -119,3 +119,31 @@ body[data-webos-mode="mobile"] .window-shell .window-body {
 @media (prefers-reduced-motion: reduce) {
   body[data-webos-mode="mobile"] #window-workspace > .window-shell { transition: none !important; }
 }
+
+
+/* Mobile PWA responsive layouts for tablets and landscape phones. */
+body[data-webos-mode="mobile"] .running-apps-section { margin-top: 22px; }
+body[data-webos-mode="mobile"] .running-apps { display:flex; flex-direction:column; gap:8px; max-height:34dvh; overflow:auto; }
+body[data-webos-mode="mobile"] .running-app {
+  display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
+  min-height:52px; padding:10px 13px; border:1px solid rgba(255,255,255,.12);
+  border-radius:14px; background:rgba(255,255,255,.065); color:inherit; text-align:left;
+}
+body[data-webos-mode="mobile"] .running-app[aria-current="true"] { border-color:rgba(142,180,255,.5); background:rgba(87,130,204,.2); }
+body[data-webos-mode="mobile"] .running-app-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body[data-webos-mode="mobile"] .running-app small { color:#a9b9d2; flex-shrink:0; }
+body[data-webos-mode="mobile"] #install-app[hidden] { display:none !important; }
+@media (min-width:700px) {
+  body[data-webos-mode="mobile"] .home-content { max-width:760px; gap:30px; }
+  body[data-webos-mode="mobile"] .apps { grid-template-columns:repeat(6,minmax(0,1fr)); gap:24px 16px; }
+  body[data-webos-mode="mobile"] .app-icon { width:66px; height:66px; border-radius:21px; }
+  body[data-webos-mode="mobile"] .dock-wrap { max-width:620px; }
+}
+@media (orientation:landscape) and (max-height:620px) {
+  body[data-webos-mode="mobile"] .shell { overflow-y:auto; }
+  body[data-webos-mode="mobile"] .home-content { margin:0 auto; padding:8px 0; gap:12px; }
+  body[data-webos-mode="mobile"] .apps { grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
+  body[data-webos-mode="mobile"] .app-icon { width:46px; height:46px; border-radius:14px; font-size:22px; }
+  body[data-webos-mode="mobile"] .dock-wrap { margin-bottom:5px; }
+  body[data-webos-mode="mobile"] .window-titlebar { min-height:48px; height:48px; }
+}
