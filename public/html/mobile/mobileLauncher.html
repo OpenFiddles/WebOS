@@ -42,6 +42,7 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
 @media(min-width:700px){.home-content,.dock-wrap{max-width:500px}.shell{padding-left:28px;padding-right:28px}}
 @media(max-height:650px){.home-content{gap:14px}.app{gap:5px}.app-icon{width:49px;height:49px;border-radius:16px}.apps{gap:12px 8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
+.status-right button.battery-indicator{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}.status-right button.network-indicator{font-size:12px;white-space:nowrap}.status-right button.battery-indicator.charging{color:#a9d6ff}.status-right button.battery-indicator.low{color:#ff9a91}
 </style>
 <link rel="stylesheet" href="../../css/display/regular_theme.css">
 <link rel="stylesheet" href="../../css/display/appearance_bridge.css">
@@ -56,7 +57,7 @@ button,input{font:inherit}button{color:inherit;cursor:pointer}
 <main class="shell" id="shell">
   <header class="status">
     <span id="clock">9:41</span>
-    <div class="status-right"><button id="install-app" aria-label="Install WebOS" title="Install WebOS" hidden>⇩</button><button id="network-indicator" class="network-indicator" type="button" aria-label="Network status: online">● Online</button><button id="quick-open" aria-label="Open quick settings and running apps">◉</button></div>
+    <div class="status-right"><button id="install-app" aria-label="Install WebOS" title="Install WebOS" hidden>⇩</button><button id="network-indicator" class="network-indicator" type="button" aria-label="Network status: checking">●</button><button id="battery-indicator" class="battery-indicator" type="button" aria-label="Battery status unavailable" title="Battery status">▰ <span id="battery-percent">—</span></button><button id="quick-open" aria-label="Open quick settings and running apps">◉</button></div>
   </header>
   <section class="home-content">
     <div class="greeting"><div><div class="eyebrow">OPENFIDDLES · WEBOS</div><h1 id="greeting">Good day.</h1></div><div class="date" id="date"></div></div>

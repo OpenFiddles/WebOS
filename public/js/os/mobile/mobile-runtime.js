@@ -340,6 +340,25 @@
     try {
       const data = await api.getSnapshot();
       const c = data.connection;
+      const batteryButton = $("battery-indicator");
+      const batteryPercent = $("battery-percent");
+      if (batteryButton && batteryPercent) {
+        if (data.battery) {
+          const level = data.battery.level;
+          batteryPercent.textContent = level + "%";
+          batteryButton.classList.toggle("charging", data.battery.charging);
+          batteryButton.classList.toggle("low", level <= 20 && !data.battery.charging);
+          batteryButton.textContent = (data.battery.charging ? "ϟ " : "▰ ") + level + "%";
+          batteryButton.setAttribute("aria-label","Battery " + level + "%, " + (data.battery.charging ? "charging" : "not charging"));
+          batteryButton.title = "Battery " + level + "%" + (data.battery.charging ? " · Charging" : "");
+        } else {
+          batteryPercent.textContent = "—";
+          batteryButton.textContent = "▰ —";
+          batteryButton.classList.remove("charging","low");
+          batteryButton.setAttribute("aria-label","Battery status unavailable in this browser");
+          batteryButton.title = "Battery information is not exposed by this browser";
+        }
+      }
       set("system-network", c.online ? "Online" : "Offline");
       const networkButton = $("network-indicator");
       if (networkButton) {
@@ -378,6 +397,8 @@
     }
   }
   $("network-indicator")?.addEventListener("click",() => { showOverlay("quick-panel"); refreshSystemStatus(); });
+  $("battery-indicator")?.addEventListener("click",() => { showOverlay("quick-panel"); refreshSystemStatus(); });
+  window.WebOSPlatform?.on?.("batterychanged", () => refreshSystemStatus());
   $("share-webos")?.addEventListener("click",async () => {
     const shareData = { title:"WebOS", text:"Explore WebOS — a community-built browser desktop.", url:window.location.origin };
     try {

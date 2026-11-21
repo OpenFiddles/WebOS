@@ -15,6 +15,8 @@
   let deferredInstallPrompt = null;
   let previousFormFactor = "";
   let disposed = false;
+  let batteryManager = null;
+  let batteryListenersAttached = false;
 
   const rounded = value => Number.isFinite(value) ? Math.round(value) : 0;
   function getViewport() {
@@ -152,13 +154,20 @@
     async getBattery() {
       if (typeof navigator.getBattery !== "function") return null;
       try {
-        const battery = await navigator.getBattery();
-        return Object.freeze({
-          level: Math.round(battery.level * 100),
-          charging: !!battery.charging,
-          chargingTime: Number.isFinite(battery.chargingTime) ? battery.chargingTime : null,
-          dischargingTime: Number.isFinite(battery.dischargingTime) ? battery.dischargingTime : null
+        batteryManager = batteryManager || await navigator.getBattery();
+        const snapshot = () => Object.freeze({
+          level: Math.round(batteryManager.level * 100),
+          charging: !!batteryManager.charging,
+          chargingTime: Number.isFinite(batteryManager.chargingTime) ? batteryManager.chargingTime : null,
+          dischargingTime: Number.isFinite(batteryManager.dischargingTime) ? batteryManager.dischargingTime : null
         });
+        if (!batteryListenersAttached) {
+          const notify = () => emit("batterychanged", { battery: snapshot() });
+          batteryManager.addEventListener("levelchange", notify);
+          batteryManager.addEventListener("chargingchange", notify);
+          batteryListenersAttached = true;
+        }
+        return snapshot();
       } catch (_) { return null; }
     },
     async getStorage() {
