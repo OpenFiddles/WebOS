@@ -123,6 +123,8 @@
   }
   async function setAccountPassword(password){
     if(!password||password.length<8)throw new Error("Use a password with at least 8 characters.");
+    if(!state.user||state.user.is_anonymous!==true)throw new Error("This action is only available while upgrading a guest account.");
+    if(!state.user.email_confirmed_at)throw new Error("Verify the email address first, then set your password.");
     const {data,error}=await requireClient().auth.updateUser({password});
     if(error)throw error;
     setState({mode:"ready",user:data.user,message:"Password updated."});
