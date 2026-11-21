@@ -635,9 +635,9 @@ function openSettings() {
             </section>
 
             <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
-                <h2>Account &amp; Cloud</h2>
-                <p>WebOS accounts are managed by WebOS and powered by Supabase Auth. Connect sign-in identities to this account; service integrations such as Drive are managed separately.</p>
-                <div id="settings-cloud-status" class="settings-readout" role="status" aria-live="polite">Checking cloud configuration…</div>
+                <h2>Accounts</h2>
+                <p>Manage your WebOS identity and the sign-in methods connected to it. Linking GitHub or GitLab here connects your identity only; repository access is a separate permission.</p>
+                <div id="settings-cloud-status" class="settings-readout" role="status" aria-live="polite">Checking account services…</div>
                 <div class="settings-cloud-form">
                     <label for="settings-cloud-email">Email</label>
                     <input id="settings-cloud-email" type="email" autocomplete="username" placeholder="you@example.com">
@@ -652,8 +652,8 @@ function openSettings() {
                     </div>
                 </div>
                 <div class="settings-subsection" style="display:flex;flex-direction:column;gap:.75rem;">
-                    <h3>Connected sign-in accounts</h3>
-                    <p>Connect providers to this WebOS identity. If you are signed in as a guest, connecting a provider upgrades this same account instead of creating a separate WebOS account.</p>
+                    <h3>Connected accounts</h3>
+                    <p>Connect multiple sign-in identities to this same WebOS account. You can use any linked provider to return to the same account.</p>
                     <div id="settings-account-identities" class="settings-readout" role="status" aria-live="polite">Loading connected accounts…</div>
                     <div class="settings-action-row" id="settings-account-link-actions">
                         <button type="button" data-link-provider="google">Connect Google</button>
@@ -662,12 +662,20 @@ function openSettings() {
                         <button type="button" data-link-provider="gitlab">Connect GitLab</button>
                     </div>
                     <div id="settings-guest-upgrade" hidden>
-                        <h4>Upgrade guest account with email</h4>
+                        <h4>Keep this guest account</h4>
+                        <p>Add an email address or connect a provider so you can sign in again on another device.</p>
                         <label for="settings-upgrade-email">Email</label><input id="settings-upgrade-email" type="email" autocomplete="email" placeholder="you@example.com">
-                        <label for="settings-upgrade-password">Password</label><input id="settings-upgrade-password" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
-                        <button type="button" id="settings-upgrade-submit">Add email and password</button>
+                        <button type="button" id="settings-upgrade-email-submit">Add email</button>
+                        <label for="settings-upgrade-password">Password (after email verification)</label><input id="settings-upgrade-password" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+                        <button type="button" id="settings-upgrade-password-submit">Set password</button>
                     </div>
                 </div>
+                <div id="settings-account-details" class="settings-readout" aria-live="polite">Account details appear here after sign-in.</div>
+            </section>
+
+            <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
+                <h2>Cloud &amp; Backup</h2>
+                <p>Back up and restore supported WebOS preferences and virtual files using your WebOS account.</p>
                 <div class="settings-action-row">
                     <button type="button" id="settings-cloud-push">Back up to cloud</button>
                     <button type="button" id="settings-cloud-pull">Restore from cloud</button>
@@ -777,7 +785,7 @@ function openSettings() {
                 "Visual CSS Inspector": "Window Design"
             })[heading] || heading;
         };
-        const categoryOrder = ["Personalization", "Window Design", "Apps & Applications", "Account & Cloud", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
+        const categoryOrder = ["Personalization", "Window Design", "Apps & Applications", "Accounts", "Cloud & Backup", "Notifications", "Privacy & Security", "Devices", "Developer Settings", "Updates", "Storage & Profiles", "Lock & Security", "Backup & Recovery", "Accessibility", "System"];
         settingsSections.sort((a, b) => categoryOrder.indexOf(labelForSection(a)) - categoryOrder.indexOf(labelForSection(b)));
         settingsSections.forEach((section, index) => {
             const label = labelForSection(section);
@@ -1332,9 +1340,13 @@ function openSettings() {
     cloudAuto.addEventListener("change",()=>localStorage.setItem("webos-cloud-auto-sync",String(cloudAuto.checked)));
     const identityStatus=win.querySelector("#settings-account-identities");
     const guestUpgrade=win.querySelector("#settings-guest-upgrade");
+    const accountDetails=win.querySelector("#settings-account-details");
     async function renderAccountIdentities(){
         const state=window.WebOSCloud?.getStatus?.()||{};
         guestUpgrade.hidden=!state.user?.is_anonymous;
+        accountDetails.textContent=state.user
+          ?(state.user.is_anonymous?"Guest account · ":"WebOS account · ")+(state.user.email||"No email attached")+" · ID "+state.user.id
+          :"No active WebOS account.";
         if(!state.user){identityStatus.textContent="Sign in to manage identities connected to your WebOS account.";return;}
         try{
             const identities=await window.WebOSCloud.getIdentities();
@@ -1370,12 +1382,19 @@ function openSettings() {
         try{await window.WebOSCloud.linkIdentity(button.dataset.linkProvider);}
         catch(error){identityStatus.textContent=error.message;button.disabled=false;}
     }));
-    win.querySelector("#settings-upgrade-submit")?.addEventListener("click",async()=>{
+    win.querySelector("#settings-upgrade-email-submit")?.addEventListener("click",async()=>{
         const email=win.querySelector("#settings-upgrade-email").value.trim();
+        const button=win.querySelector("#settings-upgrade-email-submit");
+        button.disabled=true;identityStatus.textContent="Adding email…";
+        try{await window.WebOSCloud.addEmailToGuest(email);identityStatus.textContent="Confirmation email sent. Verify it before setting a password.";}
+        catch(error){identityStatus.textContent=error.message;}
+        finally{button.disabled=false;}
+    });
+    win.querySelector("#settings-upgrade-password-submit")?.addEventListener("click",async()=>{
         const password=win.querySelector("#settings-upgrade-password").value;
-        const button=win.querySelector("#settings-upgrade-submit");
-        button.disabled=true;identityStatus.textContent="Updating guest account…";
-        try{await window.WebOSCloud.upgradeWithEmail(email,password);win.querySelector("#settings-upgrade-password").value="";identityStatus.textContent="Email added. Follow any confirmation email from Supabase.";await renderAccountIdentities();}
+        const button=win.querySelector("#settings-upgrade-password-submit");
+        button.disabled=true;identityStatus.textContent="Updating password…";
+        try{await window.WebOSCloud.setAccountPassword(password);win.querySelector("#settings-upgrade-password").value="";identityStatus.textContent="Password updated.";}
         catch(error){identityStatus.textContent=error.message;}
         finally{button.disabled=false;}
     });
