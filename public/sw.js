@@ -1,5 +1,5 @@
 const NAME = "WebOS";
-const VERSION = "3.4.0";
+const VERSION = "3.4.1";
 const CACHE_NAME = `${NAME}-v${VERSION}`;
 
 const CORE_ASSETS = [
@@ -7,6 +7,7 @@ const CORE_ASSETS = [
   "/html/mobile/mobileLauncher.html", "/site.webmanifest",
   "/html/BootScreen_popcorn.html", "/html/DisplayManager_PopIT.html", "/search.html", "/opensearch.xml",
   "/js/os/desktop/app-registry.js", "/js/os/desktop/filesystem.js", "/js/os/desktop/HostFileBridge.js",
+  "/js/os/core/InterfaceMode.js",
   "/js/os/desktop/Permissions.js", "/js/os/desktop/AppStorage.js", "/js/os/desktop/Core.js", "/js/os/desktop/DeviceInfo.js", "/js/os/desktop/CloudSync.js",
   "/js/os/window/Launcher.js", "/js/os/window/WindowManager.js", "/js/os/window/SystemApps.js",
   "/js/os/desktop/Workspaces.js", "/js/os/window/PlatformApps.js", "/js/os/window/CoreApps.js",
