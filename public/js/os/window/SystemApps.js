@@ -636,7 +636,7 @@ function openSettings() {
 
             <section class="settings-section" style="display:flex;flex-direction:column;gap:1rem;">
                 <h2>Account &amp; Cloud</h2>
-                <p>Sign in to sync your WebOS preferences and virtual files across devices. Local mode remains available if cloud services are unavailable.</p>
+                <p>WebOS accounts are managed by WebOS and powered by Supabase Auth. Connect sign-in identities to this account; service integrations such as Drive are managed separately.</p>
                 <div id="settings-cloud-status" class="settings-readout" role="status" aria-live="polite">Checking cloud configuration…</div>
                 <div class="settings-cloud-form">
                     <label for="settings-cloud-email">Email</label>
@@ -649,6 +649,23 @@ function openSettings() {
                         <button type="button" id="settings-cloud-signin">Sign in</button>
                         <button type="button" id="settings-cloud-signup">Create account</button>
                         <button type="button" id="settings-cloud-signout" hidden>Sign out</button>
+                    </div>
+                </div>
+                <div class="settings-section" style="display:flex;flex-direction:column;gap:.75rem;">
+                    <h3>Connected sign-in accounts</h3>
+                    <p>Connect providers to this WebOS identity. If you are signed in as a guest, connecting a provider upgrades this same account instead of creating a separate WebOS account.</p>
+                    <div id="settings-account-identities" class="settings-readout" role="status" aria-live="polite">Loading connected accounts…</div>
+                    <div class="settings-action-row" id="settings-account-link-actions">
+                        <button type="button" data-link-provider="google">Connect Google</button>
+                        <button type="button" data-link-provider="discord">Connect Discord</button>
+                        <button type="button" data-link-provider="github">Connect GitHub</button>
+                        <button type="button" data-link-provider="gitlab">Connect GitLab</button>
+                    </div>
+                    <div id="settings-guest-upgrade" hidden>
+                        <h4>Upgrade guest account with email</h4>
+                        <label for="settings-upgrade-email">Email</label><input id="settings-upgrade-email" type="email" autocomplete="email" placeholder="you@example.com">
+                        <label for="settings-upgrade-password">Password</label><input id="settings-upgrade-password" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+                        <button type="button" id="settings-upgrade-submit">Add email and password</button>
                     </div>
                 </div>
                 <div class="settings-action-row">
@@ -1313,9 +1330,59 @@ function openSettings() {
     cloudPush.addEventListener("click",()=>cloudAction("push"));
     cloudPull.addEventListener("click",()=>cloudAction("pull"));
     cloudAuto.addEventListener("change",()=>localStorage.setItem("webos-cloud-auto-sync",String(cloudAuto.checked)));
-    window.addEventListener("webos:cloud-state",renderCloudState);
-    window.WebOSCloud?.ready?.then(renderCloudState);
+    const identityStatus=win.querySelector("#settings-account-identities");
+    const guestUpgrade=win.querySelector("#settings-guest-upgrade");
+    async function renderAccountIdentities(){
+        const state=window.WebOSCloud?.getStatus?.()||{};
+        guestUpgrade.hidden=!state.user?.is_anonymous;
+        if(!state.user){identityStatus.textContent="Sign in to manage identities connected to your WebOS account.";return;}
+        try{
+            const identities=await window.WebOSCloud.getIdentities();
+            const providers=[...new Set(identities.map(item=>item.provider).filter(Boolean))];
+            identityStatus.textContent=providers.length
+              ?"Connected: "+providers.map(name=>({google:"Google",discord:"Discord",github:"GitHub",gitlab:"GitLab"}[name]||name)).join(" · ")
+              :"No external sign-in identities are linked yet.";
+            win.querySelectorAll("[data-link-provider]").forEach(button=>{
+                const provider=button.dataset.linkProvider,linked=providers.includes(provider);
+                button.hidden=linked;
+                button.disabled=state.mode!=="ready";
+            });
+            let unlink=win.querySelector("#settings-account-unlink");
+            if(!unlink){unlink=document.createElement("div");unlink.id="settings-account-unlink";unlink.className="settings-action-row";identityStatus.after(unlink);}
+            unlink.replaceChildren();
+            if(identities.length>1){
+                identities.forEach(identity=>{
+                    const button=document.createElement("button");
+                    button.type="button";button.textContent="Disconnect "+(identity.provider||"account");
+                    button.addEventListener("click",async()=>{
+                        if(!confirm("Disconnect this sign-in method from your WebOS account? Make sure another sign-in method is available first."))return;
+                        button.disabled=true;
+                        try{await window.WebOSCloud.unlinkIdentity(identity);await renderAccountIdentities();}
+                        catch(error){identityStatus.textContent=error.message;button.disabled=false;}
+                    });
+                    unlink.append(button);
+                });
+            }
+        }catch(error){identityStatus.textContent="Could not load connected accounts: "+(error.message||error);}
+    }
+    win.querySelectorAll("[data-link-provider]").forEach(button=>button.addEventListener("click",async()=>{
+        button.disabled=true;identityStatus.textContent="Opening secure provider connection…";
+        try{await window.WebOSCloud.linkIdentity(button.dataset.linkProvider);}
+        catch(error){identityStatus.textContent=error.message;button.disabled=false;}
+    }));
+    win.querySelector("#settings-upgrade-submit")?.addEventListener("click",async()=>{
+        const email=win.querySelector("#settings-upgrade-email").value.trim();
+        const password=win.querySelector("#settings-upgrade-password").value;
+        const button=win.querySelector("#settings-upgrade-submit");
+        button.disabled=true;identityStatus.textContent="Updating guest account…";
+        try{await window.WebOSCloud.upgradeWithEmail(email,password);win.querySelector("#settings-upgrade-password").value="";identityStatus.textContent="Email added. Follow any confirmation email from Supabase.";await renderAccountIdentities();}
+        catch(error){identityStatus.textContent=error.message;}
+        finally{button.disabled=false;}
+    });
+    window.addEventListener("webos:cloud-state",()=>{renderCloudState();renderAccountIdentities();});
+    window.WebOSCloud?.ready?.then(()=>{renderCloudState();renderAccountIdentities();});
     renderCloudState();
+    renderAccountIdentities();
     win.querySelectorAll("[data-dev-app]").forEach(button=>button.addEventListener("click",()=>window.WebOSAppRegistry?.launch?.(button.dataset.devApp)));
     const notifyErrors=win.querySelector("#settings-notify-errors"),notifyUpdates=win.querySelector("#settings-notify-updates");
     notifyErrors.checked=localStorage.getItem("webos-notify-errors")!=="false";
